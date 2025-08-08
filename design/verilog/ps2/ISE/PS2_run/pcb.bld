@@ -1,0 +1,72 @@
+Release 14.7 ngdbuild P.20131013 (lin64)
+Copyright (c) 1995-2013 Xilinx, Inc.  All rights reserved.
+
+Command Line: /opt/Xilinx/14.7/ISE_DS/ISE/bin/lin64/unwrapped/ngdbuild -intstyle
+ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -uc
+/home/cct/FPGA_Project/PS2_run/ISE/ps2_run.ucf -p xc3s700an-fgg484-5 pcb_cs.ngc
+pcb.ngd
+
+Reading NGO file "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb_cs.ngc" ...
+Gathering constraint information from source properties...
+Done.
+
+Annotating constraints to design from ucf file
+"/home/cct/FPGA_Project/PS2_run/ISE/ps2_run.ucf" ...
+Resolving constraint associations...
+Checking Constraint Associations...
+WARNING:ConstraintSystem:56 - Constraint <TIMESPEC TS_J_CLK = PERIOD "J_CLK"
+   30000.000000000 pS HIGH 50.000000000 %;>: Unable to find an active 'TNM' or
+   'TimeGrp' constraint named 'J_CLK'.
+
+WARNING:ConstraintSystem:56 - Constraint <TIMESPEC TS_U_TO_J = FROM "U_CLK" TO
+   "J_CLK" 15000.000000000 pS;>: Unable to find an active 'TimeGrp' or 'TNM' or
+   'TPSync' constraint named 'J_CLK'.
+
+WARNING:ConstraintSystem:56 - Constraint <TIMESPEC TS_J_TO_D = FROM "J_CLK" TO
+   "D_CLK" TIG;>: Unable to find an active 'TimeGrp' or 'TNM' or 'TPSync'
+   constraint named 'J_CLK'.
+
+WARNING:ConstraintSystem:56 - Constraint <TIMESPEC TS_D_TO_J = FROM "D_CLK" TO
+   "J_CLK" TIG;>: Unable to find an active 'TimeGrp' or 'TNM' or 'TPSync'
+   constraint named 'J_CLK'.
+
+WARNING:ConstraintSystem:168 - Constraint <OFFSET = IN  10.000 VALID 20.000
+   BEFORE "analyzer_clk"  ;>
+   [/home/cct/FPGA_Project/PS2_run/ISE/ps2_run.ucf(9)]: This constraint will be
+   ignored because NET "analyzer_clk" could not be found or was not connected to
+   a PAD.
+
+WARNING:ConstraintSystem:168 - Constraint <OFFSET = OUT 20.000 AFTER
+   "analyzer_clk"  ;> [/home/cct/FPGA_Project/PS2_run/ISE/ps2_run.ucf(10)]: This
+   constraint will be ignored because NET "analyzer_clk" could not be found or
+   was not connected to a PAD.
+
+INFO:ConstraintSystem - The Period constraint <PERIOD = 10.000 ;>
+   [/home/cct/FPGA_Project/PS2_run/ISE/ps2_run.ucf(4)], is specified using the
+   Net Period method which is not recommended. Please use the Timespec PERIOD
+   method.
+
+Done...
+
+Checking expanded design ...
+WARNING:NgdBuild:452 - logical net 'N4' has no driver
+WARNING:NgdBuild:452 - logical net 'N5' has no driver
+
+Partition Implementation Status
+-------------------------------
+
+  No Partitions were found in this design.
+
+-------------------------------
+
+NGDBUILD Design Results Summary:
+  Number of errors:     0
+  Number of warnings:   8
+
+Total memory usage is 460160 kilobytes
+
+Writing NGD file "pcb.ngd" ...
+Total REAL time to NGDBUILD completion:  3 sec
+Total CPU time to NGDBUILD completion:   3 sec
+
+Writing NGDBUILD log file "pcb.bld"...

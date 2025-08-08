@@ -86,6 +86,7 @@ class string_draw_engine ( config : StringDrawEngConfig )  extends Component {
     val offset =  stringList.keys zip ( keyLengths.scanLeft(0)(_ + _).dropRight(1) )  toMap
 
     val rom = Mem(UInt(7 bits), keyLengths.sum )
+    rom.addAttribute("ram_style", "distributed")
 
     val romInitialContent = scala.collection.mutable.ArrayBuffer[BigInt]()
 

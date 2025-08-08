@@ -57,6 +57,18 @@ object PathUtils {
 
     desiredRtlPath
   }
+
+  def getVerilogFilePath(
+                        middlePath : String = "design/verilog",
+                        ipFolderName : String,
+                        fileName : String
+                      ): Path = {
+    val projectBasePath: Path = Paths.get(System.getProperty("user.dir")).toAbsolutePath
+    val desiredRtlPath: Path = projectBasePath.resolve(middlePath).resolve(ipFolderName).resolve(fileName)
+
+    desiredRtlPath
+  }
+
 }
 
 

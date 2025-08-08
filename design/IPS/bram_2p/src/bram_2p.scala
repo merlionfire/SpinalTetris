@@ -44,6 +44,7 @@ class bram_2p  ( config :Bram2pConfig ) extends Component {
 
   // Instantiate the memory
   val memory = Mem(Bits(wordWidth bits), depth)
+  memory.addAttribute("ram_style", "block")
   memory.initBigInt(initContent)
 
   // Create the write port and associate it with the writeClockDomain

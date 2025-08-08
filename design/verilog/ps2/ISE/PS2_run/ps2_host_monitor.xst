@@ -1,0 +1,6 @@
+set -tmpdir "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/xst/projnav.tmp"
+set -xsthdpdir "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/xst"
+elaborate
+-lso /home/cct/FPGA_Project/PS2_run/ISE/PS2_run/ps2_host_monitor.lso
+-ifn ps2_host_monitor.prj
+-ifmt mixed

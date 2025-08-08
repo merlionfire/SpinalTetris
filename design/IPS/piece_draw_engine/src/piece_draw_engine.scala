@@ -35,7 +35,7 @@ class piece_draw_engine(config : PieceDrawEngConfig )  extends Component {
 
   // Sync-write and Sync-read
   val memory = Mem(Bits(colBlocksNum bits), rowBlocksNum)
-
+  memory.addAttribute("ram_style", "distributed")
 
   //*****************************************************
   //              Write

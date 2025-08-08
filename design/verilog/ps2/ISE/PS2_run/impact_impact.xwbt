@@ -1,0 +1,8 @@
+INTSTYLE=impact
+INFILE=/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/impact.xsl
+OUTFILE=/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/impact.xsl
+FAMILY=Multiple
+PART=Multiple
+WORKINGDIR=/home/cct/FPGA_Project/PS2_run/ISE/PS2_run
+LICENSE=iMPACT
+USER_INFO=iMPACT

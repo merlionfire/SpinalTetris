@@ -1,0 +1,599 @@
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -ise "PS2_run.ise" -intstyle ise -f pcb.ut pcb.ncd 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -ise "PS2_run.ise" -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -i -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -ise "PS2_run.ise" -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -ise "PS2_run.ise" -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -ise "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/PS2_run.ise" -intstyle ise -v 3 -s 5 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+xst -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -uc /home/cct/FPGA_Project/PS2_run/ISE/ps2_run.ucf -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -intstyle ise -v 3 -s 5 -n 3 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -intstyle ise -f pcb.ut pcb.ncd 
+xst -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -uc /home/cct/FPGA_Project/PS2_run/ISE/ps2_run.ucf -p xc3s700an-fgg484-5 pcb.ngc pcb.ngd  
+map -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -intstyle ise -v 3 -s 5 -n 3 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -intstyle ise -f pcb.ut pcb.ncd 
+ngdbuild -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -uc /home/cct/FPGA_Project/PS2_run/ISE/ps2_run.ucf -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+ngdbuild -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -uc /home/cct/FPGA_Project/PS2_run/ISE/ps2_run.ucf -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -intstyle ise -v 3 -s 5 -n 3 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -intstyle ise -f pcb.ut pcb.ncd 
+xst -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -uc /home/cct/FPGA_Project/PS2_run/ISE/ps2_run.ucf -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -intstyle ise -v 3 -s 5 -n 3 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -intstyle ise -f pcb.ut pcb.ncd 
+xst -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+xst -intstyle ise -ifn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.xst" -ofn "/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.syr" 
+ngdbuild -intstyle ise -dd _ngo -sd ../../../Uart_run/ISE/uart_fifo -nt timestamp -uc /home/cct/FPGA_Project/PS2_run/ISE/ps2_run.ucf -p xc3s700an-fgg484-5 pcb_cs.ngc pcb.ngd  
+map -intstyle ise -p xc3s700an-fgg484-5 -cm area -ir off -pr off -c 100 -o pcb_map.ncd pcb.ngd pcb.pcf 
+par -w -intstyle ise -ol high -t 1 pcb_map.ncd pcb.ncd pcb.pcf 
+trce -intstyle ise -v 3 -s 5 -n 3 -fastpaths -xml pcb.twx pcb.ncd -o pcb.twr pcb.pcf 
+bitgen -intstyle ise -f pcb.ut pcb.ncd 

@@ -46,6 +46,7 @@ class color_palettes ( val g : ColorPalettesConfig ) extends Component {
 
   //rom.initBigInt( cPalettes16(Palettes_name))
   rom.initBigInt( get_palette )
+  rom.addAttribute("ram_style", "distributed")
 
   io.color.payload := rom.readSync(io.addr, io.rd_en)
   io.color.valid := RegNext( io.rd_en )

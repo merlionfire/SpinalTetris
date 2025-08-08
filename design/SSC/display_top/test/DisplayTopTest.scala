@@ -30,7 +30,7 @@ class DisplayTopTest extends AnyFunSuite {
   //  CUSTOM CODE BEGIN
   // ***************************************
 
-  val debugMode : Boolean =  false   // True : drive each draw engines signals instead of FSM ( default )
+  val debugMode : Boolean =  true // false   // True : drive each draw engines signals instead of FSM ( default )
   // ***************************************
   //  CUSTOM CODE END
   // ***************************************

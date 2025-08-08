@@ -1,0 +1,8 @@
+INTSTYLE=ise
+INFILE=/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.ncd
+OUTFILE=/home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.bit
+FAMILY=Spartan3A and Spartan3AN
+PART=xc3s700an-5fgg484
+WORKINGDIR=/home/cct/FPGA_Project/PS2_run/ISE/PS2_run
+LICENSE=WebPack
+USER_INFO=__0_0_0

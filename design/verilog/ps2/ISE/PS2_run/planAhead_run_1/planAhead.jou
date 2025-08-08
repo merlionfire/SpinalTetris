@@ -1,0 +1,17 @@
+#-----------------------------------------------------------
+# PlanAhead v11.4
+# Build 52232 by hdbuild on Fri Nov  6 19:11:44 PST 2009
+# Start of session at: 9/13/14 12:28:00 AM
+# Process ID: 1519
+#-----------------------------------------------------------
+source /home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pa.fromNetlist.tcl
+# hdi::project new -name PS2_run -dir /home/cct/FPGA_Project/PS2_run/ISE/PS2_run/planAhead_run_1 -netlist /home/cct/FPGA_Project/PS2_run/ISE/PS2_run/pcb.ngc -search_path  {/home/cct/FPGA_Project/PS2_run/ISE/PS2_run} {../../../Uart_run/ISE/uart_fifo} 
+# hdi::project setArch -name PS2_run -arch spartan3a
+# hdi::param set -name project.pinAheadLayout -bvalue yes
+# hdi::param set -name project.paUcfFile -svalue /home/cct/FPGA_Project/PS2_run/ISE/ps2_run.ucf
+# hdi::floorplan new -name floorplan_1 -part xc3s700anfgg484-5 -project PS2_run
+# hdi::pconst import -project PS2_run -floorplan floorplan_1 -file /home/cct/FPGA_Project/PS2_run/ISE/ps2_run.ucf
+#-----------------------------------------------------------
+# End of session at: 9/13/14 12:50:58 AM
+# Process ID: 1519
+#-----------------------------------------------------------

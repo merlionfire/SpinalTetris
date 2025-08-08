@@ -1,6 +1,7 @@
 package IPS.ascii_font16x8
 
 import spinal.core._
+import utils.PathUtils.getVerilogFilePath
 
 
 class ascii_font16x8 ( addressWidth : Int = 11, wordWidth : Int = 8) extends BlackBox {
@@ -16,6 +17,8 @@ class ascii_font16x8 ( addressWidth : Int = 11, wordWidth : Int = 8) extends Bla
   mapCurrentClockDomain(io.clk)
 
   noIoPrefix()
+
+  addRTLPath(getVerilogFilePath(middlePath="design", ipFolderName = "utils", fileName = "ascii_font16x8.v" ).toString)
 /*
   // Method 1 : Use addRTLPath and then defined method to read content of files, which will be copied here during PhaseVerilog.impl()
   //  Pro : concise

@@ -1,0 +1,13 @@
+
+
+
+// Instantiate the module
+single_buf_clock instance_name (
+    .CLKIN_IN(CLKIN_IN), 
+    .CLKDV_OUT(CLKDV_OUT), 
+    .CLKIN_IBUFG_OUT(CLKIN_IBUFG_OUT), 
+    .CLK0_OUT(CLK0_OUT), 
+    .LOCKED_OUT(LOCKED_OUT)
+    );
+
+

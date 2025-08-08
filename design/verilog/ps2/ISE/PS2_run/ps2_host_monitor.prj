@@ -1,0 +1,2 @@
+verilog verilog "../../rtl/disp_rom.v"
+verilog work "single_buf_clock.v"

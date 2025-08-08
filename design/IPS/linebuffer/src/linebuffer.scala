@@ -29,6 +29,8 @@ class linebuffer[T<: Data]  ( val dataType: HardType[T],
 
   val ram =Mem(dataType, depth)
 
+  ram.addAttribute("ram_style", "distributed")
+
   val wr = new ClockingArea ( wrClock ) {
 
     val addr = RegInit(U(0, addrWidth bits))

@@ -1,0 +1,29 @@
+##############################################################################
+# Clock  
+##############################################################################
+NET "CLK_50M"       LOC = "E12"  | IOSTANDARD = LVCMOS33 | PERIOD = 10.000 ;
+#OFFSET = IN  10.000 VALID 20.000 BEFORE "CLK_50M" ;
+#OFFSET = OUT 20.000 AFTER "CLK_50M" ;
+NET "analyzer_clk"  TNM_NET = sys_clk ; 
+TIMESPEC TS_sys_clk = PERIOD sys_clk 100mhz HIGH 50% ;
+OFFSET = IN  10.000 VALID 20.000 BEFORE "analyzer_clk"  ;
+OFFSET = OUT 20.000 AFTER "analyzer_clk"  ;
+
+##############################################################################
+# Mouse and/or Keyboard Connector (PS2)
+##############################################################################
+# Primary connection, simply plug device into connector.
+NET "PS2_CLK1"      LOC = "W12"  |IOSTANDARD = LVCMOS33 |DRIVE = 8 |SLEW = SLOW ;
+NET "PS2_DATA1"     LOC = "V11"  |IOSTANDARD = LVCMOS33 |DRIVE = 8 |SLEW = SLOW ;
+
+##############################################################################
+# Serial Ports (RS232)
+##############################################################################
+NET "RS232_DCE_RXD" LOC = "E16"  |IOSTANDARD = LVCMOS33 ;
+NET "RS232_DCE_TXD" LOC = "F15"  |IOSTANDARD = LVCMOS33 |DRIVE = 8 |SLEW = SLOW ;
+
+
+##############################################################################
+# Directional Push-Buttons (BTN)
+##############################################################################
+NET "BTN_SOUTH"     LOC = "T15"  |IOSTANDARD = LVCMOS33 |PULLDOWN ;

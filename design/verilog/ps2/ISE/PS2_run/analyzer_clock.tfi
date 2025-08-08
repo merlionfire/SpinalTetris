@@ -1,0 +1,16 @@
+
+
+
+// Instantiate the module
+analyzer_clock instance_name (
+    .U1_CLKIN_IN(U1_CLKIN_IN), 
+    .U1_RST_IN(U1_RST_IN), 
+    .U1_CLKDV_OUT(U1_CLKDV_OUT), 
+    .U1_CLKIN_IBUFG_OUT(U1_CLKIN_IBUFG_OUT), 
+    .U1_CLK0_OUT(U1_CLK0_OUT), 
+    .U2_CLKDV_OUT(U2_CLKDV_OUT), 
+    .U2_CLK0_OUT(U2_CLK0_OUT), 
+    .U2_LOCKED_OUT(U2_LOCKED_OUT)
+    );
+
+
