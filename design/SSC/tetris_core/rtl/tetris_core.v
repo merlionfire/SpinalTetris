@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : tetris_core
-// Git hash  : 1966d2c2753e3d447f4de5f4d933de13c0cb6e6b
+// Git hash  : 0d2e7053e857cd3a7807b5ffed71b5a65057eda9
 
 `timescale 1ns/1ps
 
@@ -1439,7 +1439,7 @@ module linebuffer (
   wire       [3:0]    rd_data_payload;
   wire       [3:0]    rd_rd_data;
   reg                 rd_enable_regNext;
-  reg [3:0] ram [0:319];
+  (* ram_style = "distributed" *) reg [3:0] ram [0:319];
 
   always @(posedge core_clk) begin
     if(wr_in_valid) begin
@@ -1537,7 +1537,7 @@ module color_palettes (
 
   reg        [11:0]   rom_spinal_port0;
   reg                 io_rd_en_regNext;
-  reg [11:0] rom [0:15];
+  (* ram_style = "distributed" *) reg [11:0] rom [0:15];
 
   initial begin
     $readmemb("tetris_core.v_toplevel_game_display_inst_lbcp_rom.bin",rom);
@@ -1789,7 +1789,7 @@ module string_draw_engine (
   reg [167:0] fsm_stateNext_string;
   `endif
 
-  reg [6:0] rom [0:10];
+  (* ram_style = "distributed" *) reg [6:0] rom [0:10];
   reg [42:0] wall_wall_rom [0:3];
 
   assign temp_when = (cnt_value == 4'b0101);
@@ -2230,7 +2230,7 @@ module piece_draw_engine (
   reg [79:0] fsm_stateNext_string;
   `endif
 
-  reg [9:0] memory [0:21];
+  (* ram_style = "distributed" *) reg [9:0] memory [0:21];
 
   assign temp_wr_row_cnt_valueNext_1 = wr_row_cnt_willIncrement;
   assign temp_wr_row_cnt_valueNext = {4'd0, temp_wr_row_cnt_valueNext_1};
@@ -2888,7 +2888,7 @@ module bram_2p (
 );
 
   reg        [3:0]    memory_spinal_port1;
-  reg [3:0] memory [0:76799];
+  (* ram_style = "block" *) reg [3:0] memory [0:76799];
 
   initial begin
     $readmemb("tetris_core.v_toplevel_game_display_inst_core_fb_memory.bin",memory);
@@ -5362,6 +5362,138 @@ module piece_checker (
         piece_in_rValid <= piece_in_valid;
       end
       case(piece_payload_type)
+        T : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b10;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b10;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b00;
+              blks_offset_3_y <= 2'b01;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b00;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b00;
+            end
+          endcase
+        end
+        O : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+          endcase
+        end
+        I : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b11;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b10;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b11;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b10;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b11;
+              blks_offset_3_y <= 2'b10;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b11;
+            end
+          endcase
+        end
         Z : begin
           case(piece_payload_rot)
             2'b00 : begin
@@ -5450,138 +5582,6 @@ module piece_checker (
             end
           endcase
         end
-        I : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b11;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b10;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b11;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b11;
-              blks_offset_3_y <= 2'b10;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b11;
-            end
-          endcase
-        end
-        J : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b00;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b10;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b10;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b01;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b00;
-            end
-          endcase
-        end
-        O : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-          endcase
-        end
         L : begin
           case(piece_payload_rot)
             2'b00 : begin
@@ -5630,19 +5630,19 @@ module piece_checker (
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b00;
+              blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b10;
               blks_offset_3_y <= 2'b01;
             end
             2'b01 : begin
-              blks_offset_0_x <= 2'b01;
+              blks_offset_0_x <= 2'b10;
               blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b10;
-              blks_offset_1_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b00;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b01;
@@ -5650,19 +5650,19 @@ module piece_checker (
             end
             2'b10 : begin
               blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b10;
+              blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b00;
               blks_offset_3_y <= 2'b01;
             end
             default : begin
-              blks_offset_0_x <= 2'b01;
+              blks_offset_0_x <= 2'b00;
               blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b00;
-              blks_offset_1_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b10;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b01;

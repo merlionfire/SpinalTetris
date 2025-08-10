@@ -1,82 +1,8 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
-// Component : pcb
-// Git hash  : 0d2e7053e857cd3a7807b5ffed71b5a65057eda9
+// Component : tetris_top
+// Git hash  : f710c93e905c21d66fa86f775a08fb48d62f39ea
 
 `timescale 1ns/1ps
-
-module pcb (
-  input  wire          CLK_50M,
-  input  wire          BTN_SOUTH,
-  input  wire          BTN_WEST,
-  input  wire          BTN_NORTH,
-  inout  wire          PS2_CLK,
-  inout  wire          PS2_DATA,
-  input  wire [3:0]    SW,
-  output wire [3:0]    VGA_B,
-  output wire [3:0]    VGA_G,
-  output wire [3:0]    VGA_R,
-  output wire          VGA_HSYNC,
-  output wire          VGA_VSYNC
-);
-
-  wire       [3:0]    btn_clean_pin_in;
-  wire                dcm_inst_CLKDV_OUT;
-  wire                dcm_inst_CLKIN_IBUFG_OUT;
-  wire                dcm_inst_CLK0_OUT;
-  wire                dcm_inst_LOCKED_OUT;
-  wire       [3:0]    btn_clean_pin_out;
-  wire                tetris_top_inst_vga_vSync;
-  wire                tetris_top_inst_vga_hSync;
-  wire                tetris_top_inst_vga_colorEn;
-  wire       [3:0]    tetris_top_inst_vga_color_r;
-  wire       [3:0]    tetris_top_inst_vga_color_g;
-  wire       [3:0]    tetris_top_inst_vga_color_b;
-  wire                btn_south_clean;
-  wire                btn_west_clean;
-  wire                btn_north_clean;
-  wire                sw_0_clean;
-
-  dcm dcm_inst (
-    .CLKIN_IN        (CLK_50M                 ), //i
-    .RST_IN          (1'b0                    ), //i
-    .CLKDV_OUT       (dcm_inst_CLKDV_OUT      ), //o
-    .CLKIN_IBUFG_OUT (dcm_inst_CLKIN_IBUFG_OUT), //o
-    .CLK0_OUT        (dcm_inst_CLK0_OUT       ), //o
-    .LOCKED_OUT      (dcm_inst_LOCKED_OUT     )  //o
-  );
-  btn_filter #(
-    .PIN_NUM (4)
-  ) btn_clean (
-    .clk     (dcm_inst_CLK0_OUT     ), //i
-    .pin_in  (btn_clean_pin_in[3:0] ), //i
-    .pin_out (btn_clean_pin_out[3:0])  //o
-  );
-  (* keep_hierarchy = "yes" *) tetris_top tetris_top_inst (
-    .core_clk    (dcm_inst_CLK0_OUT               ), //i
-    .core_rst    (btn_north_clean                 ), //i
-    .vga_clk     (dcm_inst_CLKDV_OUT              ), //i
-    .vga_rst     (btn_north_clean                 ), //i
-    .ps2_clk     (PS2_CLK                         ), //~
-    .ps2_data    (PS2_DATA                        ), //~
-    .vga_vSync   (tetris_top_inst_vga_vSync       ), //o
-    .vga_hSync   (tetris_top_inst_vga_hSync       ), //o
-    .vga_colorEn (tetris_top_inst_vga_colorEn     ), //o
-    .vga_color_r (tetris_top_inst_vga_color_r[3:0]), //o
-    .vga_color_g (tetris_top_inst_vga_color_g[3:0]), //o
-    .vga_color_b (tetris_top_inst_vga_color_b[3:0])  //o
-  );
-  assign btn_clean_pin_in = {BTN_SOUTH,{BTN_WEST,{BTN_NORTH,SW[0]}}};
-  assign btn_south_clean = btn_clean_pin_out[3];
-  assign btn_west_clean = btn_clean_pin_out[2];
-  assign btn_north_clean = btn_clean_pin_out[1];
-  assign sw_0_clean = btn_clean_pin_out[0];
-  assign VGA_HSYNC = tetris_top_inst_vga_hSync;
-  assign VGA_VSYNC = tetris_top_inst_vga_vSync;
-  assign VGA_R = tetris_top_inst_vga_color_r;
-  assign VGA_G = tetris_top_inst_vga_color_g;
-  assign VGA_B = tetris_top_inst_vga_color_b;
-
-endmodule
 
 module tetris_top (
   input  wire          core_clk,
@@ -159,7 +85,7 @@ module kd_ps2 (
   wire                ps2_inst_ps2_tx_ready;
   wire                ps2_inst_ps2_rddata_valid;
   wire       [7:0]    ps2_inst_ps2_rd_data;
-  wire       [7:0]    ps2_inst_ps2_rx_ready;
+  wire       [7:0]    ps2_inst_ps2_rd_ready;
   reg                 key_valid_up_valid;
   reg                 key_valid_down_valid;
   reg                 up_tick;
@@ -198,7 +124,7 @@ module kd_ps2 (
     .ps2_tx_ready     (ps2_inst_ps2_tx_ready     ), //o
     .ps2_rddata_valid (ps2_inst_ps2_rddata_valid ), //o
     .ps2_rd_data      (ps2_inst_ps2_rd_data[7:0] ), //o
-    .ps2_rx_ready     (ps2_inst_ps2_rx_ready[7:0])  //o
+    .ps2_rd_ready     (ps2_inst_ps2_rd_ready[7:0])  //o
   );
   `ifndef SYNTHESIS
   always @(*) begin
@@ -485,8 +411,6 @@ module display_top (
   wire                vga_sync_io_sos_buffercc_io_dataOut;
   wire                vga_sync_io_sof_buffercc_io_dataOut;
   wire                lb_load_valid_buffercc_io_dataOut;
-  wire       [4:0]    temp_temp_rd_start_1;
-  wire       [0:0]    temp_temp_rd_start_1_1;
   wire       [8:0]    temp_dma_fb_fetch_en_cnt_valueNext;
   wire       [0:0]    temp_dma_fb_fetch_en_cnt_valueNext_1;
   wire       [16:0]   temp_dma_fb_fetch_addr_valueNext;
@@ -503,12 +427,6 @@ module display_top (
   wire                fb_scale_cnt_willOverflowIfInc;
   wire                fb_scale_cnt_willOverflow;
   wire                lb_load_valid;
-  reg                 temp_1;
-  reg                 temp_rd_start;
-  reg        [4:0]    temp_rd_start_1;
-  reg        [4:0]    temp_rd_start_2;
-  wire                temp_rd_start_3;
-  wire                temp_rd_start_4;
   reg                 vga_sync_io_hSync_delay_1;
   reg                 vga_sync_io_hSync_delay_2;
   reg                 vga_sync_io_vSync_delay_1;
@@ -542,8 +460,6 @@ module display_top (
   wire       [3:0]    dma_lb_wr_payload;
   reg                 dma_fb_fetch_en_regNext;
 
-  assign temp_temp_rd_start_1_1 = temp_rd_start;
-  assign temp_temp_rd_start_1 = {4'd0, temp_temp_rd_start_1_1};
   assign temp_dma_fb_fetch_en_cnt_valueNext_1 = dma_fb_fetch_en_cnt_willIncrement;
   assign temp_dma_fb_fetch_en_cnt_valueNext = {8'd0, temp_dma_fb_fetch_en_cnt_valueNext_1};
   assign temp_dma_fb_fetch_addr_valueNext_1 = dma_fb_fetch_addr_willIncrement;
@@ -658,7 +574,7 @@ module display_top (
   linebuffer lb (
     .wr_in_valid    (dma_lb_wr_valid       ), //i
     .wr_in_payload  (dma_lb_wr_payload[3:0]), //i
-    .rd_start       (temp_rd_start_4       ), //i
+    .rd_start       (vga_sync_io_sol       ), //i
     .rd_out_valid   (lb_rd_out_valid       ), //o
     .rd_out_payload (lb_rd_out_payload[3:0]), //o
     .core_clk       (core_clk              ), //i
@@ -751,22 +667,6 @@ module display_top (
   end
 
   assign lb_load_valid = ((fb_scale_cnt_value == 1'b0) && vga_sync_io_vColorEn);
-  always @(*) begin
-    temp_rd_start = 1'b0;
-    if(temp_1) begin
-      temp_rd_start = 1'b1;
-    end
-  end
-
-  assign temp_rd_start_3 = (temp_rd_start_2 == 5'h1f);
-  assign temp_rd_start_4 = (temp_rd_start_3 && temp_rd_start);
-  always @(*) begin
-    temp_rd_start_1 = (temp_rd_start_2 + temp_temp_rd_start_1);
-    if(1'b0) begin
-      temp_rd_start_1 = 5'h0;
-    end
-  end
-
   assign lbcp_io_addr = lb_rd_out_payload;
   assign vga_hSync = vga_sync_io_hSync_delay_2;
   assign vga_vSync = vga_sync_io_vSync_delay_2;
@@ -813,7 +713,7 @@ module display_top (
     end
   end
 
-  assign dma_fb_fetch_en_cnt_willOverflowIfInc = (dma_fb_fetch_en_cnt_value == 9'h11f);
+  assign dma_fb_fetch_en_cnt_willOverflowIfInc = (dma_fb_fetch_en_cnt_value == 9'h13f);
   assign dma_fb_fetch_en_cnt_willOverflow = (dma_fb_fetch_en_cnt_willOverflowIfInc && dma_fb_fetch_en_cnt_willIncrement);
   always @(*) begin
     if(dma_fb_fetch_en_cnt_willOverflow) begin
@@ -840,7 +740,7 @@ module display_top (
     end
   end
 
-  assign dma_fb_fetch_addr_willOverflowIfInc = (dma_fb_fetch_addr_value == 17'h10dff);
+  assign dma_fb_fetch_addr_willOverflowIfInc = (dma_fb_fetch_addr_value == 17'h12bff);
   assign dma_fb_fetch_addr_willOverflow = (dma_fb_fetch_addr_willOverflowIfInc && dma_fb_fetch_addr_willIncrement);
   always @(*) begin
     if(dma_fb_fetch_addr_willOverflow) begin
@@ -885,19 +785,10 @@ module display_top (
     if(vga_rst) begin
       vga_sync_io_colorEn_regNext <= 1'b0;
       fb_scale_cnt_value <= 1'b0;
-      temp_1 <= 1'b0;
-      temp_rd_start_2 <= 5'h0;
       is_bg_color <= 1'b0;
     end else begin
       vga_sync_io_colorEn_regNext <= vga_sync_io_colorEn;
       fb_scale_cnt_value <= fb_scale_cnt_valueNext;
-      temp_rd_start_2 <= temp_rd_start_1;
-      if(vga_sync_io_sol) begin
-        temp_1 <= 1'b1;
-      end
-      if(temp_rd_start_3) begin
-        temp_1 <= 1'b0;
-      end
       is_bg_color <= (lb_rd_out_payload == 4'b0010);
     end
   end
@@ -1799,7 +1690,7 @@ module linebuffer (
   wire       [3:0]    rd_data_payload;
   wire       [3:0]    rd_rd_data;
   reg                 rd_enable_regNext;
-  (* ram_style = "distributed" *) reg [3:0] ram [0:287];
+  reg [3:0] ram [0:319];
 
   always @(posedge core_clk) begin
     if(wr_in_valid) begin
@@ -1848,7 +1739,7 @@ module linebuffer (
       wr_addr <= 9'h0;
     end else begin
       if(wr_in_valid) begin
-        if((wr_addr == 9'h11f)) begin
+        if((wr_addr == 9'h13f)) begin
           wr_addr <= 9'h0;
         end else begin
           wr_addr <= (wr_addr + 9'h001);
@@ -1868,7 +1759,7 @@ module linebuffer (
       if(rd_start) begin
         rd_enable <= 1'b1;
       end else begin
-        if(((rd_addr == 9'h11f) && rd_scale_cnt_willOverflowIfInc)) begin
+        if(((rd_addr == 9'h13f) && rd_scale_cnt_willOverflowIfInc)) begin
           rd_enable <= 1'b0;
         end
       end
@@ -1897,10 +1788,10 @@ module color_palettes (
 
   reg        [11:0]   rom_spinal_port0;
   reg                 io_rd_en_regNext;
-  (* ram_style = "distributed" *) reg [11:0] rom [0:15];
+  reg [11:0] rom [0:15];
 
   initial begin
-    $readmemb("pcb.v_toplevel_tetris_top_inst_tetris_core_inst_game_display_inst_lbcp_rom.bin",rom);
+    $readmemb("tetris_top.v_toplevel_tetris_core_inst_game_display_inst_lbcp_rom.bin",rom);
   end
   always @(posedge vga_clk) begin
     if(io_rd_en) begin
@@ -2149,7 +2040,7 @@ module string_draw_engine (
   reg [167:0] fsm_stateNext_string;
   `endif
 
-  (* ram_style = "distributed" *) reg [6:0] rom [0:10];
+  reg [6:0] rom [0:10];
   reg [42:0] wall_wall_rom [0:3];
 
   assign temp_when = (cnt_value == 4'b0101);
@@ -2159,11 +2050,11 @@ module string_draw_engine (
   assign temp_wall_cnt_valueNext_1 = wall_cnt_willIncrement;
   assign temp_wall_cnt_valueNext = {1'd0, temp_wall_cnt_valueNext_1};
   initial begin
-    $readmemb("pcb.v_toplevel_tetris_top_inst_tetris_core_inst_game_display_inst_core_draw_fsm_inst_rom.bin",rom);
+    $readmemb("tetris_top.v_toplevel_tetris_core_inst_game_display_inst_core_draw_fsm_inst_rom.bin",rom);
   end
   assign rom_spinal_port0 = rom[cnt_value];
   initial begin
-    $readmemb("pcb.v_toplevel_tetris_top_inst_tetris_core_inst_game_display_inst_core_draw_fsm_inst_wall_wall_rom.bin",wall_wall_rom);
+    $readmemb("tetris_top.v_toplevel_tetris_core_inst_game_display_inst_core_draw_fsm_inst_wall_wall_rom.bin",wall_wall_rom);
   end
   assign wall_wall_rom_spinal_port0 = wall_wall_rom[wall_cnt_value];
   `ifndef SYNTHESIS
@@ -2405,7 +2296,7 @@ module string_draw_engine (
       end
       WAIT_GAME_START : begin
         if(logoHasRm) begin
-          x <= 9'h0da;
+          x <= 9'h0ec;
           y <= 8'h17;
           scale <= 3'b000;
           color <= 4'b0110;
@@ -2466,24 +2357,24 @@ module fb_addr_gen (
   input  wire          core_rst
 );
 
-  wire       [11:0]   temp_v_next_in_fb;
-  wire       [10:0]   temp_v_next_in_fb_1;
-  wire       [11:0]   temp_v_next_in_fb_2;
+  wire       [10:0]   temp_v_next_in_fb;
+  wire       [9:0]    temp_v_next_in_fb_1;
+  wire       [10:0]   temp_v_next_in_fb_2;
   wire       [16:0]   temp_addr;
   wire       [16:0]   temp_addr_1;
   reg        [8:0]    x_reg;
   reg        [7:0]    y_reg;
   wire       [7:0]    v_next;
-  wire       [11:0]   v_next_in_fb;
+  wire       [10:0]   v_next_in_fb;
   reg        [8:0]    h_reg;
-  reg        [11:0]   v_reg;
+  reg        [10:0]   v_reg;
   reg        [16:0]   addr;
 
-  assign temp_v_next_in_fb_1 = ({3'd0,v_next} <<< 2'd3);
+  assign temp_v_next_in_fb_1 = ({2'd0,v_next} <<< 2'd2);
   assign temp_v_next_in_fb = {1'd0, temp_v_next_in_fb_1};
-  assign temp_v_next_in_fb_2 = {4'd0, v_next};
+  assign temp_v_next_in_fb_2 = {3'd0, v_next};
   assign temp_addr = {8'd0, h_reg};
-  assign temp_addr_1 = ({5'd0,v_reg} <<< 3'd5);
+  assign temp_addr_1 = ({6'd0,v_reg} <<< 3'd6);
   assign v_next = (y_reg + v_cnt);
   assign v_next_in_fb = (temp_v_next_in_fb + temp_v_next_in_fb_2);
   assign out_addr = addr;
@@ -2492,7 +2383,7 @@ module fb_addr_gen (
       x_reg <= 9'h0;
       y_reg <= 8'h0;
       h_reg <= 9'h0;
-      v_reg <= 12'h0;
+      v_reg <= 11'h0;
       addr <= 17'h0;
     end else begin
       if(start) begin
@@ -2590,7 +2481,7 @@ module piece_draw_engine (
   reg [79:0] fsm_stateNext_string;
   `endif
 
-  (* ram_style = "distributed" *) reg [9:0] memory [0:21];
+  reg [9:0] memory [0:21];
 
   assign temp_wr_row_cnt_valueNext_1 = wr_row_cnt_willIncrement;
   assign temp_wr_row_cnt_valueNext = {4'd0, temp_wr_row_cnt_valueNext_1};
@@ -2794,7 +2685,7 @@ module piece_draw_engine (
       row_cnt_value <= row_cnt_valueNext;
       row_val_valid_regNext <= row_val_valid;
       if(gen_start) begin
-        x <= 9'h02b;
+        x <= 9'h03b;
         y <= 8'h14;
       end
       if(gen_done) begin
@@ -2802,7 +2693,7 @@ module piece_draw_engine (
         y <= 8'h0;
       end else begin
         if(col_cnt_willOverflow) begin
-          x <= 9'h02b;
+          x <= 9'h03b;
         end else begin
           if(col_cnt_inc) begin
             x <= x_next;
@@ -3248,10 +3139,10 @@ module bram_2p (
 );
 
   reg        [3:0]    memory_spinal_port1;
-  (* ram_style = "block" *) reg [3:0] memory [0:69119];
+  reg [3:0] memory [0:76799];
 
   initial begin
-    $readmemb("pcb.v_toplevel_tetris_top_inst_tetris_core_inst_game_display_inst_core_fb_memory.bin",memory);
+    $readmemb("tetris_top.v_toplevel_tetris_core_inst_game_display_inst_core_fb_memory.bin",memory);
   end
   always @(posedge core_clk) begin
     if(wr_en) begin
@@ -5722,7 +5613,51 @@ module piece_checker (
         piece_in_rValid <= piece_in_valid;
       end
       case(piece_payload_type)
-        S : begin
+        J : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b00;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b10;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b10;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b00;
+              blks_offset_3_y <= 2'b01;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b00;
+            end
+          endcase
+        end
+        T : begin
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
@@ -5732,7 +5667,7 @@ module piece_checker (
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b00;
+              blks_offset_3_y <= 2'b01;
             end
             2'b01 : begin
               blks_offset_0_x <= 2'b01;
@@ -5741,7 +5676,7 @@ module piece_checker (
               blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
+              blks_offset_3_x <= 2'b01;
               blks_offset_3_y <= 2'b10;
             end
             2'b10 : begin
@@ -5752,7 +5687,7 @@ module piece_checker (
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b10;
+              blks_offset_3_y <= 2'b01;
             end
             default : begin
               blks_offset_0_x <= 2'b01;
@@ -5761,7 +5696,51 @@ module piece_checker (
               blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b00;
+            end
+          endcase
+        end
+        L : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b10;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b00;
+              blks_offset_2_y <= 2'b10;
               blks_offset_3_x <= 2'b00;
+              blks_offset_3_y <= 2'b01;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b00;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b01;
               blks_offset_3_y <= 2'b00;
             end
           endcase
@@ -5854,50 +5833,6 @@ module piece_checker (
             end
           endcase
         end
-        L : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b10;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b00;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b01;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b00;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b00;
-            end
-          endcase
-        end
         Z : begin
           case(piece_payload_rot)
             2'b00 : begin
@@ -5942,90 +5877,46 @@ module piece_checker (
             end
           endcase
         end
-        T : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b10;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b10;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b01;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b00;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b00;
-            end
-          endcase
-        end
         default : begin
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b00;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b00;
+              blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b00;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b10;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b00;
             end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b10;
+            2'b01 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
               blks_offset_1_x <= 2'b10;
               blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b01;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b10;
             end
-            default : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b10;
+            2'b10 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b10;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
+              blks_offset_3_x <= 2'b00;
+              blks_offset_3_y <= 2'b10;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b00;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b00;
               blks_offset_3_y <= 2'b00;
             end
           endcase

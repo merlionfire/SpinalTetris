@@ -26,9 +26,16 @@ import IPS.draw_block_engine._
 import IPS.string_draw_engine._
 import IPS.piece_draw_engine._
 
+case class screenCropConfig(x: Int, y: Int, width: Int, height: Int) {
+  def x_right: Int = x + width - 1
+  def y_bottom: Int = y + height - 1
+}
+
 case class DisplayTopConfig(
                              xWidth : Int = 640,
-                             yWidth : Int = 480
+                             yWidth : Int = 480,
+                             offset_x : Int = 0,
+                             offset_y : Int = 0
                            ) {
 
   val xBitsWidth: Int = log2Up(xWidth)
@@ -40,8 +47,19 @@ case class DisplayTopConfig(
   val IDX_W= log2Up(COLOR_NUM)
   val FB_SCALE = 1 << 1
 
+  val screenCrop = screenCropConfig(
+    offset_x,
+    offset_y,
+    xWidth - 2 * offset_x, yWidth - 2 * offset_y
+  )
+
+  /*
   val FB_WIDTH = xWidth / FB_SCALE
   val FB_HEIGHT = yWidth / FB_SCALE
+  */
+  val FB_WIDTH = screenCrop.width / FB_SCALE
+  val FB_HEIGHT = screenCrop.height / FB_SCALE
+
   val FB_PIXELS = FB_WIDTH * FB_HEIGHT
   val FB_ADDRWIDTH =  log2Up(FB_PIXELS)
   val FB_WORDWIDTH = log2Up(COLOR_NUM)
@@ -55,8 +73,8 @@ case class DisplayTopConfig(
   val pfConfig = TetrisPlayFeildConfig(
     block_len = 9,
     wall_width = 9,
-    x_orig = 50,
-    y_orig = 20,
+    x_orig = 50 - offset_x / FB_SCALE ,
+    y_orig = 20 - offset_y / FB_SCALE,
     piece_ft_color = 9,
     piece_bg_color = 2
   )
@@ -289,15 +307,21 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
     )
 
 
-    val lb_orig_x = 0
-    val lb_orig_y = 0
 
     val fb_scale_cnt = Counter(stateCount = (FB_SCALE), vga_sync.io.colorEn.fall(False) )
 
     val lb_load_valid = ( fb_scale_cnt === U(0) )  && vga_sync.io.vColorEn
 
+
     // Initiate line buffer readout
-    lb.io.rd_start :=  vga_sync.io.sol
+    if ( screenCrop.x == 0) {
+      lb.io.rd_start := vga_sync.io.sol
+    } else {
+      val offset_cnt_en = RegInit(False)
+      val offset_cnt = Counter( screenCrop.x, offset_cnt_en )
+      offset_cnt_en.setWhen( vga_sync.io.sol).clearWhen(offset_cnt.willOverflowIfInc)
+      lb.io.rd_start := offset_cnt.willOverflow
+    }
 
     // write to linebuffer colorP interface
     lbcp.io.rd_en := lb.io.rd_out.valid

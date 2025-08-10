@@ -55,7 +55,7 @@ class DisplayTopTest extends AnyFunSuite {
   var obs_mem = mutable.Queue[(Int, Int, Int)]()
   val shift_mem = mutable.Queue[ArrayBuffer[BigInt]]()
 
-  val  config = DisplayTopConfig()
+  val  config = DisplayTopConfig(offset_x = 32 )
 
   lazy val compiled: SimCompiled[display_top] = runSimConfig(runFolder, compiler)
     .addRtl(s"${xilinxPath}/glbl.v")

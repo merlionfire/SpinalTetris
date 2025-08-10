@@ -14,7 +14,11 @@ class fb_addr_gen ( config : FbAddrGenConfig )  extends Component {
 
   import config._
 
-  val ( v_shift_a, v_shift_b ) = if ( FB_WIDTH == 320 ) (2,6) else (0,0)
+  val ( v_shift_a, v_shift_b ) = FB_WIDTH match {
+    case 320 => (2, 6)
+    case 288 => (3, 5)
+    case _ => (0, 0)  // fail the generation
+  }
 
   val io = new Bundle {
     val x = in UInt (FB_X_ADDRWIDTH bits)

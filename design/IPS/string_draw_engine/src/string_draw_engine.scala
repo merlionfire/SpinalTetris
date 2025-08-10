@@ -27,7 +27,7 @@ case class StringDrawEngConfig (
   val stringList = mutable.LinkedHashMap(
     // Content -> x,_orig, y_orig, width(include margin) , scale, color
     "Tetris"  -> charInfo(28,  66, 46, 2,  6 ),
-    "Score"   -> charInfo(236, 23, 12, 0,  6 )
+    "Score"   -> charInfo(218, 23, 12, 0,  6 )
   )
 
   val wallInfoLsit = List(

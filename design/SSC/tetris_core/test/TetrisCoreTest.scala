@@ -47,6 +47,7 @@ class TetrisCoreTest extends AnyFunSuite {
     xWidth  = 640,
     yWidth  = 480,
     pixelFreqInMHz = 25,
+    offset_x = 32,
     rowNum = rowNum,
     colNum = colNum )
 
@@ -54,7 +55,6 @@ class TetrisCoreTest extends AnyFunSuite {
   lazy val compiled : SimCompiled[tetris_core] = runSimConfig(runFolder, compiler)
     .addRtl(s"${xilinxPath}/glbl.v")
     .addRtl(s"${xilinxPath}/unisims/${memory_model}")
-    .addRtl("design/utils/ascii_font16x8.v")
     .withTimeScale( 1 ns )
     .withTimePrecision( 10 ps)
     .compile {

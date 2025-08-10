@@ -12,6 +12,8 @@ case class TetrisCoreConfig (
                               xWidth : Int = 640,
                               yWidth : Int = 480,
                               pixelFreqInMHz : Int = 25,
+                              offset_x : Int = 0,
+                              offset_y : Int = 0,
                               rowNum : Int = 23,   // include bottom wall
                               colNum :Int = 12    // include left and right wall
                             ){
@@ -19,7 +21,7 @@ case class TetrisCoreConfig (
 
   val logicTopConfig = LogicTopConfig( rowNum, colNum )
 
-  val displayTopConfig = DisplayTopConfig(xWidth, yWidth )
+  val displayTopConfig = DisplayTopConfig(xWidth, yWidth, offset_x, offset_y )
 }
 
 class tetris_core ( config : TetrisCoreConfig ) extends Component {

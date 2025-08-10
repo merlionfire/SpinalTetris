@@ -120,6 +120,8 @@ $RECYCLE.BIN/
 *.fst
 *.ghw
 *.fsdb
+*.dtmp
+
 
 
 # SpinalHDL build artifacts
@@ -165,3 +167,4 @@ out/
 /xilinx/
 /design/verilog/ps2/ISE/
 
+!/xilinx/ipcore_dir

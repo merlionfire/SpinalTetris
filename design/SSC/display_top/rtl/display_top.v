@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : display_top
-// Git hash  : 1966d2c2753e3d447f4de5f4d933de13c0cb6e6b
+// Git hash  : 0d2e7053e857cd3a7807b5ffed71b5a65057eda9
 
 `timescale 1ns/1ps
 
@@ -86,6 +86,8 @@ module display_top (
   wire                io_sos_buffercc_io_dataOut;
   wire                io_sof_buffercc_io_dataOut;
   wire                lb_load_valid_buffercc_io_dataOut;
+  wire       [3:0]    temp_temp_rd_start_1;
+  wire       [0:0]    temp_temp_rd_start_1_1;
   wire       [8:0]    temp_dma_fb_fetch_en_cnt_valueNext;
   wire       [0:0]    temp_dma_fb_fetch_en_cnt_valueNext_1;
   wire       [16:0]   temp_dma_fb_fetch_addr_valueNext;
@@ -102,6 +104,12 @@ module display_top (
   wire                fb_scale_cnt_willOverflowIfInc;
   wire                fb_scale_cnt_willOverflow;
   wire                lb_load_valid;
+  reg                 temp_1;
+  reg                 temp_rd_start;
+  reg        [3:0]    temp_rd_start_1;
+  reg        [3:0]    temp_rd_start_2;
+  wire                temp_rd_start_3;
+  wire                temp_rd_start_4;
   reg                 io_hSync_delay_1;
   reg                 io_hSync_delay_2;
   reg                 io_vSync_delay_1;
@@ -135,6 +143,8 @@ module display_top (
   wire       [3:0]    dma_lb_wr_payload;
   reg                 dma_fb_fetch_en_regNext;
 
+  assign temp_temp_rd_start_1_1 = temp_rd_start;
+  assign temp_temp_rd_start_1 = {3'd0, temp_temp_rd_start_1_1};
   assign temp_dma_fb_fetch_en_cnt_valueNext_1 = dma_fb_fetch_en_cnt_willIncrement;
   assign temp_dma_fb_fetch_en_cnt_valueNext = {8'd0, temp_dma_fb_fetch_en_cnt_valueNext_1};
   assign temp_dma_fb_fetch_addr_valueNext_1 = dma_fb_fetch_addr_willIncrement;
@@ -249,7 +259,7 @@ module display_top (
   linebuffer lb (
     .wr_in_valid    (dma_lb_wr_valid       ), //i
     .wr_in_payload  (dma_lb_wr_payload[3:0]), //i
-    .rd_start       (vga_sync_io_sol       ), //i
+    .rd_start       (temp_rd_start_4       ), //i
     .rd_out_valid   (lb_rd_out_valid       ), //o
     .rd_out_payload (lb_rd_out_payload[3:0]), //o
     .core_clk       (core_clk              ), //i
@@ -342,6 +352,26 @@ module display_top (
   end
 
   assign lb_load_valid = ((fb_scale_cnt_value == 1'b0) && vga_sync_io_vColorEn);
+  always @(*) begin
+    temp_rd_start = 1'b0;
+    if(temp_1) begin
+      temp_rd_start = 1'b1;
+    end
+  end
+
+  assign temp_rd_start_3 = (temp_rd_start_2 == 4'b1001);
+  assign temp_rd_start_4 = (temp_rd_start_3 && temp_rd_start);
+  always @(*) begin
+    if(temp_rd_start_4) begin
+      temp_rd_start_1 = 4'b0000;
+    end else begin
+      temp_rd_start_1 = (temp_rd_start_2 + temp_temp_rd_start_1);
+    end
+    if(1'b0) begin
+      temp_rd_start_1 = 4'b0000;
+    end
+  end
+
   assign lbcp_io_addr = lb_rd_out_payload;
   assign vga_hSync = io_hSync_delay_2;
   assign vga_vSync = io_vSync_delay_2;
@@ -460,10 +490,19 @@ module display_top (
     if(vga_rst) begin
       io_colorEn_regNext <= 1'b0;
       fb_scale_cnt_value <= 1'b0;
+      temp_1 <= 1'b0;
+      temp_rd_start_2 <= 4'b0000;
       is_bg_color <= 1'b0;
     end else begin
       io_colorEn_regNext <= vga_sync_io_colorEn;
       fb_scale_cnt_value <= fb_scale_cnt_valueNext;
+      temp_rd_start_2 <= temp_rd_start_1;
+      if(vga_sync_io_sol) begin
+        temp_1 <= 1'b1;
+      end
+      if(temp_rd_start_3) begin
+        temp_1 <= 1'b0;
+      end
       is_bg_color <= (lb_rd_out_payload == 4'b0010);
     end
   end
@@ -535,8 +574,8 @@ module linebuffer (
   wire                rd_data_valid;
   wire       [3:0]    rd_data_payload;
   wire       [3:0]    rd_rd_data;
-  reg                 rd_valid_regNext;
-  reg [3:0] ram [0:319];
+  reg                 rd_enable_regNext;
+  (* ram_style = "distributed" *) reg [3:0] ram [0:319];
 
   always @(posedge core_clk) begin
     if(wr_in_valid) begin
@@ -576,7 +615,7 @@ module linebuffer (
   assign rd_valid = ((rd_scale_cnt_value == 1'b0) && rd_enable);
   assign rd_inc_enable = (rd_scale_cnt_willOverflowIfInc && rd_enable);
   assign rd_rd_data = ram_spinal_port1;
-  assign rd_data_valid = rd_valid_regNext;
+  assign rd_data_valid = rd_enable_regNext;
   assign rd_data_payload = rd_rd_data;
   assign rd_out_valid = rd_data_valid;
   assign rd_out_payload = rd_data_payload;
@@ -599,7 +638,7 @@ module linebuffer (
       rd_addr <= 9'h0;
       rd_enable <= 1'b0;
       rd_scale_cnt_value <= 1'b0;
-      rd_valid_regNext <= 1'b0;
+      rd_enable_regNext <= 1'b0;
     end else begin
       rd_scale_cnt_value <= rd_scale_cnt_valueNext;
       if(rd_start) begin
@@ -616,7 +655,7 @@ module linebuffer (
           rd_addr <= (rd_addr + 9'h001);
         end
       end
-      rd_valid_regNext <= rd_valid;
+      rd_enable_regNext <= rd_enable;
     end
   end
 
@@ -634,7 +673,7 @@ module color_palettes (
 
   reg        [11:0]   rom_spinal_port0;
   reg                 io_rd_en_regNext;
-  reg [11:0] rom [0:15];
+  (* ram_style = "distributed" *) reg [11:0] rom [0:15];
 
   initial begin
     $readmemb("display_top.v_toplevel_lbcp_rom.bin",rom);
@@ -886,7 +925,7 @@ module string_draw_engine (
   reg [167:0] fsm_stateNext_string;
   `endif
 
-  reg [6:0] rom [0:10];
+  (* ram_style = "distributed" *) reg [6:0] rom [0:10];
   reg [42:0] wall_wall_rom [0:3];
 
   assign temp_when = (cnt_value == 4'b0101);
@@ -1327,7 +1366,7 @@ module piece_draw_engine (
   reg [79:0] fsm_stateNext_string;
   `endif
 
-  reg [9:0] memory [0:21];
+  (* ram_style = "distributed" *) reg [9:0] memory [0:21];
 
   assign temp_wr_row_cnt_valueNext_1 = wr_row_cnt_willIncrement;
   assign temp_wr_row_cnt_valueNext = {4'd0, temp_wr_row_cnt_valueNext_1};
@@ -1537,16 +1576,17 @@ module piece_draw_engine (
       if(gen_done) begin
         x <= 9'h0;
         y <= 8'h0;
-      end
-      if(col_cnt_willOverflow) begin
-        x <= 9'h03b;
       end else begin
-        if(col_cnt_inc) begin
-          x <= x_next;
+        if(col_cnt_willOverflow) begin
+          x <= 9'h03b;
+        end else begin
+          if(col_cnt_inc) begin
+            x <= x_next;
+          end
         end
-      end
-      if(row_cnt_inc) begin
-        y <= y_next;
+        if(row_cnt_inc) begin
+          y <= y_next;
+        end
       end
       fsm_stateReg <= fsm_stateNext;
     end
@@ -1984,7 +2024,7 @@ module bram_2p (
 );
 
   reg        [3:0]    memory_spinal_port1;
-  reg [3:0] memory [0:76799];
+  (* ram_style = "block" *) reg [3:0] memory [0:76799];
 
   initial begin
     $readmemb("display_top.v_toplevel_core_fb_memory.bin",memory);
