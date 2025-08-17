@@ -23,11 +23,13 @@ object  runSimConfig {
     if ( compiler == "verilator" ) {
       SimConfig.withWave.withConfig(buildConfig).withTimeSpec( 1 ns, 10 ps)
         .withVerilator
+        .addSimulatorFlag("-D" + "SIM")
         .workspacePath(runDir+"/verilator")
 
     } else if (compiler == "vcs" ) {
       val flags = VCSFlags(
-        compileFlags = List("-verilog +v2k -ntb"), /* Useless, skip this step in dev publish */
+        compileFlags = List("-verilog +v2k -ntb +define+SIM"), /* Useless, skip this step in dev publish */
+        //elaborateFlags = List("-V -lca +define+VCS_NO_INTEGER_RACE -debug_access+nomemcbk -no_optimize "), /* Useless, skip this step in dev publish */
         elaborateFlags = List("-V"), /* Useless, skip this step in dev publish */
         runFlags = List("-l sim.log")
       )

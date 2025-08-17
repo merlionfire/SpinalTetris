@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : tetris_top
-// Git hash  : f710c93e905c21d66fa86f775a08fb48d62f39ea
+// Git hash  : 7fe74b1e69c59b3f0452b0659edccf5639181324
 
 `timescale 1ns/1ps
 
@@ -25,20 +25,16 @@ module tetris_top (
   wire       [3:0]    tetris_core_inst_vga_color_r;
   wire       [3:0]    tetris_core_inst_vga_color_g;
   wire       [3:0]    tetris_core_inst_vga_color_b;
-  wire                kd_ps2_inst_rd_data_valid;
-  wire       [7:0]    kd_ps2_inst_rd_data_payload;
-  wire                kd_ps2_inst_key_up_valid;
-  wire                kd_ps2_inst_key_down_valid;
 
   tetris_core tetris_core_inst (
     .core_clk    (core_clk                         ), //i
     .core_rst    (core_rst                         ), //i
     .vga_clk     (vga_clk                          ), //i
     .vga_rst     (vga_rst                          ), //i
-    .game_start  (kd_ps2_inst_key_up_valid         ), //i
+    .game_start  (1'b0                             ), //i
     .move_left   (1'b0                             ), //i
     .move_right  (1'b0                             ), //i
-    .move_down   (kd_ps2_inst_key_down_valid       ), //i
+    .move_down   (1'b0                             ), //i
     .rotate      (1'b0                             ), //i
     .vga_vSync   (tetris_core_inst_vga_vSync       ), //o
     .vga_hSync   (tetris_core_inst_vga_hSync       ), //o
@@ -47,211 +43,12 @@ module tetris_top (
     .vga_color_g (tetris_core_inst_vga_color_g[3:0]), //o
     .vga_color_b (tetris_core_inst_vga_color_b[3:0])  //o
   );
-  kd_ps2 kd_ps2_inst (
-    .ps2_clk         (ps2_clk                         ), //~
-    .ps2_data        (ps2_data                        ), //~
-    .rd_data_valid   (kd_ps2_inst_rd_data_valid       ), //o
-    .rd_data_payload (kd_ps2_inst_rd_data_payload[7:0]), //o
-    .key_up_valid    (kd_ps2_inst_key_up_valid        ), //o
-    .key_down_valid  (kd_ps2_inst_key_down_valid      ), //o
-    .core_rst        (core_rst                        ), //i
-    .core_clk        (core_clk                        )  //i
-  );
   assign vga_vSync = tetris_core_inst_vga_vSync;
   assign vga_hSync = tetris_core_inst_vga_hSync;
   assign vga_colorEn = tetris_core_inst_vga_colorEn;
   assign vga_color_r = tetris_core_inst_vga_color_r;
   assign vga_color_g = tetris_core_inst_vga_color_g;
   assign vga_color_b = tetris_core_inst_vga_color_b;
-
-endmodule
-
-module kd_ps2 (
-  inout  wire          ps2_clk,
-  inout  wire          ps2_data,
-  output wire          rd_data_valid,
-  output wire [7:0]    rd_data_payload,
-  output wire          key_up_valid,
-  output wire          key_down_valid,
-  input  wire          core_rst,
-  input  wire          core_clk
-);
-  localparam IDLE = 2'd0;
-  localparam WAIT_BREAK = 2'd1;
-  localparam WAIT_LAST = 2'd2;
-  localparam DEFAULT_1 = 2'd3;
-
-  wire                ps2_inst_ps2_tx_done;
-  wire                ps2_inst_ps2_tx_ready;
-  wire                ps2_inst_ps2_rddata_valid;
-  wire       [7:0]    ps2_inst_ps2_rd_data;
-  wire       [7:0]    ps2_inst_ps2_rd_ready;
-  reg                 key_valid_up_valid;
-  reg                 key_valid_down_valid;
-  reg                 up_tick;
-  reg                 down_tick;
-  reg                 break_tick;
-  reg                 other_tick;
-  wire                up_key_is_up;
-  wire                down_key_is_up;
-  wire                rx_fsm_wantExit;
-  reg                 rx_fsm_wantStart;
-  wire                rx_fsm_wantKill;
-  reg        [1:0]    rx_fsm_stateReg;
-  reg        [1:0]    rx_fsm_stateNext;
-  wire                rx_fsm_onExit_IDLE;
-  wire                rx_fsm_onExit_WAIT_BREAK;
-  wire                rx_fsm_onExit_WAIT_LAST;
-  wire                rx_fsm_onExit_DEFAULT_1;
-  wire                rx_fsm_onEntry_IDLE;
-  wire                rx_fsm_onEntry_WAIT_BREAK;
-  wire                rx_fsm_onEntry_WAIT_LAST;
-  wire                rx_fsm_onEntry_DEFAULT_1;
-  `ifndef SYNTHESIS
-  reg [79:0] rx_fsm_stateReg_string;
-  reg [79:0] rx_fsm_stateNext_string;
-  `endif
-
-
-  ps2_host_rxtx ps2_inst (
-    .clk              (core_clk                  ), //i
-    .rst              (core_rst                  ), //i
-    .ps2_clk          (ps2_clk                   ), //~
-    .ps2_data         (ps2_data                  ), //~
-    .ps2_wr_stb       (1'b0                      ), //i
-    .ps2_wr_data      (8'h0                      ), //i
-    .ps2_tx_done      (ps2_inst_ps2_tx_done      ), //o
-    .ps2_tx_ready     (ps2_inst_ps2_tx_ready     ), //o
-    .ps2_rddata_valid (ps2_inst_ps2_rddata_valid ), //o
-    .ps2_rd_data      (ps2_inst_ps2_rd_data[7:0] ), //o
-    .ps2_rd_ready     (ps2_inst_ps2_rd_ready[7:0])  //o
-  );
-  `ifndef SYNTHESIS
-  always @(*) begin
-    case(rx_fsm_stateReg)
-      IDLE : rx_fsm_stateReg_string = "IDLE      ";
-      WAIT_BREAK : rx_fsm_stateReg_string = "WAIT_BREAK";
-      WAIT_LAST : rx_fsm_stateReg_string = "WAIT_LAST ";
-      DEFAULT_1 : rx_fsm_stateReg_string = "DEFAULT_1 ";
-      default : rx_fsm_stateReg_string = "??????????";
-    endcase
-  end
-  always @(*) begin
-    case(rx_fsm_stateNext)
-      IDLE : rx_fsm_stateNext_string = "IDLE      ";
-      WAIT_BREAK : rx_fsm_stateNext_string = "WAIT_BREAK";
-      WAIT_LAST : rx_fsm_stateNext_string = "WAIT_LAST ";
-      DEFAULT_1 : rx_fsm_stateNext_string = "DEFAULT_1 ";
-      default : rx_fsm_stateNext_string = "??????????";
-    endcase
-  end
-  `endif
-
-  assign key_up_valid = key_valid_up_valid;
-  assign key_down_valid = key_valid_down_valid;
-  assign rd_data_valid = ps2_inst_ps2_rddata_valid;
-  assign rd_data_payload = ps2_inst_ps2_rd_data;
-  assign up_key_is_up = (up_tick && key_valid_up_valid);
-  assign down_key_is_up = (down_tick && key_valid_down_valid);
-  assign rx_fsm_wantExit = 1'b0;
-  always @(*) begin
-    rx_fsm_wantStart = 1'b0;
-    rx_fsm_stateNext = rx_fsm_stateReg;
-    case(rx_fsm_stateReg)
-      WAIT_BREAK : begin
-        if(break_tick) begin
-          rx_fsm_stateNext = WAIT_LAST;
-        end
-      end
-      WAIT_LAST : begin
-        if(other_tick) begin
-          rx_fsm_stateNext = WAIT_BREAK;
-        end
-        if((up_key_is_up || down_key_is_up)) begin
-          rx_fsm_stateNext = IDLE;
-        end
-      end
-      DEFAULT_1 : begin
-        rx_fsm_stateNext = IDLE;
-      end
-      default : begin
-        if((up_tick || down_tick)) begin
-          rx_fsm_stateNext = WAIT_BREAK;
-        end
-        rx_fsm_wantStart = 1'b1;
-      end
-    endcase
-    if(rx_fsm_wantKill) begin
-      rx_fsm_stateNext = IDLE;
-    end
-  end
-
-  assign rx_fsm_wantKill = 1'b0;
-  assign rx_fsm_onExit_IDLE = ((rx_fsm_stateNext != IDLE) && (rx_fsm_stateReg == IDLE));
-  assign rx_fsm_onExit_WAIT_BREAK = ((rx_fsm_stateNext != WAIT_BREAK) && (rx_fsm_stateReg == WAIT_BREAK));
-  assign rx_fsm_onExit_WAIT_LAST = ((rx_fsm_stateNext != WAIT_LAST) && (rx_fsm_stateReg == WAIT_LAST));
-  assign rx_fsm_onExit_DEFAULT_1 = ((rx_fsm_stateNext != DEFAULT_1) && (rx_fsm_stateReg == DEFAULT_1));
-  assign rx_fsm_onEntry_IDLE = ((rx_fsm_stateNext == IDLE) && (rx_fsm_stateReg != IDLE));
-  assign rx_fsm_onEntry_WAIT_BREAK = ((rx_fsm_stateNext == WAIT_BREAK) && (rx_fsm_stateReg != WAIT_BREAK));
-  assign rx_fsm_onEntry_WAIT_LAST = ((rx_fsm_stateNext == WAIT_LAST) && (rx_fsm_stateReg != WAIT_LAST));
-  assign rx_fsm_onEntry_DEFAULT_1 = ((rx_fsm_stateNext == DEFAULT_1) && (rx_fsm_stateReg != DEFAULT_1));
-  always @(posedge core_clk or posedge core_rst) begin
-    if(core_rst) begin
-      up_tick <= 1'b0;
-      down_tick <= 1'b0;
-      break_tick <= 1'b0;
-      other_tick <= 1'b0;
-      rx_fsm_stateReg <= IDLE;
-    end else begin
-      if(ps2_inst_ps2_rddata_valid) begin
-        case(ps2_inst_ps2_rd_data)
-          8'h1d : begin
-            up_tick <= 1'b1;
-          end
-          8'h1b : begin
-            down_tick <= 1'b1;
-          end
-          8'hf0 : begin
-            break_tick <= 1'b1;
-          end
-          default : begin
-            other_tick <= 1'b1;
-          end
-        endcase
-      end
-      rx_fsm_stateReg <= rx_fsm_stateNext;
-    end
-  end
-
-  always @(posedge core_clk) begin
-    case(rx_fsm_stateReg)
-      WAIT_BREAK : begin
-      end
-      WAIT_LAST : begin
-        if(up_key_is_up) begin
-          key_valid_up_valid <= 1'b0;
-        end
-        if(down_key_is_up) begin
-          key_valid_down_valid <= 1'b0;
-        end
-      end
-      DEFAULT_1 : begin
-      end
-      default : begin
-        if(up_tick) begin
-          key_valid_up_valid <= 1'b1;
-        end
-        if(down_tick) begin
-          key_valid_down_valid <= 1'b1;
-        end
-      end
-    endcase
-    if(rx_fsm_onEntry_IDLE) begin
-      key_valid_up_valid <= 1'b0;
-      key_valid_down_valid <= 1'b0;
-    end
-  end
-
 
 endmodule
 
@@ -1690,7 +1487,7 @@ module linebuffer (
   wire       [3:0]    rd_data_payload;
   wire       [3:0]    rd_rd_data;
   reg                 rd_enable_regNext;
-  reg [3:0] ram [0:319];
+  (* ram_style = "distributed" *) reg [3:0] ram [0:319];
 
   always @(posedge core_clk) begin
     if(wr_in_valid) begin
@@ -1788,7 +1585,7 @@ module color_palettes (
 
   reg        [11:0]   rom_spinal_port0;
   reg                 io_rd_en_regNext;
-  reg [11:0] rom [0:15];
+  (* ram_style = "distributed" *) reg [11:0] rom [0:15];
 
   initial begin
     $readmemb("tetris_top.v_toplevel_tetris_core_inst_game_display_inst_lbcp_rom.bin",rom);
@@ -2040,7 +1837,7 @@ module string_draw_engine (
   reg [167:0] fsm_stateNext_string;
   `endif
 
-  reg [6:0] rom [0:10];
+  (* ram_style = "distributed" *) reg [6:0] rom [0:10];
   reg [42:0] wall_wall_rom [0:3];
 
   assign temp_when = (cnt_value == 4'b0101);
@@ -2296,7 +2093,7 @@ module string_draw_engine (
       end
       WAIT_GAME_START : begin
         if(logoHasRm) begin
-          x <= 9'h0ec;
+          x <= 9'h0da;
           y <= 8'h17;
           scale <= 3'b000;
           color <= 4'b0110;
@@ -2481,7 +2278,7 @@ module piece_draw_engine (
   reg [79:0] fsm_stateNext_string;
   `endif
 
-  reg [9:0] memory [0:21];
+  (* ram_style = "distributed" *) reg [9:0] memory [0:21];
 
   assign temp_wr_row_cnt_valueNext_1 = wr_row_cnt_willIncrement;
   assign temp_wr_row_cnt_valueNext = {4'd0, temp_wr_row_cnt_valueNext_1};
@@ -3139,7 +2936,7 @@ module bram_2p (
 );
 
   reg        [3:0]    memory_spinal_port1;
-  reg [3:0] memory [0:76799];
+  (* ram_style = "block" *) reg [3:0] memory [0:76799];
 
   initial begin
     $readmemb("tetris_top.v_toplevel_tetris_core_inst_game_display_inst_core_fb_memory.bin",memory);
@@ -5613,50 +5410,6 @@ module piece_checker (
         piece_in_rValid <= piece_in_valid;
       end
       case(piece_payload_type)
-        J : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b00;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b10;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b10;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b01;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b00;
-            end
-          endcase
-        end
         T : begin
           case(piece_payload_rot)
             2'b00 : begin
@@ -5701,45 +5454,45 @@ module piece_checker (
             end
           endcase
         end
-        L : begin
+        Z : begin
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b01;
+              blks_offset_0_y <= 2'b00;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
+              blks_offset_1_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b10;
               blks_offset_3_y <= 2'b01;
             end
             2'b01 : begin
-              blks_offset_0_x <= 2'b01;
+              blks_offset_0_x <= 2'b10;
               blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
+              blks_offset_1_x <= 2'b10;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b01;
               blks_offset_3_y <= 2'b10;
             end
             2'b10 : begin
               blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b01;
+              blks_offset_0_y <= 2'b10;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b00;
-              blks_offset_2_y <= 2'b10;
+              blks_offset_1_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b00;
               blks_offset_3_y <= 2'b01;
             end
             default : begin
-              blks_offset_0_x <= 2'b01;
+              blks_offset_0_x <= 2'b00;
               blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b01;
+              blks_offset_1_x <= 2'b00;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b00;
-              blks_offset_2_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b01;
               blks_offset_3_y <= 2'b00;
             end
@@ -5833,13 +5586,57 @@ module piece_checker (
             end
           endcase
         end
-        Z : begin
+        S : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b00;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b10;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b10;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b00;
+              blks_offset_3_y <= 2'b10;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b00;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b00;
+              blks_offset_3_y <= 2'b00;
+            end
+          endcase
+        end
+        J : begin
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
               blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
+              blks_offset_1_x <= 2'b00;
+              blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b10;
@@ -5848,8 +5645,8 @@ module piece_checker (
             2'b01 : begin
               blks_offset_0_x <= 2'b10;
               blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b10;
-              blks_offset_1_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b00;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b01;
@@ -5858,8 +5655,8 @@ module piece_checker (
             2'b10 : begin
               blks_offset_0_x <= 2'b10;
               blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
+              blks_offset_1_x <= 2'b10;
+              blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b00;
@@ -5868,8 +5665,8 @@ module piece_checker (
             default : begin
               blks_offset_0_x <= 2'b00;
               blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b00;
-              blks_offset_1_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b10;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b01;
@@ -5883,40 +5680,40 @@ module piece_checker (
               blks_offset_0_x <= 2'b00;
               blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
               blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b00;
+              blks_offset_3_y <= 2'b01;
             end
             2'b01 : begin
               blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b10;
+              blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b01;
               blks_offset_3_y <= 2'b10;
             end
             2'b10 : begin
               blks_offset_0_x <= 2'b10;
               blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b00;
+              blks_offset_2_y <= 2'b10;
               blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b10;
+              blks_offset_3_y <= 2'b01;
             end
             default : begin
               blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b00;
+              blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b00;
+              blks_offset_2_x <= 2'b00;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b01;
               blks_offset_3_y <= 2'b00;
             end
           endcase

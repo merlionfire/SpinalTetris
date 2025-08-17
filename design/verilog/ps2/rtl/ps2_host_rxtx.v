@@ -39,6 +39,16 @@ module ps2_host_rxtx  (
    );
 `endif
 
+`ifdef SIM
+   assign       ps2_tx_done = 1'b0;
+   assign       ps2_tx_ready = 1'b0 ;
+   assign       ps2_rddata_valid = 1'b0 ;
+   assign       ps2_rd_data = 8'h00;
+   assign       wireps2_rx_ready  = 1'b0 ;
+`else
+
+
+
 //   ps2_host_tx #(.NUM_OF_BITS_FOR_100US (9 ) )  ps2_host_tx_inst (
    ps2_host_tx #(.NUM_OF_BITS_FOR_100US ( 13 ) )  ps2_host_tx_inst (
       .clk          ( clk           ),
@@ -64,5 +74,7 @@ module ps2_host_rxtx  (
       .ps2_rd_data  ( ps2_rd_data   ), 
       .ps2_rx_ready ( ps2_rx_ready  )    
    );
+
+`endif
 endmodule    
 

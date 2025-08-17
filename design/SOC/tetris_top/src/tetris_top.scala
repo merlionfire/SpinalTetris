@@ -17,8 +17,8 @@ class tetris_top ( config : TetrisCoreConfig ) extends Component {
     val vga_clk =  in Bool()  // 25MHz for 640x480
     val vga_rst =  in Bool()
 
-    val ps2_clk = inout(Analog(Bool()))
-    val ps2_data = inout(Analog(Bool()))
+    //val ps2_clk = inout(Analog(Bool()))
+    //val ps2_data = inout(Analog(Bool()))
 
     val vga      = master(Vga(displayTopConfig.rgbConfig, withColorEn = true ))
   }
@@ -35,10 +35,11 @@ class tetris_top ( config : TetrisCoreConfig ) extends Component {
   )
 
   val tetris_core_inst = new tetris_core(config)
-  val kd_ps2_inst = keyClockDomain( new kd_ps2() )
+//  val kd_ps2_inst = keyClockDomain( new kd_ps2() )
+//
+//  io.ps2_clk  <> kd_ps2_inst.io.ps2_clk
+//  io.ps2_data <> kd_ps2_inst.io.ps2_data
 
-  io.ps2_clk  <> kd_ps2_inst.io.ps2_clk
-  io.ps2_data <> kd_ps2_inst.io.ps2_data
   io.vga <> tetris_core_inst.io.vga
 
   tetris_core_inst.io.core_clk := io.core_clk
@@ -46,8 +47,11 @@ class tetris_top ( config : TetrisCoreConfig ) extends Component {
   tetris_core_inst.io.vga_clk := io.vga_clk
   tetris_core_inst.io.vga_rst := io.vga_rst
 
-  tetris_core_inst.io.game_start := kd_ps2_inst.io.key.up_valid
-  tetris_core_inst.io.move_down  := kd_ps2_inst.io.key.down_valid
+//  tetris_core_inst.io.game_start := kd_ps2_inst.io.key.up_valid
+//  tetris_core_inst.io.move_down  := kd_ps2_inst.io.key.down_valid
+  tetris_core_inst.io.game_start := False
+  tetris_core_inst.io.move_down  := False
+
   tetris_core_inst.io.move_left  := False
   tetris_core_inst.io.move_right := False
   tetris_core_inst.io.rotate := False

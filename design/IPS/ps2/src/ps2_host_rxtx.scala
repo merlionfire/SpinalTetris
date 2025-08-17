@@ -18,7 +18,7 @@ class ps2_host_rxtx ( ) extends BlackBox {
       val tx_ready = out Bool()
       val rddata_valid = out Bool()
       val rd_data = out UInt (8 bit)
-      val rx_ready = out UInt (8 bit)
+      val rx_ready = out Bool()
     }
   }
   noIoPrefix()
@@ -26,19 +26,26 @@ class ps2_host_rxtx ( ) extends BlackBox {
   mapClockDomain(clock = io.clk, reset = io.rst)
 
 
+//  val verilogFilesList = List (
+//    "ps2_host_rxtx.v",
+//    "ps2_host_tx.v",
+//    "ps2_host_rx.v",
+//  )
+
+
   val verilogFilesList = List (
-    "ps2_host_rxtx.v",
-    "ps2_host_tx.v",
-    "ps2_host_rx.v",
+    "ps2_host_rxtx.v"
   )
+
 
   verilogFilesList.foreach { fileName =>
     addRTLPath(getVerilogFilePath(ipFolderName = "ps2/rtl", fileName = fileName ).toString)
   }
 
+  /*
   addRTLPath(getVerilogFilePath(ipFolderName = "misc", fileName = "io_filter.v" ).toString)
   addRTLPath(getVerilogFilePath(ipFolderName = "misc", fileName = "glitch_free.v" ).toString)
   addRTLPath(getVerilogFilePath(ipFolderName = "misc", fileName = "synchro.v" ).toString)
-
+  */
 
 }

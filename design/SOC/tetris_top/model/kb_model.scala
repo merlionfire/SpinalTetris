@@ -4,17 +4,15 @@ package SOC.tetris_top.model
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
+
+import java.util.concurrent.LinkedBlockingQueue
+import scala.collection.mutable.{ArrayBuffer, Queue}
 import scala.collection.mutable
 import scala.util.Random
 
-class kb_model {
-
-}
 
 // PS2 Interface Bundle
-case class PS2Interface() extends Bundle with IMasterSlave {
-  val clk = Bool()
-  val data = Bool()
+case class PS2Interface( clk : Bool, data : Bool ) extends Bundle with IMasterSlave {
 
   override def asMaster(): Unit = {
     out(clk, data)
@@ -44,6 +42,7 @@ object PS2KbScanCodes {
     '\n' -> 0x5A, // Enter
     '\t' -> 0x0D  // Tab
   )
+  val scanCodeMapRev = scanCodeMap.map(_.swap)
 
   // Special keys
   val ESCAPE = 0x76
@@ -73,9 +72,29 @@ case class PS2DeviceToHost(data: Int) extends PS2Transaction
 case class PS2Acknowledge() extends PS2Transaction
 case class PS2Resend() extends PS2Transaction
 
+// Define the states for our state machine using the Scala 2 pattern.
+// A sealed trait can only be extended in the same file, giving us
+// similar safety to an enum.
+sealed trait State
+object State {
+  case object Idle extends State
+  case object ExpectingBreakCode extends State
+  case object ExpectingExtendedCode extends State
+  case object ExpectingExtendedBreakCode extends State
+}
+
+
 // PS2 Device Model (Keyboard simulation)
 class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
   import PS2KbScanCodes._
+
+  // working_clk = 10us
+  // ps2 clock = 80us
+  // half_duty_cycles = 4
+  // full_duty = 60us - 100 us => 16.7KHz - 10 HZ
+  private val ps2ClockPeriod = 50000 // 50us = 20kHz (PS2 spec: 10-16.7kHz)
+  private val full_duty_cylces = 8
+  private val half_duty_cylces = 2
 
   private val transactionQueue = mutable.Queue[PS2Transaction]()
   private var currentBitIndex = 0
@@ -105,29 +124,26 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
     errorCount = 0
   }
 
-  // Convert data byte to PS2 frame (11 bits: start, 8 data, parity, stop)
-  private def createFrame(data: Int): Array[Boolean] = {
-    val frame = Array.ofDim[Boolean](11)
-    frame(0) = false // Start bit
+  // Convert data byte to PS2 packet (11 bits: start, 8 data, parity, stop)
+  private def createPacket(data: Int): Array[Boolean] = {
+    val packet = Array.ofDim[Boolean](11)
+    packet(0) = false // Start bit
 
     // Data bits (LSB first)
     for (i <- 0 until 8) {
-      frame(i + 1) = ((data >> i) & 1) == 1
+      packet(i + 1) = ((data >> i) & 1) == 1
     }
-
     // Odd parity bit ensure that the total number of 1s in the data byte (including the parity bit) is always odd.
-
-    frame(9) = ! frame.slice(1, 9).reduce(_ ^ _)
-    frame(10) = true // Stop bit
-    frame
+    packet(9) = ! packet.slice(1, 9).reduce(_ ^ _)
+    packet(10) = true // Stop bit
+    packet
   }
 
-  // Calculate parity for received frame
-  private def checkParity(frame: Array[Boolean]): Boolean = {
-    val dataAndParity = frame.slice(1, 10)
-    val parityCount = dataAndParity.count(identity)
-    (parityCount % 2) == 1 // Odd parity
+  // Calculate parity for received packet is odd
+  private def checkParity(packet: Int): Boolean = {
+    Integer.bitCount(packet) % 2 == 1
   }
+
 
   // Queue a scan code to be sent
   def queueScanCode(scanCode: Int): Unit = {
@@ -206,8 +222,8 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
     ps2.clk #= true
   }
 
-  // Main simulation process
-  def startSimulation(): Unit = {
+  // Main simulation process. It corresponds to UVM run_phase() task
+  def run(): Unit = {
     fork {
       reset()
 
@@ -233,16 +249,16 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
           }
 
           // Monitor host-to-device communication
-          monitorHostCommunication()
+         // monitorHostCommunication()
         }
 
-        wait(clockPeriod)
+        wait(clockPeriod*10)
       }
     }
   }
 
   private def startTransmission(data: Int): Unit = {
-    frameBits = createFrame(data)
+    frameBits = createPacket(data)
     currentBitIndex = 0
     isTransmitting = true
     clockCounter = 0
@@ -250,26 +266,24 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
   }
 
   private def handleTransmission(): Unit = {
-    clockCounter += 1
+    //clockCounter += 1
 
-    // Generate clock edges (falling edge first)
-    if (clockCounter % 2 == 1) {
-      // Falling edge - set data
-      ps2.clk #= false
-      ps2.data #= frameBits(currentBitIndex)
-    } else {
-      // Rising edge - advance bit
+    clockDomain.waitSampling()
+
+    for ( data <- frameBits ) {
       ps2.clk #= true
-      currentBitIndex += 1
-
-      if (currentBitIndex >= frameBits.length) {
-        // Transmission complete
-        isTransmitting = false
-        totalFramesSent += 1
-        ps2.data #= true // Release data line
-        println(s"PS2: Transmission complete. Total frames sent: $totalFramesSent")
-      }
+      ps2.data #= data
+      clockDomain.waitSampling(half_duty_cylces)
+      ps2.clk #= false
+      clockDomain.waitSampling(half_duty_cylces)
     }
+    ps2.clk #= true
+    ps2.data #= true
+
+    clockDomain.waitSampling(full_duty_cylces)
+    ps2.clk #= false
+    isTransmitting = false
+    println(s"PS2: Transmission complete.")
   }
 
   private def monitorHostCommunication(): Unit = {
@@ -324,7 +338,7 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
   // Error injection for testing
   def injectParityError(): Unit = {
     // This would modify the next transmission to have wrong parity
-    // Implementation would require modifying the createFrame method
+    // Implementation would require modifying the createPacket method
   }
 
   def injectClockGlitch(): Unit = {
@@ -336,27 +350,181 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
   }
 }
 
-// Complete PS2 Test Environment
-class PS2KbTestEnvironment(ps2: PS2Interface, clockDomain: ClockDomain, isSlave : Boolean = true  ) {
-  val deviceModel = if ( isSlave ) new PS2KbDeviceModel(ps2, clockDomain) else null
-  //val hostModel = new PS2HostModel(ps2, clockDomain)
+object PS2Monitor{
+  def apply(ps2: PS2Interface, clockDomain: ClockDomain)(callback : (Int) => Unit) = {
+    val clockDomain = ClockDomain( ps2.clk )
+    new PS2Monitor(ps2.data, clockDomain).addCallback(callback)
+  }
+}
 
-  def initialize(): Unit = {
-    deviceModel.startSimulation()
-    //hostModel.startListening()
+class PS2Monitor(data : Bool, clockDomain: ClockDomain){
+  import PS2KbScanCodes._
+  val callbacks = ArrayBuffer[(Int) => Unit]()
+
+  var bitCount = 0
+  var charData = 0
+  val packet = Array.fill(10)(false)
+
+  val  packetQueue = new LinkedBlockingQueue[Int]()
+  val  observedCharQueue = new LinkedBlockingQueue[Char]()
+  // Calculate parity for received packet is odd
+  private def checkParity(packet: Array[Boolean]): Boolean = {
+    packet.slice(1, 10).reduce(_ ^ _)
   }
 
+
+  private def listBoolean2Int( packet : Array[Boolean] ) : Int = {
+    packet.map(if (_) 1 else 0).reduce((a, b) => (a << 1) | b)
+  }
+
+  def addCallback(callback : (Int) => Unit): this.type = {
+    callbacks += callback
+    this
+  }
+
+  def isStart = bitCount == 0
+  def isPacket = 1 to 8 contains( bitCount )
+  def isParity = bitCount == 9
+  def isStop = bitCount == 10
+
+  def getKeyInChar = observedCharQueue.take()
+
+
+  def run(): Unit = {
+    // Import the states from the companion object.
+    import State._
+    var currentState: State = Idle // Start in the Idle state
+    var heldKey: Option[Char] = None
+
+    println("Keyboard Monitor started. Waiting for scan codes...")
+    
+    clockDomain.onFallingEdges {
+
+      if (isStart) {
+        if (data.toBoolean) {
+          println("[INF] PS2 : Start Bit is observed !!")
+          packet(0) = false
+          bitCount += 1
+        }
+      } else if (isPacket) {
+        packet(bitCount) = data.toBoolean
+        bitCount += 1
+      } else if (isParity) {
+
+        charData = listBoolean2Int(packet.slice(1, 9).reverse)
+        println(f"[INF] PS2 : data 0x$charData%x is observed !!")
+        packet(bitCount) = data.toBoolean
+        if (!checkParity(packet)) {
+          println(s"[ERR] PS2 : parity is NOT expected !!")
+        }
+        bitCount += 1
+      } else if (isStop) {
+        if (data.toBoolean) {
+          println("[INF] PS2 : Stop Bit is observed !!")
+        } else {
+          println("[ERR] PS2 : Stop Bit is NOT observed !!")
+        }
+        bitCount = 0
+        callbacks.foreach(_(charData))
+        packetQueue.put(charData)
+
+      }
+    }
+
+    fork {
+      while (true) {
+        // .take() blocks and waits until an item is available in the queue.
+        val code = packetQueue.take()
+
+        // The core logic is a state machine implemented with a match expression.
+        (currentState, code) match {
+          // --- State: Idle ---
+          case (Idle, 0xF0 ) => currentState = ExpectingBreakCode // Break code prefix
+          case (Idle, 0xE0 ) => currentState = ExpectingExtendedCode // Extended key prefix
+          case (Idle, makeCode) =>
+            scanCodeMapRev.get(makeCode) match {
+              case Some(key) =>
+                if (heldKey.contains(key)) {
+                  println(s"[HOLD] Key: $key")
+                } else {
+                  println(s"[PRESS] Key: $key")
+                  heldKey = Some(key)
+                }
+              case None =>
+                println(f"[INFO] Unknown make code: 0x$code%02X")
+            }
+
+          // --- State: Expecting a Break Code ---
+          case (ExpectingBreakCode, breakCode) =>
+            scanCodeMapRev.get(breakCode) match {
+              case Some(key) =>
+                println(s"[RELEASE] Key: $key")
+                heldKey = None
+                observedCharQueue.put(key)
+
+              case None =>
+                println(f"[INFO] Unknown break code after F0: 0x$breakCode%02X")
+            }
+            currentState = Idle // Return to Idle state
+
+          // --- State: Expecting an Extended Key ---
+          case (ExpectingExtendedCode, 0xF0) => currentState = ExpectingExtendedBreakCode // Release of an extended key
+
+          case (ExpectingExtendedCode, makeCode) =>
+            scanCodeMapRev.get(makeCode) match {
+              case Some(key) =>
+                println(s"[PRESS] Extended Key: $key")
+                heldKey = Some(key)
+              case None =>
+                println(f"[INFO] Unknown extended make code: 0x$makeCode%02X")
+            }
+            currentState = Idle
+
+          // --- State: Expecting an Extended Break Code ---
+          case (ExpectingExtendedBreakCode, breakCode) =>
+            scanCodeMapRev.get(breakCode) match {
+              case Some(key) =>
+                println(s"[RELEASE] Extended Key: $key")
+                heldKey = None
+              case None =>
+                println(f"[INFO] Unknown extended break code: 0x$breakCode%02X")
+            }
+            currentState = Idle
+
+          case (state, unmatchedCode) =>
+            println(f"[WARN] Unhandled combination! State: $state, Code: 0x$unmatchedCode%02X")
+            currentState = Idle // Reset on error
+        }
+      }
+
+    } // end of fork
+  } // end of run()
+
+}
+
+// Complete PS2 Test Environment
+class PS2KbTestEnvironment(ps2: PS2Interface, clockDomain: ClockDomain, isSlave : Boolean = true  ) {
+
+  import PS2KbScanCodes._
+
+  val deviceModel = if ( isSlave ) new PS2KbDeviceModel(ps2, clockDomain) else null
+  val ps2Monitor = PS2Monitor( ps2,clockDomain){ _ => }
+  //val hostModel = new PS2HostModel(ps2, clockDomain)
+
   // High-level test methods
-  def testBasicKeyPress(key: Char): Boolean = {
+  def testBasicKeyPress(key: Char): Char = {
     deviceModel.sendKeyPress(key)
     deviceModel.waitForIdle()
 
-    val received = hostModel.waitForBytes(1, 10000)
-    val expectedScanCode = PS2ScanCodes.scanCodeMap.getOrElse(key.toLower, -1)
+    ps2Monitor.getKeyInChar
 
-    received.headOption.contains(expectedScanCode)
+    //val received = hostModel.waitForBytes(1, 10000)
+    //val expectedScanCode = scanCodeMap.getOrElse(key.toLower, -1)
+
+    //received.headOption.contains(expectedScanCode)
   }
 
+  /*
   def testKeySequence(keys: String): Boolean = {
     var success = true
     for (key <- keys) {
@@ -368,16 +536,41 @@ class PS2KbTestEnvironment(ps2: PS2Interface, clockDomain: ClockDomain, isSlave 
     success
   }
 
-  def testFullKeyPressRelease(key: Char): Boolean = {
-    deviceModel.sendKeyPress(key)
-    deviceModel.sendKeyRelease(key)
-    deviceModel.waitForIdle()
+  */
 
-    val received = hostModel.waitForBytes(2, 10000)
-    val expectedScanCode = PS2ScanCodes.scanCodeMap.getOrElse(key.toLower, -1)
-
-    received.length == 2 &&
-      received(0) == expectedScanCode &&
-      received(1) == PS2ScanCodes.BREAK_CODE
+  def testKeySequence(keys: String): String  = {
+    var ret = ""
+    for (key <- keys) {
+        ret = ret + testBasicKeyPress(key)
+    }
+    ret
   }
+
+  
+  // It corresponds to UVM_ENV run_phase
+  def run(): Unit = {
+    deviceModel.run()
+    ps2Monitor.run()
+    //hostModel.startListening()
+    val sendString = "ok"
+    val receivedString = testKeySequence(sendString)
+    println(s"[PS2 MON] Received String = ${receivedString}")
+
+  }
+
+
+
+
+//  def testFullKeyPressRelease(key: Char): Boolean = {
+//    deviceModel.sendKeyPress(key)
+//    deviceModel.sendKeyRelease(key)
+//    deviceModel.waitForIdle()
+//
+//    //val received = hostModel.waitForBytes(2, 10000)
+//    val expectedScanCode = scanCodeMap.getOrElse(key.toLower, -1)
+//
+//    received.length == 2 &&
+//      received(0) == expectedScanCode &&
+//      received(1) == PS2ScanCodes.BREAK_CODE
+//  }
 }
