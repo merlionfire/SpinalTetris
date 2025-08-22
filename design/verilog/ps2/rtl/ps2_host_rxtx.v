@@ -39,7 +39,7 @@ module ps2_host_rxtx  (
    );
 `endif
 
-`ifdef SIM
+`ifdef 0
    assign       ps2_tx_done = 1'b0;
    assign       ps2_tx_ready = 1'b0 ;
    assign       ps2_rddata_valid = 1'b0 ;

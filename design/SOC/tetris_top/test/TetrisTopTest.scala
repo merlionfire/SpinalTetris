@@ -30,23 +30,18 @@ class TetrisTopTest extends AnyFunSuite {
   //  CUSTOM CODE END
   // ***************************************
   //val compiler: String = "verilator"
-  val compiler : String = "vcs"
+  val compiler: String = "vcs"
   val runFolder: String = PathUtils.getRtlOutputPath(getClass, middlePath = "design/SOC", targetName = "sim").toString
-  val verilogFile : String = PathUtils.getVerilogFilePath(
-                          middlePath= "design/SOC",
-                          ipFolderName = "tetris_top/rtl",
-                          fileName = "tetris_top_bb.v").toString
+  val verilogFile: String = PathUtils.getVerilogFilePath(
+    middlePath = "design/SOC",
+    ipFolderName = "tetris_top/rtl",
+    fileName = "tetris_top_bb.v").toString
 
   val workFolder = runFolder + "/" + compiler
 
   val memory_model: String = compiler match {
     case "verilator" => "RAMB16_S9_VERILATOR.v"
     case "vcs" => "RAMB16_S9.v"
-  }
-
-  val fdc_model: String = compiler match {
-    case "verilator" => "FDC_VERILATOR.v"
-    case "vcs" => "FDC.v"
   }
 
   val xilinxPath = System.getenv("XILINX")
@@ -60,12 +55,12 @@ class TetrisTopTest extends AnyFunSuite {
   lazy val compiled: SimCompiled[tetris_top] = runSimConfig(runFolder, compiler)
     .addRtl(s"${xilinxPath}/glbl.v")
     .addRtl(s"${xilinxPath}/unisims/${memory_model}")
-    //.addRtl(s"${xilinxPath}/unisims/${fdc_model}")
     //.addRtl(s"${verilogFile}")
     .withTimeScale(1 ns)
     .withTimePrecision(10 ps)
     .compile {
       val c = new tetris_top(TetrisCoreConfig(offset_x = 32))
+      c.tetris_core_inst.game_display_inst.io.sof.simPublic()
       c
     }
 
@@ -93,32 +88,37 @@ class TetrisTopTest extends AnyFunSuite {
       val coreClocking = ClockDomain(dut.io.core_clk, dut.io.core_rst)
       val vgaClocking = ClockDomain(dut.io.vga_clk, dut.io.vga_rst)
 
+
       coreClocking.forkStimulus(50 MHz)
-      vgaClocking.forkStimulus( 25 MHz)
-      SimTimeout(1 ms) // adjust timeout as needed
+      vgaClocking.forkStimulus(25 MHz)
 
-      //val ps2HostIf = SOC.tetris_top.model.PS2Interface(clk = dut.io.ps2_clk, data = dut.io.ps2_data)
+      SimTimeout(100 ms) // adjust timeout as needed
+
+      coreClocking.waitSampling(100)
+
+      val ps2HostIf = PS2Interface(clk = dut.io.ps2_clk, data = dut.io.ps2_data)
       // In your SpinalHDL testbench
-      //val kdSlaveVip = new PS2KbTestEnvironment(ps2HostIf, coreClocking)
+      val kdSlaveVip = new PS2KbTestEnvironment(ps2HostIf, dut.keyClockDomain)
 
 
-      vgaClocking.waitSampling(100)
+      kdSlaveVip.run()
 
-      //kdSlaveVip.run()
-
-      // Test typing
-      //kdSlaveVip.deviceModel.typeString("Hello World!")
-
-      // Test individual keys
-      //assert(kdSlaveVip.testBasicKeyPress('a'))
+      kdSlaveVip.sendKeys("ws")
 
 
-      vgaClocking.waitSampling(1000)
+      println("simTime : " + simTime() + "[Main] Wait for some time")
 
+      vgaClocking.waitSampling(10000)
+      vgaClocking.waitSamplingWhere(dut.tetris_core_inst.game_display_inst.io.sof.toBoolean)
+      println(f"[DEBUG] @${simTime()} The 2nd frame has been started and then stop sim now !")
+      vgaClocking.waitSampling(10000)
+      vgaClocking.waitSamplingWhere(dut.tetris_core_inst.game_display_inst.io.sof.toBoolean)
+      println(f"[DEBUG] @${simTime()} The 3rd frame has been started and then stop sim now !")
       println("simTime : " + simTime())
       simSuccess()
 
     }
 
+
   }
- }
+}

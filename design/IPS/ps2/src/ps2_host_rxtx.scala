@@ -26,16 +26,12 @@ class ps2_host_rxtx ( ) extends BlackBox {
   mapClockDomain(clock = io.clk, reset = io.rst)
 
 
-//  val verilogFilesList = List (
-//    "ps2_host_rxtx.v",
-//    "ps2_host_tx.v",
-//    "ps2_host_rx.v",
-//  )
-
-
   val verilogFilesList = List (
-    "ps2_host_rxtx.v"
+    "ps2_host_rxtx.v",
+    "ps2_host_tx.v",
+    "ps2_host_rx.v",
   )
+
 
 
   verilogFilesList.foreach { fileName =>

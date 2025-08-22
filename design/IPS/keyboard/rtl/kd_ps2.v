@@ -1,12 +1,12 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : kd_ps2
-// Git hash  : f710c93e905c21d66fa86f775a08fb48d62f39ea
+// Git hash  : c7cda290674d725d87016493ba8faa85fb4a9821
 
 `timescale 1ns/1ps
 
 module kd_ps2 (
   inout  wire          ps2_clk,
-  inout  wire          data,
+  inout  wire          ps2_data,
   output wire          rd_data_valid,
   output wire [7:0]    rd_data_payload,
   output wire          key_up_valid,
@@ -23,12 +23,13 @@ module kd_ps2 (
   wire                ps2_inst_ps2_tx_ready;
   wire                ps2_inst_ps2_rddata_valid;
   wire       [7:0]    ps2_inst_ps2_rd_data;
-  wire       [7:0]    ps2_inst_ps2_rd_ready;
+  wire                ps2_inst_ps2_rx_ready;
   reg                 key_valid_up_valid;
   reg                 key_valid_down_valid;
   reg                 up_tick;
   reg                 down_tick;
   reg                 break_tick;
+  wire                isSpecificKey;
   reg                 other_tick;
   wire                up_key_is_up;
   wire                down_key_is_up;
@@ -52,17 +53,17 @@ module kd_ps2 (
 
 
   ps2_host_rxtx ps2_inst (
-    .clk              (clk                       ), //i
-    .rst              (reset                     ), //i
-    .ps2_clk          (ps2_clk                   ), //~
-    .ps2_data         (data                      ), //~
-    .ps2_wr_stb       (1'b0                      ), //i
-    .ps2_wr_data      (8'h0                      ), //i
-    .ps2_tx_done      (ps2_inst_ps2_tx_done      ), //o
-    .ps2_tx_ready     (ps2_inst_ps2_tx_ready     ), //o
-    .ps2_rddata_valid (ps2_inst_ps2_rddata_valid ), //o
-    .ps2_rd_data      (ps2_inst_ps2_rd_data[7:0] ), //o
-    .ps2_rd_ready     (ps2_inst_ps2_rd_ready[7:0])  //o
+    .clk              (clk                      ), //i
+    .rst              (reset                    ), //i
+    .ps2_clk          (ps2_clk                  ), //~
+    .ps2_data         (ps2_data                 ), //~
+    .ps2_wr_stb       (1'b0                     ), //i
+    .ps2_wr_data      (8'h0                     ), //i
+    .ps2_tx_done      (ps2_inst_ps2_tx_done     ), //o
+    .ps2_tx_ready     (ps2_inst_ps2_tx_ready    ), //o
+    .ps2_rddata_valid (ps2_inst_ps2_rddata_valid), //o
+    .ps2_rd_data      (ps2_inst_ps2_rd_data[7:0]), //o
+    .ps2_rx_ready     (ps2_inst_ps2_rx_ready    )  //o
   );
   `ifndef SYNTHESIS
   always @(*) begin
@@ -89,6 +90,7 @@ module kd_ps2 (
   assign key_down_valid = key_valid_down_valid;
   assign rd_data_valid = ps2_inst_ps2_rddata_valid;
   assign rd_data_payload = ps2_inst_ps2_rd_data;
+  assign isSpecificKey = (|{(ps2_inst_ps2_rd_data == 8'hf0),{(ps2_inst_ps2_rd_data == 8'h1b),(ps2_inst_ps2_rd_data == 8'h1d)}});
   assign up_key_is_up = (up_tick && key_valid_up_valid);
   assign down_key_is_up = (down_tick && key_valid_down_valid);
   assign rx_fsm_wantExit = 1'b0;
@@ -135,58 +137,45 @@ module kd_ps2 (
   assign rx_fsm_onEntry_DEFAULT_1 = ((rx_fsm_stateNext == DEFAULT_1) && (rx_fsm_stateReg != DEFAULT_1));
   always @(posedge clk or posedge reset) begin
     if(reset) begin
+      key_valid_up_valid <= 1'b0;
+      key_valid_down_valid <= 1'b0;
       up_tick <= 1'b0;
       down_tick <= 1'b0;
       break_tick <= 1'b0;
       other_tick <= 1'b0;
       rx_fsm_stateReg <= IDLE;
     end else begin
-      if(ps2_inst_ps2_rddata_valid) begin
-        case(ps2_inst_ps2_rd_data)
-          8'h1d : begin
-            up_tick <= 1'b1;
-          end
-          8'h1b : begin
-            down_tick <= 1'b1;
-          end
-          8'hf0 : begin
-            break_tick <= 1'b1;
-          end
-          default : begin
-            other_tick <= 1'b1;
-          end
-        endcase
-      end
+      up_tick <= (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1d));
+      down_tick <= (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1b));
+      break_tick <= (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'hf0));
+      other_tick <= (ps2_inst_ps2_rddata_valid && (! isSpecificKey));
       rx_fsm_stateReg <= rx_fsm_stateNext;
-    end
-  end
-
-  always @(posedge clk) begin
-    case(rx_fsm_stateReg)
-      WAIT_BREAK : begin
-      end
-      WAIT_LAST : begin
-        if(up_key_is_up) begin
-          key_valid_up_valid <= 1'b0;
+      case(rx_fsm_stateReg)
+        WAIT_BREAK : begin
         end
-        if(down_key_is_up) begin
-          key_valid_down_valid <= 1'b0;
+        WAIT_LAST : begin
+          if(up_key_is_up) begin
+            key_valid_up_valid <= 1'b0;
+          end
+          if(down_key_is_up) begin
+            key_valid_down_valid <= 1'b0;
+          end
         end
-      end
-      DEFAULT_1 : begin
-      end
-      default : begin
-        if(up_tick) begin
-          key_valid_up_valid <= 1'b1;
+        DEFAULT_1 : begin
         end
-        if(down_tick) begin
-          key_valid_down_valid <= 1'b1;
+        default : begin
+          if(up_tick) begin
+            key_valid_up_valid <= 1'b1;
+          end
+          if(down_tick) begin
+            key_valid_down_valid <= 1'b1;
+          end
         end
+      endcase
+      if(rx_fsm_onEntry_IDLE) begin
+        key_valid_up_valid <= 1'b0;
+        key_valid_down_valid <= 1'b0;
       end
-    endcase
-    if(rx_fsm_onEntry_IDLE) begin
-      key_valid_up_valid <= 1'b0;
-      key_valid_down_valid <= 1'b0;
     end
   end
 

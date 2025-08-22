@@ -154,13 +154,16 @@ class kd_ps2 extends Component  {
     val key = new Bundle {
       val up_valid = out Bool()
       val down_valid = out Bool()
-      //val left_valid = out Bool()
-      //val right_valid = out Bool()
+      val left_valid = out Bool()
+      val right_valid = out Bool()
     }
 
   }
 
   noIoPrefix()
+
+
+
 
   val ps2_inst = new ps2_host_rxtx()
 
@@ -169,11 +172,11 @@ class kd_ps2 extends Component  {
 
 
   val key_valid = new Bundle {
-    val up_valid = Bool()
-    val down_valid = Bool()
+    val up_valid = RegInit(False)
+    val down_valid = RegInit(False)
     //val left_valid = Bool()
    // val right_valid = Bool()
-  } .setAsReg()
+  }
 
 
   io.ps2_clk := ps2.clk
@@ -187,12 +190,18 @@ class kd_ps2 extends Component  {
   ps2.wr_stb := False
   ps2.wr_data := 0
 
+  /*
   val up_tick = RegInit(False) default False
   val down_tick = RegInit(False) default False
   //val left_tick = RegInit(False)
   //val right_tick = RegInit(False)
   val break_tick = RegInit(False) default( False)
   val other_tick = RegInit(False) default( False)
+
+  up_tick := False
+  down_tick := False
+  break_tick := False
+  other_tick := False
 
   when ( ps2.rddata_valid ) {
     switch ( ps2.rd_data ) {
@@ -202,12 +211,35 @@ class kd_ps2 extends Component  {
       default { other_tick := True}
     }
   }
+  */
 
+  /**
+   * Creates a single-cycle pulse signal that fires the cycle after a specific key is detected.
+   * @param keyCode The key code to detect.
+   * @return A registered Bool signal that is high for one cycle.
+   */
+  def keyPulse(keyCode: Int ): Bool = {
+    // The event is true when data is valid and the key code matches.
+    val event = ps2.rddata_valid && (ps2.rd_data === keyCode)
 
-  def keIsReleased( tick : Bool , valid : Bool ) = tick && valid
+    // Return the registered event, which creates the one-cycle pulse.
+    RegNext(event) init(False)
+  }
 
-  val up_key_is_up   = keIsReleased( up_tick, key_valid.up_valid )
-  val down_key_is_up = keIsReleased( down_tick, key_valid.down_valid )
+  val specificKeys = Seq(KEY_W, KEY_S, KEY_BREAK)
+  val up_tick    = keyPulse(KEY_W)
+  val down_tick  = keyPulse(KEY_S)
+  val left_tick  = keyPulse(KEY_A)
+
+  val break_tick = keyPulse(KEY_BREAK)
+
+  val isSpecificKey = specificKeys.map(ps2.rd_data === _).orR
+  val other_tick    = RegNext(ps2.rddata_valid && !isSpecificKey) init(False)
+
+  def keyIsReleased(tick : Bool, valid : Bool ) = tick && valid
+
+  val up_key_is_up   = keyIsReleased( up_tick, key_valid.up_valid )
+  val down_key_is_up = keyIsReleased( down_tick, key_valid.down_valid )
 
   val rx_fsm = new StateMachine {
 

@@ -1,12 +1,11 @@
 package SOC.tetris_top.model
 
 
+import SOC.tetris_top.tetris_top
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 
-import java.util.concurrent.LinkedBlockingQueue
-import scala.collection.mutable.{ArrayBuffer, Queue}
 import scala.collection.mutable
 import scala.util.Random
 
@@ -92,9 +91,13 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
   // ps2 clock = 80us
   // half_duty_cycles = 4
   // full_duty = 60us - 100 us => 16.7KHz - 10 HZ
+  // 60su < T < 100 us
+  private val clockFreqInMHz = 50
+  def usToCycles( duty : Int ) = clockFreqInMHz * duty
   private val ps2ClockPeriod = 50000 // 50us = 20kHz (PS2 spec: 10-16.7kHz)
-  private val full_duty_cylces = 8
-  private val half_duty_cylces = 2
+  // 50MHz ->   80 (us)  / ( 1 / 50 ( MHz) ) = 80 x 50 = 4000
+  private val full_duty_cylces = usToCycles(80) // 4000
+  private val half_duty_cylces = full_duty_cylces / 2
 
   private val transactionQueue = mutable.Queue[PS2Transaction]()
   private var currentBitIndex = 0
@@ -190,9 +193,9 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
   def typeString(text: String, delay: Int = 1000): Unit = {
     for (char <- text) {
       sendKeyPress(char)
-      wait(delay)
+      clockDomain.waitSampling(delay)
       sendKeyRelease(char)
-      wait(delay)
+      clockDomain.waitSampling(delay)
     }
   }
 
@@ -201,7 +204,7 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
     queueScanCode(LEFT_CTRL)
     queueScanCode(LEFT_ALT)
     queueScanCode(DELETE)
-    wait(10000)
+    clockDomain.waitSampling(1000)
     queueScanCode(BREAK_CODE)
     queueScanCode(DELETE)
     queueScanCode(BREAK_CODE)
@@ -222,14 +225,24 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
     ps2.clk #= true
   }
 
+  def delay() = {
+
+    //println( "simTime : " + simTime() + "[PS2 DEV] Start to wait for while ... ")
+    clockDomain.waitSampling(200)
+    //println( "simTime : " + simTime() + "[PS2 DEV] I wake up now ... ")
+  }
+
   // Main simulation process. It corresponds to UVM run_phase() task
   def run(): Unit = {
     fork {
-      reset()
 
+      println(s"[PS2 DEV] run() is called now ...")
+      reset()
+      println(s"[PS2 DEV] reset() is done !!! ")
       while (true) {
         if (!inhibitMode) {
           // Check if we need to start a new transmission
+          //println(s"[PS2 DEV] Checking if some data are to be transmitted !!! ")
           if (!isTransmitting && transactionQueue.nonEmpty) {
             val transaction = transactionQueue.dequeue()
             transaction match {
@@ -251,8 +264,9 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
           // Monitor host-to-device communication
          // monitorHostCommunication()
         }
-
-        wait(clockPeriod*10)
+        //println(s"[PS2 DEV] Sleep for a while  !!! ")
+        clockDomain.waitSampling(200)
+        //println(s"[PS2 DEV] I am wake up !!! ")
       }
     }
   }
@@ -265,6 +279,7 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
     println(s"PS2: Starting transmission of 0x${data.toHexString}")
   }
 
+  // Driver interface
   private def handleTransmission(): Unit = {
     //clockCounter += 1
 
@@ -279,9 +294,6 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
     }
     ps2.clk #= true
     ps2.data #= true
-
-    clockDomain.waitSampling(full_duty_cylces)
-    ps2.clk #= false
     isTransmitting = false
     println(s"PS2: Transmission complete.")
   }
@@ -301,11 +313,11 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
     !isTransmitting && transactionQueue.isEmpty
   }
 
-  def waitForIdle(timeout: Int = 100000): Unit = {
+  def waitForIdle(timeout: Int = 100): Unit = {
     var timeoutCounter = 0
     while (!isIdle() && timeoutCounter < timeout) {
-      wait(clockPeriod)
-      timeoutCounter += clockPeriod
+      clockDomain.waitSampling(full_duty_cylces)
+      timeoutCounter += 1
     }
     if (timeoutCounter >= timeout) {
       throw new RuntimeException("Timeout waiting for PS2 to become idle")
@@ -320,18 +332,18 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
     for (_ <- 0 until count) {
       val key = keys(random.nextInt(keys.length))
       sendKeyPress(key)
-      wait(delay)
+      clockDomain.waitSampling(delay)
       sendKeyRelease(key)
-      wait(delay)
+      clockDomain.waitSampling(delay)
     }
   }
 
   def generateTypingBurst(text: String): Unit = {
     for (char <- text) {
       sendKeyPress(char)
-      wait(500) // Quick press
+      clockDomain.waitSampling(200)
       sendKeyRelease(char)
-      wait(200) // Short gap between keys
+      clockDomain.waitSampling(200) // Short gap between keys
     }
   }
 
@@ -352,21 +364,20 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
 
 object PS2Monitor{
   def apply(ps2: PS2Interface, clockDomain: ClockDomain)(callback : (Int) => Unit) = {
-    val clockDomain = ClockDomain( ps2.clk )
-    new PS2Monitor(ps2.data, clockDomain).addCallback(callback)
+    new PS2Monitor(ps2, clockDomain).addCallback(callback)
   }
 }
 
-class PS2Monitor(data : Bool, clockDomain: ClockDomain){
+class PS2Monitor(ps2: PS2Interface, clockDomain: ClockDomain){
   import PS2KbScanCodes._
-  val callbacks = ArrayBuffer[(Int) => Unit]()
+  val callbacks = mutable.ArrayBuffer[(Int) => Unit]()
 
   var bitCount = 0
   var charData = 0
   val packet = Array.fill(10)(false)
 
-  val  packetQueue = new LinkedBlockingQueue[Int]()
-  val  observedCharQueue = new LinkedBlockingQueue[Char]()
+  val  packetQueue = mutable.Queue[Int]()
+  val  observedCharQueue = mutable.Queue[Char]()
   // Calculate parity for received packet is odd
   private def checkParity(packet: Array[Boolean]): Boolean = {
     packet.slice(1, 10).reduce(_ ^ _)
@@ -387,7 +398,7 @@ class PS2Monitor(data : Bool, clockDomain: ClockDomain){
   def isParity = bitCount == 9
   def isStop = bitCount == 10
 
-  def getKeyInChar = observedCharQueue.take()
+  def getKeyInChar = observedCharQueue.dequeue()
 
 
   def run(): Unit = {
@@ -396,166 +407,165 @@ class PS2Monitor(data : Bool, clockDomain: ClockDomain){
     var currentState: State = Idle // Start in the Idle state
     var heldKey: Option[Char] = None
 
-    println("Keyboard Monitor started. Waiting for scan codes...")
+    var ps2ClockPreviousValue = true
+
+    println("[PS2 MON] Keyboard Monitor started. Waiting for scan codes...")
     
-    clockDomain.onFallingEdges {
+    clockDomain.onRisingEdges {
+      //println( "simTime : " + simTime() + "[PS2 MON] Clock rising edge is triggered ...")
+      val ps2ClockCurrentValue = ps2.clk.toBoolean
 
-      if (isStart) {
-        if (data.toBoolean) {
-          println("[INF] PS2 : Start Bit is observed !!")
-          packet(0) = false
+      if (   !ps2ClockCurrentValue  && ps2ClockPreviousValue  ) {
+        // negative edge of ps2.clk is observed
+        //println( "simTime : " + simTime() + "[PS2 MON] negative edge of PS2 CLK is observed ...")
+        //println( "simTime : " + simTime() + s"[PS2 MON] bitCount = ${bitCount} ")
+
+        if (isStart) {
+          if ( ! ps2.data.toBoolean) {
+            println("[INF] PS2 : Start Bit is observed !!")
+            packet(0) = false
+            bitCount += 1
+          }
+        } else if (isPacket) {
+          packet(bitCount) = ps2.data.toBoolean
           bitCount += 1
-        }
-      } else if (isPacket) {
-        packet(bitCount) = data.toBoolean
-        bitCount += 1
-      } else if (isParity) {
+        } else if (isParity) {
 
-        charData = listBoolean2Int(packet.slice(1, 9).reverse)
-        println(f"[INF] PS2 : data 0x$charData%x is observed !!")
-        packet(bitCount) = data.toBoolean
-        if (!checkParity(packet)) {
-          println(s"[ERR] PS2 : parity is NOT expected !!")
+          charData = listBoolean2Int(packet.slice(1, 9).reverse)
+          println(f"[INF] PS2 : data 0x$charData%x is observed !!")
+          packet(bitCount) = ps2.data.toBoolean
+          if (!checkParity(packet)) {
+            println(s"[ERR] PS2 : parity is NOT expected !!")
+          }
+          bitCount += 1
+        } else if (isStop) {
+          if (ps2.data.toBoolean) {
+            println("[INF] PS2 : Stop Bit is observed !!")
+          } else {
+            println("[ERR] PS2 : Stop Bit is NOT observed !!")
+          }
+          bitCount = 0
+          callbacks.foreach(_(charData))
+          packetQueue.enqueue(charData)
+
         }
-        bitCount += 1
-      } else if (isStop) {
-        if (data.toBoolean) {
-          println("[INF] PS2 : Stop Bit is observed !!")
-        } else {
-          println("[ERR] PS2 : Stop Bit is NOT observed !!")
-        }
-        bitCount = 0
-        callbacks.foreach(_(charData))
-        packetQueue.put(charData)
 
       }
+      ps2ClockPreviousValue = ps2ClockCurrentValue
     }
+
+
+    println("[PS2 MON] Initiate fork to process received bytes.")
 
     fork {
       while (true) {
         // .take() blocks and waits until an item is available in the queue.
-        val code = packetQueue.take()
+        //println("simTime : " + simTime() + "[PS2 MON] I am checking if packetQueue has data...")
 
-        // The core logic is a state machine implemented with a match expression.
-        (currentState, code) match {
-          // --- State: Idle ---
-          case (Idle, 0xF0 ) => currentState = ExpectingBreakCode // Break code prefix
-          case (Idle, 0xE0 ) => currentState = ExpectingExtendedCode // Extended key prefix
-          case (Idle, makeCode) =>
-            scanCodeMapRev.get(makeCode) match {
-              case Some(key) =>
-                if (heldKey.contains(key)) {
-                  println(s"[HOLD] Key: $key")
-                } else {
-                  println(s"[PRESS] Key: $key")
+
+        if ( packetQueue.nonEmpty ) {
+          val code = packetQueue.dequeue()
+          println("simTime : " + simTime() + f"[PS2 MON] Get 0x${code}%x from packetQueue ...")
+          // The core logic is a state machine implemented with a match expression.
+          (currentState, code) match {
+            // --- State: Idle ---
+            case (Idle, 0xF0) => currentState = ExpectingBreakCode // Break code prefix
+            case (Idle, 0xE0) => currentState = ExpectingExtendedCode // Extended key prefix
+            case (Idle, makeCode) =>
+              scanCodeMapRev.get(makeCode) match {
+                case Some(key) =>
+                  if (heldKey.contains(key)) {
+                    println(s"[HOLD] Key: $key")
+                  } else {
+                    println(s"[PRESS] Key: $key")
+                    heldKey = Some(key)
+                  }
+                case None =>
+                  println(f"[INFO] Unknown make code: 0x$code%02X")
+              }
+
+            // --- State: Expecting a Break Code ---
+            case (ExpectingBreakCode, breakCode) =>
+              scanCodeMapRev.get(breakCode) match {
+                case Some(key) =>
+                  println(s"[RELEASE] Key: $key")
+                  heldKey = None
+                  observedCharQueue.enqueue(key)
+
+                case None =>
+                  println(f"[INFO] Unknown break code after F0: 0x$breakCode%02X")
+              }
+              currentState = Idle // Return to Idle state
+
+            // --- State: Expecting an Extended Key ---
+            case (ExpectingExtendedCode, 0xF0) => currentState = ExpectingExtendedBreakCode // Release of an extended key
+
+            case (ExpectingExtendedCode, makeCode) =>
+              scanCodeMapRev.get(makeCode) match {
+                case Some(key) =>
+                  println(s"[PRESS] Extended Key: $key")
                   heldKey = Some(key)
-                }
-              case None =>
-                println(f"[INFO] Unknown make code: 0x$code%02X")
-            }
+                case None =>
+                  println(f"[INFO] Unknown extended make code: 0x$makeCode%02X")
+              }
+              currentState = Idle
 
-          // --- State: Expecting a Break Code ---
-          case (ExpectingBreakCode, breakCode) =>
-            scanCodeMapRev.get(breakCode) match {
-              case Some(key) =>
-                println(s"[RELEASE] Key: $key")
-                heldKey = None
-                observedCharQueue.put(key)
+            // --- State: Expecting an Extended Break Code ---
+            case (ExpectingExtendedBreakCode, breakCode) =>
+              scanCodeMapRev.get(breakCode) match {
+                case Some(key) =>
+                  println(s"[RELEASE] Extended Key: $key")
+                  heldKey = None
+                case None =>
+                  println(f"[INFO] Unknown extended break code: 0x$breakCode%02X")
+              }
+              currentState = Idle
 
-              case None =>
-                println(f"[INFO] Unknown break code after F0: 0x$breakCode%02X")
-            }
-            currentState = Idle // Return to Idle state
-
-          // --- State: Expecting an Extended Key ---
-          case (ExpectingExtendedCode, 0xF0) => currentState = ExpectingExtendedBreakCode // Release of an extended key
-
-          case (ExpectingExtendedCode, makeCode) =>
-            scanCodeMapRev.get(makeCode) match {
-              case Some(key) =>
-                println(s"[PRESS] Extended Key: $key")
-                heldKey = Some(key)
-              case None =>
-                println(f"[INFO] Unknown extended make code: 0x$makeCode%02X")
-            }
-            currentState = Idle
-
-          // --- State: Expecting an Extended Break Code ---
-          case (ExpectingExtendedBreakCode, breakCode) =>
-            scanCodeMapRev.get(breakCode) match {
-              case Some(key) =>
-                println(s"[RELEASE] Extended Key: $key")
-                heldKey = None
-              case None =>
-                println(f"[INFO] Unknown extended break code: 0x$breakCode%02X")
-            }
-            currentState = Idle
-
-          case (state, unmatchedCode) =>
-            println(f"[WARN] Unhandled combination! State: $state, Code: 0x$unmatchedCode%02X")
-            currentState = Idle // Reset on error
+            case (state, unmatchedCode) =>
+              println(f"[WARN] Unhandled combination! State: $state, Code: 0x$unmatchedCode%02X")
+              currentState = Idle // Reset on error
+          }
         }
+
+        clockDomain.waitSampling(2000)
+
       }
 
     } // end of fork
+    println("[PS2 MON] Exit run().")
   } // end of run()
 
 }
 
 // Complete PS2 Test Environment
-class PS2KbTestEnvironment(ps2: PS2Interface, clockDomain: ClockDomain, isSlave : Boolean = true  ) {
-
-  import PS2KbScanCodes._
+//class PS2KbTestEnvironment(val ps2: PS2Interface, val clockDomain: ClockDomain, isSlave : Boolean = true  ) {
+class PS2KbTestEnvironment(val ps2: PS2Interface, clockDomain: ClockDomain, isSlave : Boolean = true  ) {
 
   val deviceModel = if ( isSlave ) new PS2KbDeviceModel(ps2, clockDomain) else null
-  val ps2Monitor = PS2Monitor( ps2,clockDomain){ _ => }
-  //val hostModel = new PS2HostModel(ps2, clockDomain)
+  val ps2Monitor = PS2Monitor( ps2, clockDomain ){ _ => }
 
-  // High-level test methods
-  def testBasicKeyPress(key: Char): Char = {
-    deviceModel.sendKeyPress(key)
-    deviceModel.waitForIdle()
-
-    ps2Monitor.getKeyInChar
-
-    //val received = hostModel.waitForBytes(1, 10000)
-    //val expectedScanCode = scanCodeMap.getOrElse(key.toLower, -1)
-
-    //received.headOption.contains(expectedScanCode)
-  }
-
-  /*
-  def testKeySequence(keys: String): Boolean = {
-    var success = true
-    for (key <- keys) {
-      if (!testBasicKeyPress(key)) {
-        success = false
-        println(s"Failed to send key: $key")
-      }
-    }
-    success
-  }
-
-  */
-
-  def testKeySequence(keys: String): String  = {
-    var ret = ""
-    for (key <- keys) {
-        ret = ret + testBasicKeyPress(key)
-    }
-    ret
-  }
-
-  
   // It corresponds to UVM_ENV run_phase
+  def sendKeys( text : String) = {
+
+
+    deviceModel.typeString(text, 1000 * 50 )
+
+    deviceModel.waitForIdle()
+    val receivedString = ps2Monitor.observedCharQueue.dequeueAll( _ => true ). mkString
+    println(s"[PS2 ENV] Received String = ${receivedString}")
+
+  }
+
   def run(): Unit = {
+
+    println("simTime : " + simTime() + s"[PS2 ENV] device and monitor have run now ..... ")
+    clockDomain.waitSampling(100)
+    println("simTime : " + simTime() + s"[PS2 ENV] Start to transfer strings")
     deviceModel.run()
     ps2Monitor.run()
-    //hostModel.startListening()
-    val sendString = "ok"
-    val receivedString = testKeySequence(sendString)
-    println(s"[PS2 MON] Received String = ${receivedString}")
 
+    clockDomain.waitSampling(100)
+    println("simTime : " + simTime() + s"[PS2 ENV] run() is exit")
   }
 
 

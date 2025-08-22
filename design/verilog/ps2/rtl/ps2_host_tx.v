@@ -50,6 +50,7 @@ reg   cntr_zero, load_cntr, dec_cntr ;
 reg   [8:0]  data_out ; 
 reg   [3:0]  data_cnt = 4'h8 , data_cnt_nxt ; 
 reg   load_dout, shift_dout, tran_err_no_ack ;  
+wire  ps2_go ;
 
 always @( posedge clk ) begin
    ps2_clk_in_1d <= ps2_clk_in ; 
@@ -73,7 +74,8 @@ always @( posedge clk ) begin
 
       case ( { load_cntr, dec_cntr } ) // synthesis parallel_case  
          2'b10 :  delay_cntr <= { NUM_OF_BITS_FOR_100US {1'b1} } ; 
-         2'b01 :  delay_cntr <= delay_cntr - 1'b1 ; 
+         2'b01 :  delay_cntr <= delay_cntr - 1'b1 ;
+         default : delay_cntr <= 'bx ;
       endcase 
    end
 end
@@ -87,7 +89,8 @@ always @( posedge clk ) begin
    end else begin    
       case ( { load_dout, shift_dout} )  //synthesis parallel_case 
          2'b10 : data_out <= { parity, ps2_wr_data }; 
-         2'b01 : data_out <= { 1'b1, data_out[8:1] } ;             
+         2'b01 : data_out <= { 1'b1, data_out[8:1] } ;
+         default :   data_out <= 'bx ;
       endcase 
    end    
 end
