@@ -35,7 +35,7 @@ class tetris_top ( config : TetrisCoreConfig ) extends Component {
   )
 
   val tetris_core_inst = new tetris_core(config)
-  val kd_ps2_inst = keyClockDomain( new kd_ps2() )
+  val kd_ps2_inst = keyClockDomain( new kd_ps2(KdPs2Config()) )
 
   io.ps2_clk  <> kd_ps2_inst.io.ps2_clk
   io.ps2_data <> kd_ps2_inst.io.ps2_data
@@ -47,8 +47,8 @@ class tetris_top ( config : TetrisCoreConfig ) extends Component {
   tetris_core_inst.io.vga_clk := io.vga_clk
   tetris_core_inst.io.vga_rst := io.vga_rst
 
-  tetris_core_inst.io.game_start := kd_ps2_inst.io.key.up_valid
-  tetris_core_inst.io.move_down  := kd_ps2_inst.io.key.down_valid
+  tetris_core_inst.io.game_start := kd_ps2_inst.io.keys_valid(0)
+  tetris_core_inst.io.move_down  := kd_ps2_inst.io.keys_valid(1)
 
 
   tetris_core_inst.io.move_left  := False
