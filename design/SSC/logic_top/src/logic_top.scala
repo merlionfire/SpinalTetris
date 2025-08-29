@@ -18,6 +18,10 @@ case class  LogicTopConfig ( rowNum : Int, colNum : Int  ) {
   val rowBlocksNum = rowNum - 1   // working field for Tetromino
   val colBlocksNum = colNum - 2   // working field for Tetromino
 
+  // 437 ms / ( 1 / 50 MHz ) = 437 * 50 * 1000
+  val levelFallInCycle = 473 * 50000
+  val lockDownInCycle  = 500 * 50000
+
   val playFieldConfig = PlayFieldConfig(
     rowBlocksNum = rowBlocksNum,
     colBlocksNum = colBlocksNum,
@@ -376,8 +380,8 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
     playfield_fsm_reset :=  False
     clear_start := False
 
-    val drop_timeout = Timeout(1000)  // Timeout who tick after 10 ms
-    val lock_timeout = Timeout(10)  // Timeout who tick after 10 ms
+    val drop_timeout = Timeout( if ( test ) 10000 else levelFallInCycle )  // Timeout who tick after 10 ms
+    val lock_timeout = Timeout( if ( test ) 100 else lockDownInCycle  )  // Timeout who tick after 10 ms
 
     val IDLE = makeInstantEntry()
     IDLE.whenIsActive {

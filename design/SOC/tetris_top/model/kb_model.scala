@@ -193,9 +193,12 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
   def typeString(text: String, delay: Int = 1000): Unit = {
     for (char <- text) {
       sendKeyPress(char)
-      clockDomain.waitSampling(delay)
+      //clockDomain.waitSampling(delay)
+      sleep(  delay us )
       sendKeyRelease(char)
-      clockDomain.waitSampling(delay)
+      //clockDomain.waitSampling(delay)
+      sleep(  delay us )
+
     }
   }
 
@@ -284,12 +287,16 @@ class PS2KbDeviceModel(ps2: PS2Interface, clockDomain: ClockDomain) {
     //clockCounter += 1
 
     clockDomain.waitSampling()
-
+    println("simTime : " + simTime() + s"[PS2 DEV] handleTransmission() is entered ! ")
     for ( data <- frameBits ) {
+      //println("simTime : " + simTime() + s"[PS2 DEV] clk <- true, data <- ${data.toString}  ")
       ps2.clk #= true
       ps2.data #= data
+      //println("simTime : " + simTime() + s"[PS2 DEV] wait for ${half_duty_cylces} cycles ")
       clockDomain.waitSampling(half_duty_cylces)
       ps2.clk #= false
+      //println("simTime : " + simTime() + s"[PS2 DEV] clk <- false, data <- NO Change ")
+      //println("simTime : " + simTime() + s"[PS2 DEV] wait for ${half_duty_cylces} cycles ")
       clockDomain.waitSampling(half_duty_cylces)
     }
     ps2.clk #= true
@@ -527,7 +534,8 @@ class PS2Monitor(ps2: PS2Interface, clockDomain: ClockDomain){
           }
         }
 
-        clockDomain.waitSampling(2000)
+        //clockDomain.waitSampling(2000)
+        sleep(2 us)
 
       }
 
@@ -545,10 +553,11 @@ class PS2KbTestEnvironment(val ps2: PS2Interface, clockDomain: ClockDomain, isSl
   val ps2Monitor = PS2Monitor( ps2, clockDomain ){ _ => }
 
   // It corresponds to UVM_ENV run_phase
-  def sendKeys( text : String) = {
+  def sendKeys( text : String, dutyInUs: Int = 20000 ) = {
 
 
-    deviceModel.typeString(text, 1000 * 50 )
+    //deviceModel.typeString(text,  deviceModel.usToCycles(dutyInUs) )
+    deviceModel.typeString(text,  dutyInUs )
 
     deviceModel.waitForIdle()
     val receivedString = ps2Monitor.observedCharQueue.dequeueAll( _ => true ). mkString
@@ -559,12 +568,12 @@ class PS2KbTestEnvironment(val ps2: PS2Interface, clockDomain: ClockDomain, isSl
   def run(): Unit = {
 
     println("simTime : " + simTime() + s"[PS2 ENV] device and monitor have run now ..... ")
-    clockDomain.waitSampling(100)
+    clockDomain.waitSampling(10)
     println("simTime : " + simTime() + s"[PS2 ENV] Start to transfer strings")
     deviceModel.run()
     ps2Monitor.run()
 
-    clockDomain.waitSampling(100)
+    clockDomain.waitSampling(10)
     println("simTime : " + simTime() + s"[PS2 ENV] run() is exit")
   }
 

@@ -222,11 +222,11 @@ module ps2_host_rxtx  (
    wire  ps2_data_out_en,  ps2_data_out, ps2_data_in, ps2_data_in_clean; 
    wire  ps2_rx_en;
 
-   assign   ps2_clk     = ps2_clk_out ? 1'bz :  1'b0 ;  
+   //assign   ps2_clk     = ps2_clk_out ? 1'bz :  1'b0 ;  
    assign   ps2_clk_in  = ps2_clk ; 
 
-   assign   ps2_data     = ps2_data_out_en ? ps2_data_out  :  1'bz ;  
-   assign   ps2_data_in  = ps2_data; 
+   //assign   ps2_data     = ps2_data_out_en ? ps2_data_out  :  1'bz ;  
+   assign   ps2_data_in   = ps2_data; 
 
    assign   ps2_rx_en    = ps2_tx_ready; 
 `ifdef SIM
@@ -239,6 +239,17 @@ module ps2_host_rxtx  (
          .pin_out ( { ps2_clk_in_clean,ps2_data_in_clean } ) 
    );
 `endif
+
+/*
+`ifdef 0
+   assign       ps2_tx_done = 1'b0;
+   assign       ps2_tx_ready = 1'b0 ;
+   assign       ps2_rddata_valid = 1'b0 ;
+   assign       ps2_rd_data = 8'h00;
+   assign       wireps2_rx_ready  = 1'b0 ;
+`else
+*/
+
 
 //   ps2_host_tx #(.NUM_OF_BITS_FOR_100US (9 ) )  ps2_host_tx_inst (
    ps2_host_tx #(.NUM_OF_BITS_FOR_100US ( 13 ) )  ps2_host_tx_inst (
@@ -265,6 +276,8 @@ module ps2_host_rxtx  (
       .ps2_rd_data  ( ps2_rd_data   ), 
       .ps2_rx_ready ( ps2_rx_ready  )    
    );
+
+//`endif
 endmodule    
 
 module ps2_host_tx (
@@ -319,6 +332,7 @@ reg   cntr_zero, load_cntr, dec_cntr ;
 reg   [8:0]  data_out ; 
 reg   [3:0]  data_cnt = 4'h8 , data_cnt_nxt ; 
 reg   load_dout, shift_dout, tran_err_no_ack ;  
+wire  ps2_go ;
 
 always @( posedge clk ) begin
    ps2_clk_in_1d <= ps2_clk_in ; 
@@ -342,7 +356,8 @@ always @( posedge clk ) begin
 
       case ( { load_cntr, dec_cntr } ) // synthesis parallel_case  
          2'b10 :  delay_cntr <= { NUM_OF_BITS_FOR_100US {1'b1} } ; 
-         2'b01 :  delay_cntr <= delay_cntr - 1'b1 ; 
+         2'b01 :  delay_cntr <= delay_cntr - 1'b1 ;
+         default : delay_cntr <= 'bx ;
       endcase 
    end
 end
@@ -356,7 +371,8 @@ always @( posedge clk ) begin
    end else begin    
       case ( { load_dout, shift_dout} )  //synthesis parallel_case 
          2'b10 : data_out <= { parity, ps2_wr_data }; 
-         2'b01 : data_out <= { 1'b1, data_out[8:1] } ;             
+         2'b01 : data_out <= { 1'b1, data_out[8:1] } ;
+         default :   data_out <= 'bx ;
       endcase 
    end    
 end
@@ -588,203 +604,3 @@ end
 
 
 endmodule
-
-module io_filter #( parameter PIN_NUM = 3 ) 
-(
-   input   clk , 
-   input   [ PIN_NUM-1 : 0 ]   pin_in    , 
-   output  [ PIN_NUM-1 : 0 ]   pin_out    
-) ; 
-
-
-   wire [ PIN_NUM-1 : 0 ] pin_in_sync ; 
-
-   genvar i ; 
-   generate 
-      for ( i = 0 ; i < PIN_NUM ; i = i+1 ) begin : io_sync_db   
-         synchro #(.INITIALIZE("LOGIC0")) io_sync_inst (
-				.clk    (  clk            ),
-            .async  (  pin_in[i]      ),
-				.sync   (  pin_in_sync[i] )
-			);
-	
-		   glitch_free  glitch_free_inst (
-            .Clk       ( clk ), 
-            .DataNoisy ( pin_in_sync[i]  ),
-            .DataClean ( pin_out[i]    ) 
-         );
-      end 
-   endgenerate 
-
-endmodule 
-`timescale 1ps / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company:         Crazy Joe's Garage Shop
-// Engineer:        Crazy Joe
-// 
-// Create Date:     22 August 2008 
-// Design Name:     De-bounce
-// Module Name:     Debounce 
-// Project Name:    Avnet FPGA Intro Speedway
-// Target Devices:  Spartan-3A DSP
-// Tool versions:   ISE/XST 10.1.02
-// Description:     This design analyzes an input for NDELAY number of cycles
-//                  for stability, thus de-bouncing the input.
-//
-// Dependencies:    
-//
-// Revision:        08/22/08 - File created (bhf)
-//
-// Additional Comments: 
-//
-//////////////////////////////////////////////////////////////////////////////////
-
-module glitch_free  (
-   input      Clk, 
-   input      DataNoisy,
-   output reg DataClean = 1'b0 
-   );
-
-      parameter NDELAY = 4'd10;
-      parameter NBITS =  4 ;
-      reg data_i = 1'b0 ;
-      reg [NBITS-1:0] count;
-
-
-
-   // Compare DataNoisy to a registered version of itself
-   // Must be the same for NDELAY consecutive cycles before
-   // DataClean is assigned
-   always @(posedge Clk)
-     if (DataNoisy != data_i) 
-        begin 
-            data_i     <= DataNoisy; 
-            count      <= 0; 
-        end
-     else if (count == NDELAY)
-        DataClean      <= data_i;
-     else 
-        count          <= count+1;
-
-endmodule
-
-//////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2006 Xilinx, Inc.
-// This design is confidential and proprietary of Xilinx, All Rights Reserved.
-//////////////////////////////////////////////////////////////////////////////
-//   ____  ____
-//  /   /\/   /
-// /___/  \  /   Vendor:        Xilinx
-// \   \   \/    Version:       1.0.0
-//  \   \        Filename:      synchro.v
-//  /   /        Date Created:  December 25, 2006
-// /___/   /\    Last Modified: December 25, 2006
-// \   \  /  \
-//  \___\/\___\
-//
-// Devices:   Spartan-3 Generation FPGA
-// Purpose:   Signal synchronizer, meant for async inputs
-// Contact:   crabill@xilinx.com
-// Reference: None
-//
-// Revision History:
-//   Rev 1.0.0 - (crabill) First created December 25, 2006.
-//
-//////////////////////////////////////////////////////////////////////////////
-//
-// LIMITED WARRANTY AND DISCLAIMER. These designs are provided to you "as is".
-// Xilinx and its licensors make and you receive no warranties or conditions,
-// express, implied, statutory or otherwise, and Xilinx specifically disclaims
-// any implied warranties of merchantability, non-infringement, or fitness for
-// a particular purpose. Xilinx does not warrant that the functions contained
-// in these designs will meet your requirements, or that the operation of
-// these designs will be uninterrupted or error free, or that defects in the
-// designs will be corrected. Furthermore, Xilinx does not warrant or make any
-// representations regarding use or the results of the use of the designs in
-// terms of correctness, accuracy, reliability, or otherwise.
-//
-// LIMITATION OF LIABILITY. In no event will Xilinx or its licensors be liable
-// for any loss of data, lost profits, cost or procurement of substitute goods
-// or services, or for any special, incidental, consequential, or indirect
-// damages arising from the use or operation of the designs or accompanying
-// documentation, however caused and on any theory of liability. This
-// limitation will apply even if Xilinx has been advised of the possibility
-// of such damage. This limitation shall apply not-withstanding the failure
-// of the essential purpose of any limited remedies herein.
-//
-//////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2006 Xilinx, Inc.
-// This design is confidential and proprietary of Xilinx, All Rights Reserved.
-//////////////////////////////////////////////////////////////////////////////
-
-`timescale 1 ns / 1 ps
-
-module synchro
-  #(
-  parameter          INITIALIZE = "LOGIC0"
-  )
-
-  (
-  input  wire        async,
-  input  wire        clk,
-  output wire        sync
-  );
-
-  //******************************************************************//
-  // Synchronizer.                                                    //
-  //******************************************************************//
-
-  wire        temp;
-
-  generate
-    if (INITIALIZE == "LOGIC1")
-    begin : use_fdp
-      (* ASYNC_REG = "TRUE" *) (* RLOC = "X0Y0"  *) FDP fda (.Q(temp),.D(async),.C(clk),.PRE(1'b0));
-      (* ASYNC_REG = "TRUE" *) (* RLOC = "X0Y0"  *) FDP fdb (.Q(sync),.D(temp),.C(clk),.PRE(1'b0));
-    end
-    else
-    begin : use_fdc
-      (* ASYNC_REG = "TRUE" *) (* RLOC = "X0Y0"  *) FDC fda (.Q(temp),.D(async),.C(clk),.CLR(1'b0));
-      (* ASYNC_REG = "TRUE" *) (* RLOC = "X0Y0"  *) FDC fdb (.Q(sync),.D(temp),.C(clk),.CLR(1'b0));
-    end
-  endgenerate
-
-  // synthesis attribute ASYNC_REG of fda is "TRUE";
-  // synthesis attribute ASYNC_REG of fdb is "TRUE";
-  // synthesis attribute HU_SET of fda is "SYNC";
-  // synthesis attribute HU_SET of fdb is "SYNC";
-  // synthesis attribute RLOC of fda is "X0Y0";
-  // synthesis attribute RLOC of fdb is "X0Y0";
-
-  //******************************************************************//
-  //                                                                  //
-  //******************************************************************//
-
-endmodule
-
-module sync_pulse (
-   input  wire    src_clk,   
-   input  wire    async_in,
-   input  wire    des_clk,
-   output wire    sync_out
-);
-
-
-   wire  async, toggle, temp, temp_sync ; 
-
-   assign async   =  toggle ^ async_in ; 
-
-   FDC fda (.Q(toggle),.D(async),.C(src_clk),.CLR(1'b0));
-    
-   synchro  synchro_inst (
-      .async   ( toggle ),
-      .clk     ( des_clk ),
-      .sync    ( temp )  
-   ) ; 
-
-   FDC fdb (.Q(temp_sync),.D(temp),.C(des_clk),.CLR(1'b0));
-
-   assign sync_out   =  temp_sync ^ temp ; 
-   
-
-endmodule    

@@ -20,6 +20,7 @@ class tetris_top ( config : TetrisCoreConfig ) extends Component {
     val ps2_clk = inout(Analog(Bool()))
     val ps2_data = inout(Analog(Bool()))
 
+
     val vga      = master(Vga(displayTopConfig.rgbConfig, withColorEn = true ))
   }
 
@@ -49,11 +50,9 @@ class tetris_top ( config : TetrisCoreConfig ) extends Component {
 
   tetris_core_inst.io.game_start := kd_ps2_inst.io.keys_valid(0)
   tetris_core_inst.io.move_down  := kd_ps2_inst.io.keys_valid(1)
-
-
-  tetris_core_inst.io.move_left  := False
-  tetris_core_inst.io.move_right := False
-  tetris_core_inst.io.rotate := False
+  tetris_core_inst.io.move_left  := kd_ps2_inst.io.keys_valid(2)
+  tetris_core_inst.io.move_right := kd_ps2_inst.io.keys_valid(3)
+  tetris_core_inst.io.rotate     := kd_ps2_inst.io.keys_valid(4)
 
 
 }

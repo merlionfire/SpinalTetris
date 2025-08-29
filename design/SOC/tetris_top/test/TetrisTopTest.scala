@@ -52,18 +52,79 @@ class TetrisTopTest extends AnyFunSuite {
   val threadMX = java.lang.management.ManagementFactory.getThreadMXBean
   println(s"Thread Count: ${threadMX.getThreadCount}")
 
+  val config = TetrisCoreConfig(offset_x = 32)
   lazy val compiled: SimCompiled[tetris_top] = runSimConfig(runFolder, compiler)
     .addRtl(s"${xilinxPath}/glbl.v")
     .addRtl(s"${xilinxPath}/unisims/${memory_model}")
-    //.addRtl(s"${verilogFile}")
     .withTimeScale(1 ns)
-    .withTimePrecision(10 ps)
-    .compile {
-      val c = new tetris_top(TetrisCoreConfig(offset_x = 32))
+    .withTimePrecision(100 ps)
+      .compile {
+      val c = new tetris_top(config)
       c.tetris_core_inst.game_display_inst.io.sof.simPublic()
+      c.tetris_core_inst.game_display_inst.vga.pixel_debug.simPublic()
       c
     }
 
+  var obs_vga = mutable.Queue[(Int, Int, Int)]()
+
+  def createScreenImg () = {
+    def vga4BitTo8Bit(color : ( Int, Int, Int) ): Int = {
+      // Scale the 4-bit value (0-15) to the 8-bit range (0-255)
+      // Multiplying by 17 (255 / 15 is approximately 17) often works well for this.
+      // (value & 0xF) * 17
+      // Alternatively, you can also try bit shifting and replication:
+      // (value & 0xF) | ((value & 0xF) << 4)
+      val r = color._1 | color._1 << 4
+      val g = color._2 | color._2 << 4
+      val color8bit = List( color._1, color._2,color._3 ).map(  x => x | ( x << 4 ))
+      color8bit(0) << 16 | color8bit(1) << 8 | color8bit(2)
+
+    }
+
+    val width = config.xWidth
+    val height = config.yWidth
+
+    // Define the output directory
+    val outputDirName = "screenShotsnap"
+    val outputDir = new File(s"${workFolder}/${outputDirName}")
+
+    // Create the directory if it doesn't exist
+    if (!outputDir.exists()) {
+      if (outputDir.mkdir()) {
+        println(s"Created directory: ${outputDir.getAbsolutePath}")
+      } else {
+        // Handle the case where directory creation fails (e.g., permissions)
+        println(s"[Error] Failed to create directory: ${outputDir.getAbsolutePath}. Images might not be saved.")
+      }
+    }
+
+    var idx = 0
+    while ( obs_vga.length >= ( 640 * 480 )   ) {
+      println(s"Start to generate screen image : ${idx}")
+      val img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+
+      for (y <- 0 until height) {
+        for (x <- 0 until width) {
+          val rgb = obs_vga.dequeue()
+          img.setRGB(x, y, vga4BitTo8Bit(rgb))
+        }
+      }
+
+      val g = img.createGraphics()
+      val image_file_name:String = s"screen_640x480_${idx}.png"
+      g.dispose()
+      val outputFile = new File(outputDir, image_file_name)
+      ImageIO.write(img, "png", outputFile)
+      println(s"Image saved to ${outputFile.getAbsolutePath}")
+      idx = idx + 1
+
+    }
+
+    if ( obs_vga.nonEmpty ) {
+      println(f"[Error] obs_mem is NOT empty and number of the remaining items : ${obs_vga.size}")
+    }
+
+  }
 
   //
   //  def init(dut: tetris_top): Unit = {
@@ -92,28 +153,58 @@ class TetrisTopTest extends AnyFunSuite {
       coreClocking.forkStimulus(50 MHz)
       vgaClocking.forkStimulus(25 MHz)
 
-      SimTimeout(100 ms) // adjust timeout as needed
+      SimTimeout(500 ms) // adjust timeout as needed
 
-      coreClocking.waitSampling(100)
+      coreClocking.waitSampling(50)
+
+      /*********************************************************
+       - It is for increasing id once a new block is created.
+       ********************************************************** */
+
+      FlowMonitor(dut.tetris_core_inst.game_display_inst.vga.pixel_debug, vgaClocking) { payload =>
+
+        obs_vga.enqueue((payload.r.toInt, payload.g.toInt, payload.b.toInt))
+      }
 
       val ps2HostIf = PS2Interface(clk = dut.io.ps2_clk, data = dut.io.ps2_data)
       // In your SpinalHDL testbench
-      val kdSlaveVip = new PS2KbTestEnvironment(ps2HostIf, dut.keyClockDomain)
 
+      val kdSlaveVip = new PS2KbTestEnvironment(ps2HostIf, dut.keyClockDomain)
 
       kdSlaveVip.run()
 
-      kdSlaveVip.sendKeys("ws")
+      vgaClocking.waitSampling(50)
+
+      kdSlaveVip.sendKeys("w")
 
 
       println("simTime : " + simTime() + "[Main] Wait for some time")
 
-      vgaClocking.waitSampling(10000)
-      vgaClocking.waitSamplingWhere(dut.tetris_core_inst.game_display_inst.io.sof.toBoolean)
-      println(f"[DEBUG] @${simTime()} The 2nd frame has been started and then stop sim now !")
-      vgaClocking.waitSampling(10000)
-      vgaClocking.waitSamplingWhere(dut.tetris_core_inst.game_display_inst.io.sof.toBoolean)
-      println(f"[DEBUG] @${simTime()} The 3rd frame has been started and then stop sim now !")
+
+      //List("s","a", "d", "d", "d", "a", "s", "a", " ", "a").zipWithIndex.foreach { case ( action, i ) =>
+      List("s","a", "d", " ", "d", "a", "a", " ").zipWithIndex.foreach { case ( action, i ) =>
+        //vgaClocking.waitSampling(6000)
+
+        vgaClocking.waitSamplingWhere(dut.tetris_core_inst.game_display_inst.io.sof.toBoolean)
+        println(f"[DEBUG] @${simTime()} The ${i+2} frame has been started and then stop sim now !")
+
+        println("simTime : " + simTime() + s"[Main] Send ${action} to DUT ...  ")
+        kdSlaveVip.sendKeys(action, 8000 )  // key is hold 10ms
+        println("simTime : " + simTime() + s"[Main] ${action} has been sent !!!  ")
+        sleep(7000 us)
+      }
+
+
+      println("[DEBUG] Simulation logic finished. Shutting down monitor threads...")
+      simulationRunning = false
+      vgaClocking.waitSampling(50) // Give threads time to exit.
+      println("[DEBUG] doSim is exited !!!")
+
+      //*************************************************************
+      //        GUI Entry Point
+      //*************************************************************
+      createScreenImg ()
+
       println("simTime : " + simTime())
       simSuccess()
 

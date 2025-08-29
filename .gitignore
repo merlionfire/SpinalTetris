@@ -164,7 +164,5 @@ metals.sbt
 
 # Mill
 out/
-/xilinx/
 /design/verilog/ps2/ISE/
 
-!/xilinx/ipcore_dir

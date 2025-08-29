@@ -7,6 +7,8 @@ import IPS.ps2._
 import spinal.lib.fsm.StateMachine
 import utils.PathUtils
 
+import scala.collection.mutable
+
 /**
  * A Scala object containing all known PS/2 keyboard scan codes.
  *
@@ -148,11 +150,12 @@ object PS2ScanCodes {
 
 case  class KdPs2Config( )  {
   import PS2ScanCodes._
-  val keyMap = Map[String, Int](
+  val keyMap = mutable.LinkedHashMap[String, Int](
     "up" -> KEY_W,
     "down" -> KEY_S,
     "left" -> KEY_A,
     "right" -> KEY_D,
+    "space" -> KEY_SPACE
   )
 
   def keysValidNum =  keyMap.size // exclude break
@@ -179,8 +182,10 @@ class kd_ps2 ( config : KdPs2Config ) extends Component  {
 
 
   //********* Connection ********************//
-  io.ps2_clk := ps2.clk
-  io.ps2_data := ps2.data
+//  io.ps2_clk := ps2.clk
+//  io.ps2_data := ps2.data
+  io.ps2_clk <> ps2.clk
+  io.ps2_data <> ps2.data
 
   io.rd_data.valid := ps2.rddata_valid
   io.rd_data.payload := ps2.rd_data

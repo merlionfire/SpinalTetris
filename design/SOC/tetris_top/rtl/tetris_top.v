@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : tetris_top
-// Git hash  : 7fe74b1e69c59b3f0452b0659edccf5639181324
+// Git hash  : 34c2cbd61ef396d58c7ef66ab436c2b551c222a0
 
 `timescale 1ns/1ps
 
@@ -19,23 +19,31 @@ module tetris_top (
   output wire [3:0]    vga_color_b
 );
 
+  wire                tetris_core_inst_game_start;
+  wire                tetris_core_inst_move_left;
+  wire                tetris_core_inst_move_right;
+  wire                tetris_core_inst_move_down;
+  wire                tetris_core_inst_rotate;
   wire                tetris_core_inst_vga_vSync;
   wire                tetris_core_inst_vga_hSync;
   wire                tetris_core_inst_vga_colorEn;
   wire       [3:0]    tetris_core_inst_vga_color_r;
   wire       [3:0]    tetris_core_inst_vga_color_g;
   wire       [3:0]    tetris_core_inst_vga_color_b;
+  wire                kd_ps2_inst_rd_data_valid;
+  wire       [7:0]    kd_ps2_inst_rd_data_payload;
+  wire       [4:0]    kd_ps2_inst_keys_valid;
 
   tetris_core tetris_core_inst (
     .core_clk    (core_clk                         ), //i
     .core_rst    (core_rst                         ), //i
     .vga_clk     (vga_clk                          ), //i
     .vga_rst     (vga_rst                          ), //i
-    .game_start  (1'b0                             ), //i
-    .move_left   (1'b0                             ), //i
-    .move_right  (1'b0                             ), //i
-    .move_down   (1'b0                             ), //i
-    .rotate      (1'b0                             ), //i
+    .game_start  (tetris_core_inst_game_start      ), //i
+    .move_left   (tetris_core_inst_move_left       ), //i
+    .move_right  (tetris_core_inst_move_right      ), //i
+    .move_down   (tetris_core_inst_move_down       ), //i
+    .rotate      (tetris_core_inst_rotate          ), //i
     .vga_vSync   (tetris_core_inst_vga_vSync       ), //o
     .vga_hSync   (tetris_core_inst_vga_hSync       ), //o
     .vga_colorEn (tetris_core_inst_vga_colorEn     ), //o
@@ -43,12 +51,228 @@ module tetris_top (
     .vga_color_g (tetris_core_inst_vga_color_g[3:0]), //o
     .vga_color_b (tetris_core_inst_vga_color_b[3:0])  //o
   );
+  kd_ps2 kd_ps2_inst (
+    .ps2_clk         (ps2_clk                         ), //~
+    .ps2_data        (ps2_data                        ), //~
+    .rd_data_valid   (kd_ps2_inst_rd_data_valid       ), //o
+    .rd_data_payload (kd_ps2_inst_rd_data_payload[7:0]), //o
+    .keys_valid      (kd_ps2_inst_keys_valid[4:0]     ), //o
+    .core_rst        (core_rst                        ), //i
+    .core_clk        (core_clk                        )  //i
+  );
   assign vga_vSync = tetris_core_inst_vga_vSync;
   assign vga_hSync = tetris_core_inst_vga_hSync;
   assign vga_colorEn = tetris_core_inst_vga_colorEn;
   assign vga_color_r = tetris_core_inst_vga_color_r;
   assign vga_color_g = tetris_core_inst_vga_color_g;
   assign vga_color_b = tetris_core_inst_vga_color_b;
+  assign tetris_core_inst_game_start = kd_ps2_inst_keys_valid[0];
+  assign tetris_core_inst_move_down = kd_ps2_inst_keys_valid[1];
+  assign tetris_core_inst_move_left = kd_ps2_inst_keys_valid[2];
+  assign tetris_core_inst_move_right = kd_ps2_inst_keys_valid[3];
+  assign tetris_core_inst_rotate = kd_ps2_inst_keys_valid[4];
+
+endmodule
+
+module kd_ps2 (
+  inout  wire          ps2_clk,
+  inout  wire          ps2_data,
+  output wire          rd_data_valid,
+  output wire [7:0]    rd_data_payload,
+  output reg  [4:0]    keys_valid,
+  input  wire          core_rst,
+  input  wire          core_clk
+);
+  localparam IDLE = 2'd0;
+  localparam WAIT_BREAK = 2'd1;
+  localparam WAIT_LAST = 2'd2;
+  localparam DEFAULT_1 = 2'd3;
+
+  wire                ps2_inst_ps2_tx_done;
+  wire                ps2_inst_ps2_tx_ready;
+  wire                ps2_inst_ps2_rddata_valid;
+  wire       [7:0]    ps2_inst_ps2_rd_data;
+  wire                ps2_inst_ps2_rx_ready;
+  wire                is_key_received;
+  wire                is_key_2nd_recevied;
+  wire                break_tick;
+  wire                rx_fsm_wantExit;
+  reg                 rx_fsm_wantStart;
+  wire                rx_fsm_wantKill;
+  wire                is_fsm_in_idle;
+  wire                is_fsm_exit_wait_last;
+  wire                up_tick;
+  reg                 up_valid;
+  wire                up_tick_2nd;
+  wire                down_tick;
+  reg                 down_valid;
+  wire                down_tick_2nd;
+  wire                left_tick;
+  reg                 left_valid;
+  wire                left_tick_2nd;
+  wire                right_tick;
+  reg                 right_valid;
+  wire                right_tick_2nd;
+  wire                space_tick;
+  reg                 space_valid;
+  wire                space_tick_2nd;
+  reg        [1:0]    rx_fsm_stateReg;
+  reg        [1:0]    rx_fsm_stateNext;
+  wire                rx_fsm_onExit_IDLE;
+  wire                rx_fsm_onExit_WAIT_BREAK;
+  wire                rx_fsm_onExit_WAIT_LAST;
+  wire                rx_fsm_onExit_DEFAULT_1;
+  wire                rx_fsm_onEntry_IDLE;
+  wire                rx_fsm_onEntry_WAIT_BREAK;
+  wire                rx_fsm_onEntry_WAIT_LAST;
+  wire                rx_fsm_onEntry_DEFAULT_1;
+  `ifndef SYNTHESIS
+  reg [79:0] rx_fsm_stateReg_string;
+  reg [79:0] rx_fsm_stateNext_string;
+  `endif
+
+
+  ps2_host_rxtx ps2_inst (
+    .clk              (core_clk                 ), //i
+    .rst              (core_rst                 ), //i
+    .ps2_clk          (ps2_clk                  ), //~
+    .ps2_data         (ps2_data                 ), //~
+    .ps2_wr_stb       (1'b0                     ), //i
+    .ps2_wr_data      (8'h0                     ), //i
+    .ps2_tx_done      (ps2_inst_ps2_tx_done     ), //o
+    .ps2_tx_ready     (ps2_inst_ps2_tx_ready    ), //o
+    .ps2_rddata_valid (ps2_inst_ps2_rddata_valid), //o
+    .ps2_rd_data      (ps2_inst_ps2_rd_data[7:0]), //o
+    .ps2_rx_ready     (ps2_inst_ps2_rx_ready    )  //o
+  );
+  `ifndef SYNTHESIS
+  always @(*) begin
+    case(rx_fsm_stateReg)
+      IDLE : rx_fsm_stateReg_string = "IDLE      ";
+      WAIT_BREAK : rx_fsm_stateReg_string = "WAIT_BREAK";
+      WAIT_LAST : rx_fsm_stateReg_string = "WAIT_LAST ";
+      DEFAULT_1 : rx_fsm_stateReg_string = "DEFAULT_1 ";
+      default : rx_fsm_stateReg_string = "??????????";
+    endcase
+  end
+  always @(*) begin
+    case(rx_fsm_stateNext)
+      IDLE : rx_fsm_stateNext_string = "IDLE      ";
+      WAIT_BREAK : rx_fsm_stateNext_string = "WAIT_BREAK";
+      WAIT_LAST : rx_fsm_stateNext_string = "WAIT_LAST ";
+      DEFAULT_1 : rx_fsm_stateNext_string = "DEFAULT_1 ";
+      default : rx_fsm_stateNext_string = "??????????";
+    endcase
+  end
+  `endif
+
+  assign rd_data_valid = ps2_inst_ps2_rddata_valid;
+  assign rd_data_payload = ps2_inst_ps2_rd_data;
+  assign break_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'hf0));
+  assign rx_fsm_wantExit = 1'b0;
+  always @(*) begin
+    rx_fsm_wantStart = 1'b0;
+    rx_fsm_stateNext = rx_fsm_stateReg;
+    case(rx_fsm_stateReg)
+      WAIT_BREAK : begin
+        if(break_tick) begin
+          rx_fsm_stateNext = WAIT_LAST;
+        end
+      end
+      WAIT_LAST : begin
+        if(is_key_2nd_recevied) begin
+          rx_fsm_stateNext = IDLE;
+        end
+      end
+      DEFAULT_1 : begin
+        rx_fsm_stateNext = IDLE;
+      end
+      default : begin
+        if(is_key_received) begin
+          rx_fsm_stateNext = WAIT_BREAK;
+        end
+        rx_fsm_wantStart = 1'b1;
+      end
+    endcase
+    if(rx_fsm_wantKill) begin
+      rx_fsm_stateNext = IDLE;
+    end
+  end
+
+  assign rx_fsm_wantKill = 1'b0;
+  assign up_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1d));
+  assign up_tick_2nd = (up_tick && up_valid);
+  always @(*) begin
+    keys_valid[0] = up_valid;
+    keys_valid[1] = down_valid;
+    keys_valid[2] = left_valid;
+    keys_valid[3] = right_valid;
+    keys_valid[4] = space_valid;
+  end
+
+  assign down_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1b));
+  assign down_tick_2nd = (down_tick && down_valid);
+  assign left_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1c));
+  assign left_tick_2nd = (left_tick && left_valid);
+  assign right_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h23));
+  assign right_tick_2nd = (right_tick && right_valid);
+  assign space_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h29));
+  assign space_tick_2nd = (space_tick && space_valid);
+  assign is_key_received = (|{space_tick,{right_tick,{left_tick,{down_tick,up_tick}}}});
+  assign is_key_2nd_recevied = (|{space_tick_2nd,{right_tick_2nd,{left_tick_2nd,{down_tick_2nd,up_tick_2nd}}}});
+  assign rx_fsm_onExit_IDLE = ((rx_fsm_stateNext != IDLE) && (rx_fsm_stateReg == IDLE));
+  assign rx_fsm_onExit_WAIT_BREAK = ((rx_fsm_stateNext != WAIT_BREAK) && (rx_fsm_stateReg == WAIT_BREAK));
+  assign rx_fsm_onExit_WAIT_LAST = ((rx_fsm_stateNext != WAIT_LAST) && (rx_fsm_stateReg == WAIT_LAST));
+  assign rx_fsm_onExit_DEFAULT_1 = ((rx_fsm_stateNext != DEFAULT_1) && (rx_fsm_stateReg == DEFAULT_1));
+  assign rx_fsm_onEntry_IDLE = ((rx_fsm_stateNext == IDLE) && (rx_fsm_stateReg != IDLE));
+  assign rx_fsm_onEntry_WAIT_BREAK = ((rx_fsm_stateNext == WAIT_BREAK) && (rx_fsm_stateReg != WAIT_BREAK));
+  assign rx_fsm_onEntry_WAIT_LAST = ((rx_fsm_stateNext == WAIT_LAST) && (rx_fsm_stateReg != WAIT_LAST));
+  assign rx_fsm_onEntry_DEFAULT_1 = ((rx_fsm_stateNext == DEFAULT_1) && (rx_fsm_stateReg != DEFAULT_1));
+  assign is_fsm_in_idle = (rx_fsm_stateReg == IDLE);
+  assign is_fsm_exit_wait_last = ((rx_fsm_stateNext != WAIT_LAST) && (rx_fsm_stateReg == WAIT_LAST));
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      up_valid <= 1'b0;
+      down_valid <= 1'b0;
+      left_valid <= 1'b0;
+      right_valid <= 1'b0;
+      space_valid <= 1'b0;
+      rx_fsm_stateReg <= IDLE;
+    end else begin
+      if(is_fsm_in_idle) begin
+        up_valid <= up_tick;
+      end
+      if(is_fsm_exit_wait_last) begin
+        up_valid <= 1'b0;
+      end
+      if(is_fsm_in_idle) begin
+        down_valid <= down_tick;
+      end
+      if(is_fsm_exit_wait_last) begin
+        down_valid <= 1'b0;
+      end
+      if(is_fsm_in_idle) begin
+        left_valid <= left_tick;
+      end
+      if(is_fsm_exit_wait_last) begin
+        left_valid <= 1'b0;
+      end
+      if(is_fsm_in_idle) begin
+        right_valid <= right_tick;
+      end
+      if(is_fsm_exit_wait_last) begin
+        right_valid <= 1'b0;
+      end
+      if(is_fsm_in_idle) begin
+        space_valid <= space_tick;
+      end
+      if(is_fsm_exit_wait_last) begin
+        space_valid <= 1'b0;
+      end
+      rx_fsm_stateReg <= rx_fsm_stateNext;
+    end
+  end
+
 
 endmodule
 
@@ -657,9 +881,9 @@ module logic_top (
   wire       [9:0]    play_field_1_row_val_payload;
   wire                play_field_1_lines_cleared_valid;
   wire       [4:0]    play_field_1_lines_cleared_payload;
-  wire       [9:0]    temp_main_fsm_drop_timeout_counter_valueNext;
+  wire       [24:0]   temp_main_fsm_drop_timeout_counter_valueNext;
   wire       [0:0]    temp_main_fsm_drop_timeout_counter_valueNext_1;
-  wire       [3:0]    temp_main_fsm_lock_timeout_counter_valueNext;
+  wire       [24:0]   temp_main_fsm_lock_timeout_counter_valueNext;
   wire       [0:0]    temp_main_fsm_lock_timeout_counter_valueNext_1;
   wire       [7:0]    temp_score_total_score;
   wire                temp_when;
@@ -712,16 +936,16 @@ module logic_top (
   reg                 main_fsm_drop_timeout_stateRise;
   wire                main_fsm_drop_timeout_counter_willIncrement;
   reg                 main_fsm_drop_timeout_counter_willClear;
-  reg        [9:0]    main_fsm_drop_timeout_counter_valueNext;
-  reg        [9:0]    main_fsm_drop_timeout_counter_value;
+  reg        [24:0]   main_fsm_drop_timeout_counter_valueNext;
+  reg        [24:0]   main_fsm_drop_timeout_counter_value;
   wire                main_fsm_drop_timeout_counter_willOverflowIfInc;
   wire                main_fsm_drop_timeout_counter_willOverflow;
   reg                 main_fsm_lock_timeout_state;
   reg                 main_fsm_lock_timeout_stateRise;
   wire                main_fsm_lock_timeout_counter_willIncrement;
   reg                 main_fsm_lock_timeout_counter_willClear;
-  reg        [3:0]    main_fsm_lock_timeout_counter_valueNext;
-  reg        [3:0]    main_fsm_lock_timeout_counter_value;
+  reg        [24:0]   main_fsm_lock_timeout_counter_valueNext;
+  reg        [24:0]   main_fsm_lock_timeout_counter_value;
   wire                main_fsm_lock_timeout_counter_willOverflowIfInc;
   wire                main_fsm_lock_timeout_counter_willOverflow;
   wire       [3:0]    main_fsm_debug;
@@ -784,9 +1008,9 @@ module logic_top (
   assign temp_when_2 = (ctrl_en && rotate);
   assign temp_when_3 = ((ctrl_en && move_down) || drop_down);
   assign temp_main_fsm_drop_timeout_counter_valueNext_1 = main_fsm_drop_timeout_counter_willIncrement;
-  assign temp_main_fsm_drop_timeout_counter_valueNext = {9'd0, temp_main_fsm_drop_timeout_counter_valueNext_1};
+  assign temp_main_fsm_drop_timeout_counter_valueNext = {24'd0, temp_main_fsm_drop_timeout_counter_valueNext_1};
   assign temp_main_fsm_lock_timeout_counter_valueNext_1 = main_fsm_lock_timeout_counter_willIncrement;
-  assign temp_main_fsm_lock_timeout_counter_valueNext = {3'd0, temp_main_fsm_lock_timeout_counter_valueNext_1};
+  assign temp_main_fsm_lock_timeout_counter_valueNext = {24'd0, temp_main_fsm_lock_timeout_counter_valueNext_1};
   assign temp_score_total_score = {5'd0, score_score_with_bonus};
   seven_bag_rng piece_gen (
     .io_enable        (gen_piece_en                   ), //i
@@ -1103,16 +1327,16 @@ module logic_top (
     end
   end
 
-  assign main_fsm_drop_timeout_counter_willOverflowIfInc = (main_fsm_drop_timeout_counter_value == 10'h3e7);
+  assign main_fsm_drop_timeout_counter_willOverflowIfInc = (main_fsm_drop_timeout_counter_value == 25'h168decf);
   assign main_fsm_drop_timeout_counter_willOverflow = (main_fsm_drop_timeout_counter_willOverflowIfInc && main_fsm_drop_timeout_counter_willIncrement);
   always @(*) begin
     if(main_fsm_drop_timeout_counter_willOverflow) begin
-      main_fsm_drop_timeout_counter_valueNext = 10'h0;
+      main_fsm_drop_timeout_counter_valueNext = 25'h0;
     end else begin
       main_fsm_drop_timeout_counter_valueNext = (main_fsm_drop_timeout_counter_value + temp_main_fsm_drop_timeout_counter_valueNext);
     end
     if(main_fsm_drop_timeout_counter_willClear) begin
-      main_fsm_drop_timeout_counter_valueNext = 10'h0;
+      main_fsm_drop_timeout_counter_valueNext = 25'h0;
     end
   end
 
@@ -1129,16 +1353,16 @@ module logic_top (
     end
   end
 
-  assign main_fsm_lock_timeout_counter_willOverflowIfInc = (main_fsm_lock_timeout_counter_value == 4'b1001);
+  assign main_fsm_lock_timeout_counter_willOverflowIfInc = (main_fsm_lock_timeout_counter_value == 25'h17d783f);
   assign main_fsm_lock_timeout_counter_willOverflow = (main_fsm_lock_timeout_counter_willOverflowIfInc && main_fsm_lock_timeout_counter_willIncrement);
   always @(*) begin
     if(main_fsm_lock_timeout_counter_willOverflow) begin
-      main_fsm_lock_timeout_counter_valueNext = 4'b0000;
+      main_fsm_lock_timeout_counter_valueNext = 25'h0;
     end else begin
       main_fsm_lock_timeout_counter_valueNext = (main_fsm_lock_timeout_counter_value + temp_main_fsm_lock_timeout_counter_valueNext);
     end
     if(main_fsm_lock_timeout_counter_willClear) begin
-      main_fsm_lock_timeout_counter_valueNext = 4'b0000;
+      main_fsm_lock_timeout_counter_valueNext = 25'h0;
     end
   end
 
@@ -1226,9 +1450,9 @@ module logic_top (
       playfield_fsm_reset <= 1'b0;
       debug_move_type <= 3'b000;
       main_fsm_drop_timeout_state <= 1'b0;
-      main_fsm_drop_timeout_counter_value <= 10'h0;
+      main_fsm_drop_timeout_counter_value <= 25'h0;
       main_fsm_lock_timeout_state <= 1'b0;
-      main_fsm_lock_timeout_counter_value <= 4'b0000;
+      main_fsm_lock_timeout_counter_value <= 25'h0;
       score_total_score <= 8'h0;
       playfield_fsm_stateReg <= STANDBY;
       main_fsm_stateReg <= IDLE;
@@ -2093,7 +2317,7 @@ module string_draw_engine (
       end
       WAIT_GAME_START : begin
         if(logoHasRm) begin
-          x <= 9'h0da;
+          x <= 9'h0d2;
           y <= 8'h17;
           scale <= 3'b000;
           color <= 4'b0110;
@@ -5410,6 +5634,94 @@ module piece_checker (
         piece_in_rValid <= piece_in_valid;
       end
       case(piece_payload_type)
+        O : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+          endcase
+        end
+        Z : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b10;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b10;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b00;
+              blks_offset_3_y <= 2'b01;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b00;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b00;
+            end
+          endcase
+        end
         T : begin
           case(piece_payload_rot)
             2'b00 : begin
@@ -5454,46 +5766,46 @@ module piece_checker (
             end
           endcase
         end
-        Z : begin
+        S : begin
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b00;
+              blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b00;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
+              blks_offset_3_y <= 2'b00;
             end
             2'b01 : begin
-              blks_offset_0_x <= 2'b10;
+              blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b00;
               blks_offset_1_x <= 2'b10;
               blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
+              blks_offset_3_x <= 2'b10;
               blks_offset_3_y <= 2'b10;
             end
             2'b10 : begin
               blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b10;
+              blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b10;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b01;
+              blks_offset_3_y <= 2'b10;
             end
             default : begin
-              blks_offset_0_x <= 2'b00;
+              blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b10;
               blks_offset_1_x <= 2'b00;
               blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
+              blks_offset_3_x <= 2'b00;
               blks_offset_3_y <= 2'b00;
             end
           endcase
@@ -5542,133 +5854,45 @@ module piece_checker (
             end
           endcase
         end
-        O : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-          endcase
-        end
-        S : begin
+        L : begin
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
               blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b00;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b10;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b10;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b10;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b00;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b00;
-            end
-          endcase
-        end
-        J : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b00;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
               blks_offset_3_x <= 2'b10;
               blks_offset_3_y <= 2'b01;
             end
             2'b01 : begin
-              blks_offset_0_x <= 2'b10;
+              blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b00;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b10;
               blks_offset_3_x <= 2'b01;
               blks_offset_3_y <= 2'b10;
             end
             2'b10 : begin
               blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b10;
+              blks_offset_0_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
+              blks_offset_2_x <= 2'b00;
+              blks_offset_2_y <= 2'b10;
               blks_offset_3_x <= 2'b00;
               blks_offset_3_y <= 2'b01;
             end
             default : begin
-              blks_offset_0_x <= 2'b00;
+              blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b10;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b00;
+              blks_offset_2_y <= 2'b00;
               blks_offset_3_x <= 2'b01;
               blks_offset_3_y <= 2'b00;
             end
@@ -5678,41 +5902,41 @@ module piece_checker (
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b00;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b10;
               blks_offset_3_y <= 2'b01;
             end
             2'b01 : begin
-              blks_offset_0_x <= 2'b01;
+              blks_offset_0_x <= 2'b10;
               blks_offset_0_y <= 2'b00;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b10;
+              blks_offset_1_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b01;
               blks_offset_3_y <= 2'b10;
             end
             2'b10 : begin
               blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b10;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b00;
-              blks_offset_2_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b00;
               blks_offset_3_y <= 2'b01;
             end
             default : begin
-              blks_offset_0_x <= 2'b01;
+              blks_offset_0_x <= 2'b00;
               blks_offset_0_y <= 2'b10;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b00;
-              blks_offset_2_y <= 2'b00;
+              blks_offset_1_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b01;
               blks_offset_3_y <= 2'b00;
             end

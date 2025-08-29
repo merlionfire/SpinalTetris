@@ -27,7 +27,7 @@ case class StringDrawEngConfig (
   val stringList = mutable.LinkedHashMap(
     // Content -> x,_orig, y_orig, width(include margin) , scale, color
     "Tetris"  -> charInfo(28,  66, 46, 2,  6 ),
-    "Score"   -> charInfo(218, 23, 12, 0,  6 )
+    "Score"   -> charInfo(210, 23, 12, 0,  6 )
   )
 
   val wallInfoLsit = List(
@@ -35,7 +35,7 @@ case class StringDrawEngConfig (
     List(x_orig, y_orig, wall_width, wall_height, 0, 15, 3),   /* Left Wall */
     List(getRightWallOrig._1, getRightWallOrig._2, wall_width, wall_height, 0, 15, 3), /*Right Wall */
     List(getBaseOrig._1, getBaseOrig._2, base_width, base_height, 0, 15, 3), /* Base */
-    List(218, 10, 2, 222, 15, 14 , 0 )  /* Split */
+    List(190, 10, 2, 222, 15, 14 , 0 )  /* Split */
   )
 
   def wallRomInit( bitLengths : List[Int] ) = wallInfoLsit.map { row =>  /* First word is stored at the least position */

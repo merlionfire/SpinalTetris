@@ -1,0 +1,3 @@
+verilog work "dcm.v"
+verilog work "../design/SOC/pcb/rtl/pcb_bb.v"
+verilog work "../design/SOC/pcb/rtl/pcb.v"
