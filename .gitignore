@@ -166,3 +166,6 @@ metals.sbt
 out/
 /design/verilog/ps2/ISE/
 
+# SVN
+**/.svn/
+
