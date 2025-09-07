@@ -28,8 +28,8 @@ class TetrisCoreTest extends AnyFunSuite {
   // ***************************************
   //  CUSTOM CODE END
   // ***************************************
-  //val compiler : String = "verilator"
-  val compiler : String = "vcs"
+  val compiler : String = "verilator"
+  //val compiler : String = "vcs"
   val runFolder : String = PathUtils.getRtlOutputPath(getClass, middlePath = "design/SSC", targetName = "sim").toString
 
   val workFolder = runFolder+"/"+compiler
@@ -581,9 +581,9 @@ class TetrisCoreTest extends AnyFunSuite {
       // ==============================================
 
       val moveSequences: Seq[Seq[(String, Int)]] = Seq(
-
-        Seq(("left", 4), ("down", 2)),  /* T */
-        Seq(("down", 2), ("left", 1))   /* L */
+        Seq(("left", 1),  ("rotate", 3))  /* T */
+        //Seq(("left", 2), ("down", 1), ("rotate", 5))  /* T */
+        //Seq(("down", 2), ("left", 1))   /* L */
 
         /*
         Seq(("down", 1), ("right", 2), ("right", 1)),  /* o */

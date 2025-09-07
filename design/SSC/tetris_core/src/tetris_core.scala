@@ -41,6 +41,7 @@ class tetris_core ( config : TetrisCoreConfig ) extends Component {
     val move_right = in Bool()
     val move_down = in Bool()
     val rotate = in Bool()
+    val ctrl_allowed = out Bool()
     val vga      = master(Vga(displayTopConfig.rgbConfig, withColorEn = true ))
 
   }
@@ -73,8 +74,9 @@ class tetris_core ( config : TetrisCoreConfig ) extends Component {
   //***********************************************************
   io -> game_display_inst.io connectByName List("vga_clk", "vga_rst", "core_clk", "core_rst", "game_start")
   io -> game_logic_inst.io connectByName List ( "game_start", "move_left", "move_right", "move_down", "rotate")
-
+  io.ctrl_allowed := game_logic_inst.io.ctrl_allowed
   io.vga := game_display_inst.io.vga
+
 
   game_display_inst.io.row_val <> game_logic_inst.io.row_val
   game_logic_inst.io.force_refresh := game_display_inst.io.sof

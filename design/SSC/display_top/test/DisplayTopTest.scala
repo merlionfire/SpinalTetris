@@ -30,12 +30,12 @@ class DisplayTopTest extends AnyFunSuite {
   //  CUSTOM CODE BEGIN
   // ***************************************
 
-  val debugMode : Boolean =  true // false   // True : drive each draw engines signals instead of FSM ( default )
+  val debugMode : Boolean =  false   // True : drive each draw engines signals instead of FSM ( default )
   // ***************************************
   //  CUSTOM CODE END
   // ***************************************
-  //val compiler : String = "verilator"
-  val compiler : String = "vcs"
+  val compiler : String = "verilator"
+  //val compiler : String = "vcs"
   val runFolder : String = PathUtils.getRtlOutputPath(getClass, middlePath = "design/SSC", targetName = "sim").toString
 
   val memory_model : String  = compiler match  {
@@ -60,14 +60,14 @@ class DisplayTopTest extends AnyFunSuite {
   lazy val compiled: SimCompiled[display_top] = runSimConfig(runFolder, compiler)
     .addRtl(s"${xilinxPath}/glbl.v")
     .addRtl(s"${xilinxPath}/unisims/${memory_model}")
-    .addRtl("design/utils/ascii_font16x8.v")
+    //.addRtl("design/utils/ascii_font16x8.v")
     .withTimeScale( 1 ns)
     .withTimePrecision(10 ps)
     .compile {
       val c = new display_top( config,debugMode)
       c.vga.pixel_debug.simPublic()
       c.vga.vga_sync.io.sof.simPublic()
-      c.core.draw_fsm_inst.fsm_debug.simPublic()
+      c.core.draw_controller.setup_fsm.fsm_debug.simPublic()
       c
     }
 
@@ -178,41 +178,41 @@ class DisplayTopTest extends AnyFunSuite {
   }
   def config_char( dut:display_top,  x : Int, y : Int ,  value : Int, color : Int = 6, scale : Int = 1  ) {
     dut.coreClockDomain.waitSampling(2)
-    dut.io.draw_x_orig #= x
-    dut.io.draw_y_orig #= y
-    dut.io.draw_char_word #= value
-    dut.io.draw_char_scale #= scale-1
-    dut.io.draw_char_color #= color
+    dut.io.debug.draw_x_orig #= x
+    dut.io.debug.draw_y_orig #= y
+    dut.io.debug.draw_char_word #= value
+    dut.io.debug.draw_char_scale #= scale-1
+    dut.io.debug.draw_char_color #= color
     dut.coreClockDomain.waitSampling()
-    dut.io.draw_char_start #= true
+    dut.io.debug.draw_char_start #= true
     dut.coreClockDomain.waitSampling()
-    dut.io.draw_char_start #= false
+    dut.io.debug.draw_char_start #= false
 
     dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
-    dut.io.draw_x_orig #= 0
-    dut.io.draw_y_orig #= 0
+    dut.io.debug.draw_x_orig #= 0
+    dut.io.debug.draw_y_orig #= 0
     dut.coreClockDomain.waitSampling()
   }
 
   def config_block( dut : display_top, x : Int, y : Int ,  width : Int , height : Int, color : Int, pat_color : Int, fill_pattern : Int = 0  ) {
     dut.coreClockDomain.waitSampling(2)
-    dut.io.draw_x_orig #= x
-    dut.io.draw_y_orig #= y
-    dut.io.draw_block_width #= width-1
-    dut.io.draw_block_height #= height-1
-    dut.io.draw_block_color #= color
-    dut.io.draw_block_pat_color #= pat_color
-    dut.io.draw_block_fill_pattern #= fill_pattern
+    dut.io.debug.draw_x_orig #= x
+    dut.io.debug.draw_y_orig #= y
+    dut.io.debug.draw_block_width #= width-1
+    dut.io.debug.draw_block_height #= height-1
+    dut.io.debug.draw_block_in_color #= color
+    dut.io.debug.draw_block_pat_color #= pat_color
+    dut.io.debug.draw_block_fill_pattern #= fill_pattern
 
     dut.coreClockDomain.waitSampling()
-    dut.io.draw_block_start #= true
+    dut.io.debug.draw_block_start #= true
     dut.coreClockDomain.waitSampling()
-    dut.io.draw_block_start #= false
+    dut.io.debug.draw_block_start #= false
     dut.coreClockDomain.waitSampling(2)
 
     dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
-    dut.io.draw_x_orig #= 0
-    dut.io.draw_y_orig #= 0
+    dut.io.debug.draw_x_orig #= 0
+    dut.io.debug.draw_y_orig #= 0
     dut.coreClockDomain.waitSampling()
 
   }
@@ -220,11 +220,11 @@ class DisplayTopTest extends AnyFunSuite {
   def init(dut:display_top): Unit = {
     dut.io.softRest #= true
     if (debugMode) {
-      dut.io.draw_char_start #= false
-      dut.io.draw_block_start #= false
+      dut.io.debug.draw_char_start #= false
+      dut.io.debug.draw_block_start #= false
       dut.io.row_val.valid #= false
-      dut.io.draw_x_orig #= 0
-      dut.io.draw_y_orig #= 0
+      dut.io.debug.draw_x_orig #= 0
+      dut.io.debug.draw_y_orig #= 0
    } else {
       dut.io.game_start #= false
 
@@ -371,14 +371,14 @@ class DisplayTopTest extends AnyFunSuite {
 
       // true : use piece_draw_engine to draw playfield
       // false : draw block by block via draw_block_engin
-      val drawAllFieldByEngine =  true //
+      val drawAllFieldByEngine =  false //
 
       dut.coreClockDomain.forkStimulus(4 ns)
       dut.vgaClockDomain.forkStimulus(10 ns)
 
       init(dut)
 
-      SimTimeout(5 ms) // adjust timeout as needed
+      SimTimeout(50 ms) // adjust timeout as needed
 
       //SimTimeout(10 ms)
 
@@ -460,7 +460,7 @@ class DisplayTopTest extends AnyFunSuite {
         }
       }
 
-      val split_x = 222
+      val split_x = 200
       val split_y = 10
 
 
@@ -536,13 +536,13 @@ class DisplayTopTest extends AnyFunSuite {
       println("@" + simTime() + " Draw Openning Screen" )
       dut.coreClockDomain.waitSampling()
 
-      dut.coreClockDomain.waitSamplingWhere(dut.core.draw_fsm_inst.fsm_debug.toInt == 3   )
+      dut.coreClockDomain.waitSamplingWhere(dut.core.draw_controller.setup_fsm.fsm_debug.toInt == 3   )
 
       dut.coreClockDomain.waitSampling(10)
       dut.io.game_start #= true
       dut.coreClockDomain.waitSampling(10)
       dut.io.game_start #= false
-      dut.coreClockDomain.waitSamplingWhere(dut.core.draw_fsm_inst.fsm_debug.toInt == 10   )
+      dut.coreClockDomain.waitSamplingWhere(dut.core.draw_controller.setup_fsm.fsm_debug.toInt == 10   )
 
       // Testing Piece draw
 

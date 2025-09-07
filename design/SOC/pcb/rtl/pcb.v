@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : pcb
-// Git hash  : 34c2cbd61ef396d58c7ef66ab436c2b551c222a0
+// Git hash  : 552d77ebcaed901cbb938e37399a3b955382786d
 
 `timescale 1ns/1ps
 
@@ -9,9 +9,13 @@ module pcb (
   input  wire          BTN_SOUTH,
   input  wire          BTN_WEST,
   input  wire          BTN_NORTH,
+  input  wire          BTN_EAST,
+  input  wire [3:0]    SW,
+  input  wire          ROT_A,
+  input  wire          ROT_B,
+  input  wire          ROT_CENTER,
   inout  wire          PS2_CLK,
   inout  wire          PS2_DATA,
-  input  wire [3:0]    SW,
   output wire [3:0]    VGA_B,
   output wire [3:0]    VGA_G,
   output wire [3:0]    VGA_R,
@@ -19,22 +23,45 @@ module pcb (
   output wire          VGA_VSYNC
 );
 
-  wire       [3:0]    btn_clean_pin_in;
   wire                dcm_inst_CLKDV_OUT;
   wire                dcm_inst_CLKIN_IBUFG_OUT;
   wire                dcm_inst_CLK0_OUT;
   wire                dcm_inst_LOCKED_OUT;
-  wire       [3:0]    btn_clean_pin_out;
+  wire                dcm_inst_CLK2X_OUT;
+  wire                CLK0_OUT_BUFG_O;
+  wire       [3:0]    picouser_inst_btn_out;
+  wire       [3:0]    picouser_inst_sws_out;
+  wire       [3:0]    picouser_inst_rot_out;
+  wire                tetris_top_inst_btns_rot_clr;
   wire                tetris_top_inst_vga_vSync;
   wire                tetris_top_inst_vga_hSync;
   wire                tetris_top_inst_vga_colorEn;
   wire       [3:0]    tetris_top_inst_vga_color_r;
   wire       [3:0]    tetris_top_inst_vga_color_g;
   wire       [3:0]    tetris_top_inst_vga_color_b;
-  wire                btn_south_clean;
-  wire                btn_west_clean;
-  wire                btn_north_clean;
-  wire                sw_0_clean;
+  (* keep *) wire                core_fast_clk;
+  (* keep *) wire                dcm_clocked;
+  wire       [3:0]    btn_out;
+  wire       [3:0]    sws_out;
+  wire       [3:0]    rot_out;
+  wire                rot_clr;
+  wire                btn_north_1;
+  wire                btn_east_1;
+  wire                btn_south_1;
+  wire                btn_west_1;
+  wire                rot_push;
+  wire                rot_pop;
+  wire                rot_left;
+  wire                rot_right;
+  wire                btns_btn_north;
+  wire                btns_btn_east;
+  wire                btns_btn_south;
+  wire                btns_btn_west;
+  wire                btns_rot_push;
+  wire                btns_rot_pop;
+  wire                btns_rot_left;
+  wire                btns_rot_right;
+  wire                btns_rot_clr;
 
   dcm dcm_inst (
     .CLKIN_IN        (CLK_50M                 ), //i
@@ -42,34 +69,74 @@ module pcb (
     .CLKDV_OUT       (dcm_inst_CLKDV_OUT      ), //o
     .CLKIN_IBUFG_OUT (dcm_inst_CLKIN_IBUFG_OUT), //o
     .CLK0_OUT        (dcm_inst_CLK0_OUT       ), //o
-    .LOCKED_OUT      (dcm_inst_LOCKED_OUT     )  //o
+    .LOCKED_OUT      (dcm_inst_LOCKED_OUT     ), //o
+    .CLK2X_OUT       (dcm_inst_CLK2X_OUT      )  //o
   );
-  btn_filter #(
-    .PIN_NUM (4)
-  ) btn_clean (
-    .clk     (dcm_inst_CLK0_OUT     ), //i
-    .pin_in  (btn_clean_pin_in[3:0] ), //i
-    .pin_out (btn_clean_pin_out[3:0])  //o
+  BUFG CLK0_OUT_BUFG (
+    .I (dcm_inst_CLK0_OUT), //i
+    .O (CLK0_OUT_BUFG_O  )  //o
+  );
+  picouser picouser_inst (
+    .BTN_EAST   (BTN_EAST                  ), //i
+    .BTN_NORTH  (BTN_NORTH                 ), //i
+    .BTN_SOUTH  (BTN_SOUTH                 ), //i
+    .BTN_WEST   (BTN_WEST                  ), //i
+    .SW         (SW[3:0]                   ), //i
+    .ROT_A      (ROT_A                     ), //i
+    .ROT_B      (ROT_B                     ), //i
+    .ROT_CENTER (ROT_CENTER                ), //i
+    .rot_clr    (rot_clr                   ), //i
+    .clk        (CLK0_OUT_BUFG_O           ), //i
+    .btn_out    (picouser_inst_btn_out[3:0]), //o
+    .sws_out    (picouser_inst_sws_out[3:0]), //o
+    .rot_out    (picouser_inst_rot_out[3:0])  //o
   );
   (* keep_hierarchy = "yes" *) tetris_top tetris_top_inst (
-    .core_clk    (dcm_inst_CLK0_OUT               ), //i
-    .core_rst    (btn_north_clean                 ), //i
-    .vga_clk     (dcm_inst_CLKDV_OUT              ), //i
-    .vga_rst     (btn_north_clean                 ), //i
-    .ps2_clk     (PS2_CLK                         ), //~
-    .ps2_data    (PS2_DATA                        ), //~
-    .vga_vSync   (tetris_top_inst_vga_vSync       ), //o
-    .vga_hSync   (tetris_top_inst_vga_hSync       ), //o
-    .vga_colorEn (tetris_top_inst_vga_colorEn     ), //o
-    .vga_color_r (tetris_top_inst_vga_color_r[3:0]), //o
-    .vga_color_g (tetris_top_inst_vga_color_g[3:0]), //o
-    .vga_color_b (tetris_top_inst_vga_color_b[3:0])  //o
+    .core_clk       (CLK0_OUT_BUFG_O                 ), //i
+    .core_rst       (btn_north_1                     ), //i
+    .vga_clk        (dcm_inst_CLKDV_OUT              ), //i
+    .vga_rst        (btn_north_1                     ), //i
+    .btns_btn_north (btns_btn_north                  ), //i
+    .btns_btn_east  (btns_btn_east                   ), //i
+    .btns_btn_south (btns_btn_south                  ), //i
+    .btns_btn_west  (btns_btn_west                   ), //i
+    .btns_rot_push  (btns_rot_push                   ), //i
+    .btns_rot_pop   (btns_rot_pop                    ), //i
+    .btns_rot_left  (btns_rot_left                   ), //i
+    .btns_rot_right (btns_rot_right                  ), //i
+    .btns_rot_clr   (tetris_top_inst_btns_rot_clr    ), //o
+    .ps2_clk        (PS2_CLK                         ), //~
+    .ps2_data       (PS2_DATA                        ), //~
+    .vga_vSync      (tetris_top_inst_vga_vSync       ), //o
+    .vga_hSync      (tetris_top_inst_vga_hSync       ), //o
+    .vga_colorEn    (tetris_top_inst_vga_colorEn     ), //o
+    .vga_color_r    (tetris_top_inst_vga_color_r[3:0]), //o
+    .vga_color_g    (tetris_top_inst_vga_color_g[3:0]), //o
+    .vga_color_b    (tetris_top_inst_vga_color_b[3:0])  //o
   );
-  assign btn_clean_pin_in = {BTN_SOUTH,{BTN_WEST,{BTN_NORTH,SW[0]}}};
-  assign btn_south_clean = btn_clean_pin_out[3];
-  assign btn_west_clean = btn_clean_pin_out[2];
-  assign btn_north_clean = btn_clean_pin_out[1];
-  assign sw_0_clean = btn_clean_pin_out[0];
+  assign core_fast_clk = dcm_inst_CLK2X_OUT;
+  assign dcm_clocked = dcm_inst_LOCKED_OUT;
+  assign btn_out = picouser_inst_btn_out;
+  assign sws_out = picouser_inst_sws_out;
+  assign rot_out = picouser_inst_rot_out;
+  assign btn_north_1 = btn_out[3];
+  assign btn_east_1 = btn_out[2];
+  assign btn_south_1 = btn_out[1];
+  assign btn_west_1 = btn_out[0];
+  assign rot_push = rot_out[3];
+  assign rot_pop = rot_out[2];
+  assign rot_left = rot_out[1];
+  assign rot_right = rot_out[0];
+  assign btns_btn_north = btn_north_1;
+  assign btns_btn_east = btn_east_1;
+  assign btns_btn_south = btn_south_1;
+  assign btns_btn_west = btn_west_1;
+  assign btns_rot_push = rot_push;
+  assign btns_rot_pop = rot_pop;
+  assign btns_rot_left = rot_left;
+  assign btns_rot_right = rot_right;
+  assign rot_clr = btns_rot_clr;
+  assign btns_rot_clr = tetris_top_inst_btns_rot_clr;
   assign VGA_HSYNC = tetris_top_inst_vga_hSync;
   assign VGA_VSYNC = tetris_top_inst_vga_vSync;
   assign VGA_R = tetris_top_inst_vga_color_r;
@@ -83,6 +150,15 @@ module tetris_top (
   input  wire          core_rst,
   input  wire          vga_clk,
   input  wire          vga_rst,
+  input  wire          btns_btn_north,
+  input  wire          btns_btn_east,
+  input  wire          btns_btn_south,
+  input  wire          btns_btn_west,
+  input  wire          btns_rot_push,
+  input  wire          btns_rot_pop,
+  input  wire          btns_rot_left,
+  input  wire          btns_rot_right,
+  output wire          btns_rot_clr,
   inout  wire          ps2_clk,
   inout  wire          ps2_data,
   output wire          vga_vSync,
@@ -93,11 +169,7 @@ module tetris_top (
   output wire [3:0]    vga_color_b
 );
 
-  wire                tetris_core_inst_game_start;
-  wire                tetris_core_inst_move_left;
-  wire                tetris_core_inst_move_right;
-  wire                tetris_core_inst_move_down;
-  wire                tetris_core_inst_rotate;
+  wire                tetris_core_inst_ctrl_allowed;
   wire                tetris_core_inst_vga_vSync;
   wire                tetris_core_inst_vga_hSync;
   wire                tetris_core_inst_vga_colorEn;
@@ -107,23 +179,27 @@ module tetris_top (
   wire                kd_ps2_inst_rd_data_valid;
   wire       [7:0]    kd_ps2_inst_rd_data_payload;
   wire       [4:0]    kd_ps2_inst_keys_valid;
+  reg                 tetris_core_inst_ctrl_allowed_regNext;
+  reg                 temp_rotate;
+  reg                 btns_btn_south_regNext;
 
   tetris_core tetris_core_inst (
-    .core_clk    (core_clk                         ), //i
-    .core_rst    (core_rst                         ), //i
-    .vga_clk     (vga_clk                          ), //i
-    .vga_rst     (vga_rst                          ), //i
-    .game_start  (tetris_core_inst_game_start      ), //i
-    .move_left   (tetris_core_inst_move_left       ), //i
-    .move_right  (tetris_core_inst_move_right      ), //i
-    .move_down   (tetris_core_inst_move_down       ), //i
-    .rotate      (tetris_core_inst_rotate          ), //i
-    .vga_vSync   (tetris_core_inst_vga_vSync       ), //o
-    .vga_hSync   (tetris_core_inst_vga_hSync       ), //o
-    .vga_colorEn (tetris_core_inst_vga_colorEn     ), //o
-    .vga_color_r (tetris_core_inst_vga_color_r[3:0]), //o
-    .vga_color_g (tetris_core_inst_vga_color_g[3:0]), //o
-    .vga_color_b (tetris_core_inst_vga_color_b[3:0])  //o
+    .core_clk     (core_clk                         ), //i
+    .core_rst     (core_rst                         ), //i
+    .vga_clk      (vga_clk                          ), //i
+    .vga_rst      (vga_rst                          ), //i
+    .game_start   (btns_btn_west                    ), //i
+    .move_left    (btns_rot_left                    ), //i
+    .move_right   (btns_rot_right                   ), //i
+    .move_down    (btns_rot_push                    ), //i
+    .rotate       (temp_rotate                      ), //i
+    .ctrl_allowed (tetris_core_inst_ctrl_allowed    ), //o
+    .vga_vSync    (tetris_core_inst_vga_vSync       ), //o
+    .vga_hSync    (tetris_core_inst_vga_hSync       ), //o
+    .vga_colorEn  (tetris_core_inst_vga_colorEn     ), //o
+    .vga_color_r  (tetris_core_inst_vga_color_r[3:0]), //o
+    .vga_color_g  (tetris_core_inst_vga_color_g[3:0]), //o
+    .vga_color_b  (tetris_core_inst_vga_color_b[3:0])  //o
   );
   kd_ps2 kd_ps2_inst (
     .ps2_clk         (ps2_clk                         ), //~
@@ -140,11 +216,24 @@ module tetris_top (
   assign vga_color_r = tetris_core_inst_vga_color_r;
   assign vga_color_g = tetris_core_inst_vga_color_g;
   assign vga_color_b = tetris_core_inst_vga_color_b;
-  assign tetris_core_inst_game_start = kd_ps2_inst_keys_valid[0];
-  assign tetris_core_inst_move_down = kd_ps2_inst_keys_valid[1];
-  assign tetris_core_inst_move_left = kd_ps2_inst_keys_valid[2];
-  assign tetris_core_inst_move_right = kd_ps2_inst_keys_valid[3];
-  assign tetris_core_inst_rotate = kd_ps2_inst_keys_valid[4];
+  assign btns_rot_clr = (tetris_core_inst_ctrl_allowed && (! tetris_core_inst_ctrl_allowed_regNext));
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      tetris_core_inst_ctrl_allowed_regNext <= 1'b0;
+      temp_rotate <= 1'b0;
+      btns_btn_south_regNext <= 1'b0;
+    end else begin
+      tetris_core_inst_ctrl_allowed_regNext <= tetris_core_inst_ctrl_allowed;
+      btns_btn_south_regNext <= btns_btn_south;
+      if((btns_btn_south && (! btns_btn_south_regNext))) begin
+        temp_rotate <= 1'b1;
+      end
+      if(btns_rot_clr) begin
+        temp_rotate <= 1'b0;
+      end
+    end
+  end
+
 
 endmodule
 
@@ -360,6 +449,7 @@ module tetris_core (
   input  wire          move_right,
   input  wire          move_down,
   input  wire          rotate,
+  output wire          ctrl_allowed,
   output wire          vga_vSync,
   output wire          vga_hSync,
   output wire          vga_colorEn,
@@ -370,6 +460,7 @@ module tetris_core (
 
   wire                game_logic_inst_row_val_valid;
   wire       [9:0]    game_logic_inst_row_val_payload;
+  wire                game_logic_inst_ctrl_allowed;
   wire                game_display_inst_vga_vSync;
   wire                game_display_inst_vga_hSync;
   wire                game_display_inst_vga_colorEn;
@@ -392,6 +483,7 @@ module tetris_core (
     .draw_field_done (game_display_inst_draw_field_done   ), //i
     .screen_is_ready (game_display_inst_screen_is_ready   ), //i
     .force_refresh   (game_display_inst_sof               ), //i
+    .ctrl_allowed    (game_logic_inst_ctrl_allowed        ), //o
     .core_clk        (core_clk                            ), //i
     .core_rst        (core_rst                            )  //i
   );
@@ -415,6 +507,7 @@ module tetris_core (
     .screen_is_ready (game_display_inst_screen_is_ready   ), //o
     .sof             (game_display_inst_sof               )  //o
   );
+  assign ctrl_allowed = game_logic_inst_ctrl_allowed;
   assign vga_vSync = game_display_inst_vga_vSync;
   assign vga_hSync = game_display_inst_vga_hSync;
   assign vga_colorEn = game_display_inst_vga_colorEn;
@@ -946,6 +1039,7 @@ module logic_top (
   input  wire          draw_field_done,
   input  wire          screen_is_ready,
   input  wire          force_refresh,
+  output wire          ctrl_allowed,
   input  wire          core_clk,
   input  wire          core_rst
 );
@@ -956,6 +1050,14 @@ module logic_top (
   localparam S = 3'd4;
   localparam T = 3'd5;
   localparam Z = 3'd6;
+  localparam STANDBY = 3'd0;
+  localparam MOVE = 3'd1;
+  localparam CHECK = 3'd2;
+  localparam ERASE = 3'd3;
+  localparam UPDATE = 3'd4;
+  localparam START_REFRESH = 3'd5;
+  localparam WAIT_FRESH_DONE = 3'd6;
+  localparam STATUS = 3'd7;
   localparam IDLE = 4'd0;
   localparam GAME_START = 4'd1;
   localparam RANDOM_GEN = 4'd2;
@@ -965,14 +1067,6 @@ module logic_top (
   localparam LOCK = 4'd6;
   localparam LOCKDOWN = 4'd7;
   localparam PATTERN = 4'd8;
-  localparam STANDBY = 3'd0;
-  localparam MOVE = 3'd1;
-  localparam CHECK = 3'd2;
-  localparam ERASE = 3'd3;
-  localparam UPDATE = 3'd4;
-  localparam START_REFRESH = 3'd5;
-  localparam WAIT_FRESH_DONE = 3'd6;
-  localparam STATUS = 3'd7;
 
   reg                 play_field_1_fetch;
   wire                piece_gen_io_shape_valid;
@@ -1360,6 +1454,7 @@ module logic_top (
   assign piece_req_valid = req_valid;
   assign playfield_fsm_wantExit = 1'b0;
   assign playfield_fsm_wantKill = 1'b0;
+  assign ctrl_allowed = (playfield_fsm_stateReg == MOVE);
   assign main_fsm_wantExit = 1'b0;
   always @(*) begin
     main_fsm_wantStart = 1'b0;
@@ -5743,7 +5838,7 @@ module piece_checker (
         piece_in_rValid <= piece_in_valid;
       end
       case(piece_payload_type)
-        L : begin
+        I : begin
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
@@ -5751,52 +5846,8 @@ module piece_checker (
               blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b10;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b00;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b01;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b00;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b00;
-            end
-          endcase
-        end
-        Z : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
-              blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
+              blks_offset_3_x <= 2'b11;
               blks_offset_3_y <= 2'b01;
             end
             2'b01 : begin
@@ -5804,30 +5855,30 @@ module piece_checker (
               blks_offset_0_y <= 2'b00;
               blks_offset_1_x <= 2'b10;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b10;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b11;
             end
             2'b10 : begin
-              blks_offset_0_x <= 2'b10;
+              blks_offset_0_x <= 2'b00;
               blks_offset_0_y <= 2'b10;
               blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b11;
+              blks_offset_3_y <= 2'b10;
             end
             default : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b00;
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
+              blks_offset_2_y <= 2'b10;
               blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b00;
+              blks_offset_3_y <= 2'b11;
             end
           endcase
         end
@@ -5875,50 +5926,6 @@ module piece_checker (
             end
           endcase
         end
-        I : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b11;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b10;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b11;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b11;
-              blks_offset_3_y <= 2'b10;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b11;
-            end
-          endcase
-        end
         O : begin
           case(piece_payload_rot)
             2'b00 : begin
@@ -5963,6 +5970,50 @@ module piece_checker (
             end
           endcase
         end
+        L : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b10;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b00;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b00;
+              blks_offset_3_y <= 2'b01;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b00;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b00;
+            end
+          endcase
+        end
         J : begin
           case(piece_payload_rot)
             2'b00 : begin
@@ -6000,6 +6051,50 @@ module piece_checker (
               blks_offset_0_y <= 2'b10;
               blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b00;
+            end
+          endcase
+        end
+        Z : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b10;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b10;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b00;
+              blks_offset_3_y <= 2'b01;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b00;
+              blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b01;

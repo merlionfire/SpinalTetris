@@ -6,16 +6,22 @@ import utils.PathUtils
 
 import SOC.tetris_top._
 import IPS.xilinx_dcm._
-import IPS.btn_filter._
+import IPS.picouser._
+import spinal.lib.blackbox.xilinx.s7._
 
 class PcbIo() extends Bundle {
-  val CLK_50M = in Bool()
+  val CLK_50M   = in Bool()
   val BTN_SOUTH = in Bool()
-  val BTN_WEST = in Bool()
+  val BTN_WEST  = in Bool()
   val BTN_NORTH = in Bool()
+  val BTN_EAST  = in Bool()
+  val SW        = in Bits(4 bits)
+  val ROT_A     = in Bool()
+  val ROT_B     = in Bool()
+  val ROT_CENTER  = in Bool()
+
   val PS2_CLK = inout(Analog(Bool()))
   val PS2_DATA = inout(Analog(Bool()))
-  val SW = in Bits(4 bits)
   // `ifdef UART` in Verilog can be handled with an optional bundle
   /*
   val UART = new Bundle {
@@ -47,25 +53,62 @@ class pcb extends  Component {
   dcm_inst.io.RST_IN := False
 
 
-  val core_clk = dcm_inst.io.CLK0_OUT
+  //val core_clk = dcm_inst.io.CLK0_OUT
   val vga_clk = dcm_inst.io.CLKDV_OUT
+  val core_fast_clk, dcm_clocked  = Bool()
+  core_fast_clk := dcm_inst.io.CLK2X_OUT
+  dcm_clocked := dcm_inst.io.LOCKED_OUT
 
+  core_fast_clk.addAttribute("keep")
+  dcm_clocked.addAttribute("keep")
+
+  val core_clk =  BUFG.on( dcm_inst.io.CLK0_OUT )
   // --------------------------------------------
   //          button
   // --------------------------------------------
 
+  // Create output signals
+  val btn_out = Bits(4 bits)
+  val sws_out = Bits(4 bits)
+  val rot_out = Bits(4 bits)
+  val rot_clr = Bool()
 
-  val btn_clean = new btn_filter(4)
-  btn_clean.io.clk := core_clk
-  btn_clean.io.pin_in := Cat(io.BTN_SOUTH, io.BTN_WEST, io.BTN_NORTH, io.SW(0))
-
-  val btn_south_clean = btn_clean.io.pin_out(3)
-  val btn_west_clean =  btn_clean.io.pin_out(2)
-  val btn_north_clean = btn_clean.io.pin_out(1)
-  val sw_0_clean      = btn_clean.io.pin_out(0)
+  // Instantiate the module
+  val picouser_inst = new picouser()
 
 
-  val core_rst, vga_rst = btn_north_clean
+  // Connect button inputs
+  picouser_inst.io.BTN_EAST   := io.BTN_EAST
+  picouser_inst.io.BTN_NORTH  := io.BTN_NORTH
+  picouser_inst.io.BTN_SOUTH  := io.BTN_SOUTH
+  picouser_inst.io.BTN_WEST   := io.BTN_WEST
+  picouser_inst.io.SW         := io.SW
+  picouser_inst.io.ROT_A      := io.ROT_A
+  picouser_inst.io.ROT_B      := io.ROT_B
+  picouser_inst.io.ROT_CENTER := io.ROT_CENTER
+
+  picouser_inst.io.rot_clr    := rot_clr
+  picouser_inst.io.clk        := core_clk
+
+  // Connect clean button outputs
+  btn_out := picouser_inst.io.btn_out
+  sws_out := picouser_inst.io.sws_out
+  rot_out := picouser_inst.io.rot_out
+
+  val btn_north = btn_out(3)
+  val btn_east  = btn_out(2)
+  val btn_south = btn_out(1)
+  val btn_west  = btn_out(0)
+
+  val rot_push  = rot_out(3)
+  val rot_pop   = rot_out(2)
+  val rot_left  = rot_out(1)
+  val rot_right = rot_out(0)
+
+  val btns : brd_btns = brd_btns(  btn_north, btn_east, btn_south, btn_west, rot_push, rot_pop, rot_left, rot_right, rot_clr  )
+
+
+  val core_rst, vga_rst = btn_north
 
   // --------------------------------------------
   //          tetris_top
@@ -78,6 +121,7 @@ class pcb extends  Component {
   tetris_top_inst.io.core_clk := core_clk
   tetris_top_inst.io.core_rst := core_rst
 
+  tetris_top_inst.io.btns <> btns
   tetris_top_inst.io.vga_clk := vga_clk
   tetris_top_inst.io.vga_rst := vga_rst
 

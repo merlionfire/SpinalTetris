@@ -21,7 +21,10 @@ object  runSimConfig {
     )/* .addStandardMemBlackboxing(blackboxAllWhatsYouCan) */
 
     if ( compiler == "verilator" ) {
-      SimConfig.withWave.withConfig(buildConfig).withTimeSpec( 1 ns, 100 ps)
+      SimConfig
+        //.withWave
+        .withConfig(buildConfig)
+        .withTimeSpec( 1 ns, 100 ps)
         .withVerilator
         .addSimulatorFlag("-D" + "SIM")
         .workspacePath(runDir+"/verilator")

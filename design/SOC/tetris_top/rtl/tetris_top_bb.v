@@ -133,11 +133,11 @@ module ps2_host_rxtx  (
    wire  ps2_data_out_en,  ps2_data_out, ps2_data_in, ps2_data_in_clean; 
    wire  ps2_rx_en;
 
-   assign   ps2_clk     = ps2_clk_out ? 1'bz :  1'b0 ;  
+   //assign   ps2_clk     = ps2_clk_out ? 1'bz :  1'b0 ;  
    assign   ps2_clk_in  = ps2_clk ; 
 
-   assign   ps2_data     = ps2_data_out_en ? ps2_data_out  :  1'bz ;  
-   assign   ps2_data_in  = ps2_data; 
+   //assign   ps2_data     = ps2_data_out_en ? ps2_data_out  :  1'bz ;  
+   assign   ps2_data_in   = ps2_data; 
 
    assign   ps2_rx_en    = ps2_tx_ready; 
 `ifdef SIM

@@ -1,33 +1,3 @@
-module btn_filter #( parameter PIN_NUM = 3 ) 
-(
-   input   clk , 
-   input   [ PIN_NUM-1 : 0 ]   pin_in    , 
-   output  [ PIN_NUM-1 : 0 ]   pin_out    
-) ; 
-
-
-   wire [ PIN_NUM-1 : 0 ] pin_in_sync ; 
-
-   genvar i ; 
-   generate 
-      for ( i = 0 ; i < PIN_NUM ; i = i+1 ) begin : io_sync_db   
-
-         synchro #(.INITIALIZE("LOGIC0")) io_btn_sync_inst (
-            .clk    (  clk            ),
-            .async  (  pin_in[i]      ),
-	    .sync   (  pin_in_sync[i] )
-	);
-
-
-         debounce btn_db_inst (
-            .Clk       ( clk ), 
-            .DataNoisy ( pin_in_sync[i]  ),
-            .DataClean ( pin_out[i]    ) 
-         );
-      end 
-   endgenerate 
-
-endmodule 
 `timescale 1ps / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Company:         Crazy Joe's Garage Shop
@@ -49,6 +19,7 @@ endmodule
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
+`define  CLK_50M
 
 module debounce (
    input      Clk, 
@@ -59,17 +30,19 @@ module debounce (
    `ifdef  SIM 
       parameter NDELAY = 4;
       parameter NBITS =  3 ;
-      reg data_i = 1'b0 ;
-      reg [NBITS-1:0] count;
-
-   `else   
-      parameter NDELAY = 650000;
+   `elsif CLK_25M
+      parameter NDELAY = 650000;  // 26ms
       parameter NBITS = 20;
-      reg data_i;
-      reg [NBITS-1:0] count;
+   `elsif CLK_50M
+       parameter NDELAY = 1200000; // 24ms
+       parameter NBITS = 21;
+   `else
+         parameter NDELAY = 650000;
+         parameter NBITS = 20;
    `endif
 
-
+    reg data_i = 1'b0 ;
+    reg [NBITS-1:0] count;
 
    // Compare DataNoisy to a registered version of itself
    // Must be the same for NDELAY consecutive cycles before
@@ -87,6 +60,352 @@ module debounce (
 
 endmodule
 
+//////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2006 Xilinx, Inc.
+// This design is confidential and proprietary of Xilinx, All Rights Reserved.
+//////////////////////////////////////////////////////////////////////////////
+//   ____  ____
+//  /   /\/   /
+// /___/  \  /   Vendor:        Xilinx
+// \   \   \/    Version:       1.0.0
+//  \   \        Filename:      debnce.v
+//  /   /        Date Created:  December 25, 2006
+// /___/   /\    Last Modified: December 25, 2006
+// \   \  /  \
+//  \___\/\___\
+//
+// Devices:   Spartan-3 Generation FPGA
+// Purpose:   Switch debouncer with pulses for on/off events
+// Contact:   crabill@xilinx.com
+// Reference: None
+//
+// Revision History:
+//   Rev 1.0.0 - (crabill) First created December 25, 2006.
+//
+//////////////////////////////////////////////////////////////////////////////
+//
+// LIMITED WARRANTY AND DISCLAIMER. These designs are provided to you "as is".
+// Xilinx and its licensors make and you receive no warranties or conditions,
+// express, implied, statutory or otherwise, and Xilinx specifically disclaims
+// any implied warranties of merchantability, non-infringement, or fitness for
+// a particular purpose. Xilinx does not warrant that the functions contained
+// in these designs will meet your requirements, or that the operation of
+// these designs will be uninterrupted or error free, or that defects in the
+// designs will be corrected. Furthermore, Xilinx does not warrant or make any
+// representations regarding use or the results of the use of the designs in
+// terms of correctness, accuracy, reliability, or otherwise.
+//
+// LIMITATION OF LIABILITY. In no event will Xilinx or its licensors be liable
+// for any loss of data, lost profits, cost or procurement of substitute goods
+// or services, or for any special, incidental, consequential, or indirect
+// damages arising from the use or operation of the designs or accompanying
+// documentation, however caused and on any theory of liability. This
+// limitation will apply even if Xilinx has been advised of the possibility
+// of such damage. This limitation shall apply not-withstanding the failure
+// of the essential purpose of any limited remedies herein.
+//
+//////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2006 Xilinx, Inc.
+// This design is confidential and proprietary of Xilinx, All Rights Reserved.
+//////////////////////////////////////////////////////////////////////////////
+
+`timescale 1 ns / 1 ps
+
+module debnce
+  (
+  input  wire        sync,
+  input  wire        clk,
+  output reg         event_on,
+  output reg         event_off
+  );
+
+  //******************************************************************//
+  // Implement debouncing.                                            //
+  //******************************************************************//
+
+  reg         [15:0] ctr;
+  reg                dly;
+  wire               sat;
+
+  assign sat = (ctr == 16'hffff);
+
+  always @(posedge clk)
+  begin : saturating_counter
+    case ({sync, sat})
+      0: ctr <= 0;
+      1: ctr <= 0;
+      2: ctr <= ctr + 1;
+    endcase
+    dly <= sat;
+    event_on  <= !dly && sat;
+    event_off <= !sat && dly;
+  end
+
+  //******************************************************************//
+  //                                                                  //
+  //******************************************************************//
+
+endmodule
+//////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2006 Xilinx, Inc.
+// This design is confidential and proprietary of Xilinx, All Rights Reserved.
+//////////////////////////////////////////////////////////////////////////////
+//   ____  ____
+//  /   /\/   /
+// /___/  \  /   Vendor:        Xilinx
+// \   \   \/    Version:       1.0.0
+//  \   \        Filename:      spinner.v
+//  /   /        Date Created:  December 25, 2006
+// /___/   /\    Last Modified: December 25, 2006
+// \   \  /  \
+//  \___\/\___\
+//
+// Devices:   Spartan-3 Generation FPGA
+// Purpose:   Rotary knob decoder
+// Contact:   crabill@xilinx.com
+// Reference: None
+//
+// Revision History:
+//   Rev 1.0.0 - (crabill) First created December 25, 2006.
+//
+//////////////////////////////////////////////////////////////////////////////
+//
+// LIMITED WARRANTY AND DISCLAIMER. These designs are provided to you "as is".
+// Xilinx and its licensors make and you receive no warranties or conditions,
+// express, implied, statutory or otherwise, and Xilinx specifically disclaims
+// any implied warranties of merchantability, non-infringement, or fitness for
+// a particular purpose. Xilinx does not warrant that the functions contained
+// in these designs will meet your requirements, or that the operation of
+// these designs will be uninterrupted or error free, or that defects in the
+// designs will be corrected. Furthermore, Xilinx does not warrant or make any
+// representations regarding use or the results of the use of the designs in
+// terms of correctness, accuracy, reliability, or otherwise.
+//
+// LIMITATION OF LIABILITY. In no event will Xilinx or its licensors be liable
+// for any loss of data, lost profits, cost or procurement of substitute goods
+// or services, or for any special, incidental, consequential, or indirect
+// damages arising from the use or operation of the designs or accompanying
+// documentation, however caused and on any theory of liability. This
+// limitation will apply even if Xilinx has been advised of the possibility
+// of such damage. This limitation shall apply not-withstanding the failure
+// of the essential purpose of any limited remedies herein.
+//
+//////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2006 Xilinx, Inc.
+// This design is confidential and proprietary of Xilinx, All Rights Reserved.
+//////////////////////////////////////////////////////////////////////////////
+
+`timescale 1 ns / 1 ps
+
+module spinner
+  (
+  input  wire        sync_rot_a,
+  input  wire        sync_rot_b,
+  input  wire        clk,
+  output reg         event_rot_l,
+  output reg         event_rot_r 
+  );
+
+  //******************************************************************//
+  // Implement rotary knob processing (borrowed from KC/PA design).   //
+  //******************************************************************//
+
+  reg                rotary_q1;
+  reg                rotary_q2;
+  reg                rotary_q1_dly;
+  reg                rotary_q2_dly;
+
+  always @(posedge clk)
+  begin : filter
+    case ({sync_rot_b, sync_rot_a})
+      0: rotary_q1 <= 1'b0;
+      1: rotary_q2 <= 1'b0;
+      2: rotary_q2 <= 1'b1;
+      3: rotary_q1 <= 1'b1;
+    endcase
+    rotary_q1_dly <= rotary_q1;
+    rotary_q2_dly <= rotary_q2;
+    event_rot_l <=  rotary_q2_dly && !rotary_q1_dly && rotary_q1;
+    event_rot_r <= !rotary_q2_dly && !rotary_q1_dly && rotary_q1;
+  end
+
+  //******************************************************************//
+  //                                                                  //
+  //******************************************************************//
+
+endmodule
+//////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2006 Xilinx, Inc.
+// This design is confidential and proprietary of Xilinx, All Rights Reserved.
+//////////////////////////////////////////////////////////////////////////////
+//   ____  ____
+//  /   /\/   /
+// /___/  \  /   Vendor:        Xilinx
+// \   \   \/    Version:       1.0.0
+//  \   \        Filename:      picouser.v
+//  /   /        Date Created:  December 25, 2006
+// /___/   /\    Last Modified: December 25, 2006
+// \   \  /  \
+//  \___\/\___\
+//
+// Devices:   Spartan-3 Generation FPGA
+// Purpose:   Switch, button, and rotary knob
+// Contact:   crabill@xilinx.com
+// Reference: None
+//
+// Revision History:
+//   Rev 1.0.0 - (crabill) First created December 25, 2006.
+//
+//////////////////////////////////////////////////////////////////////////////
+//
+// LIMITED WARRANTY AND DISCLAIMER. These designs are provided to you "as is".
+// Xilinx and its licensors make and you receive no warranties or conditions,
+// express, implied, statutory or otherwise, and Xilinx specifically disclaims
+// any implied warranties of merchantability, non-infringement, or fitness for
+// a particular purpose. Xilinx does not warrant that the functions contained
+// in these designs will meet your requirements, or that the operation of
+// these designs will be uninterrupted or error free, or that defects in the
+// designs will be corrected. Furthermore, Xilinx does not warrant or make any
+// representations regarding use or the results of the use of the designs in
+// terms of correctness, accuracy, reliability, or otherwise.
+//
+// LIMITATION OF LIABILITY. In no event will Xilinx or its licensors be liable
+// for any loss of data, lost profits, cost or procurement of substitute goods
+// or services, or for any special, incidental, consequential, or indirect
+// damages arising from the use or operation of the designs or accompanying
+// documentation, however caused and on any theory of liability. This
+// limitation will apply even if Xilinx has been advised of the possibility
+// of such damage. This limitation shall apply not-withstanding the failure
+// of the essential purpose of any limited remedies herein.
+//
+//////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2006 Xilinx, Inc.
+// This design is confidential and proprietary of Xilinx, All Rights Reserved.
+//////////////////////////////////////////////////////////////////////////////
+
+`timescale 1 ns / 1 ps
+
+module picouser
+  (
+  input  wire        BTN_EAST,
+  input  wire        BTN_NORTH,
+  input  wire        BTN_SOUTH,
+  input  wire        BTN_WEST,
+
+  input  wire  [3:0] SW,
+
+  input  wire        ROT_A,
+  input  wire        ROT_B,
+  input  wire        ROT_CENTER,
+
+  input  wire        rot_clr,
+  input  wire        clk,
+
+  output wire  [3:0] btn_out,
+  output wire  [3:0] sws_out,
+  output reg   [3:0] rot_out
+  );
+
+  wire  [3:0] btn_glitch ;
+  wire  [3:0] sws_glitch ;
+
+  //******************************************************************//
+  // Let them eat synchronizer!                                       //
+  //******************************************************************//
+
+  synchro #(.INITIALIZE("LOGIC0"))
+  synchro_sws_3 (.async(SW[3]),.sync(sws_glitch[3]),.clk(clk));
+  debounce db_sws_3 ( clk,  sws_glitch[3], sws_out[3] ) ;
+
+  synchro #(.INITIALIZE("LOGIC0"))
+  synchro_sws_2 (.async(SW[2]),.sync(sws_glitch[2]),.clk(clk));
+  debounce db_sws_2 ( clk,  sws_glitch[2], sws_out[2] ) ;
+
+  synchro #(.INITIALIZE("LOGIC0"))
+  synchro_sws_1 (.async(SW[1]),.sync(sws_glitch[1]),.clk(clk));
+  debounce db_sws_1 ( clk,  sws_glitch[1], sws_out[1] ) ;
+
+  synchro #(.INITIALIZE("LOGIC0"))
+  synchro_sws_0 (.async(SW[0]),.sync(sws_glitch[0]),.clk(clk));
+  debounce db_sws_0 ( clk,  sws_glitch[0], sws_out[0] ) ;
+
+
+  //******************************************************************//
+  // Have another piece!                                              //
+  //******************************************************************//
+
+  synchro #(.INITIALIZE("LOGIC0"))
+  synchro_btn_n (.async(BTN_NORTH),.sync(btn_glitch[3]),.clk(clk));
+  debounce db_btn_n ( clk,  btn_glitch[3], btn_out[3] ) ;
+
+  synchro #(.INITIALIZE("LOGIC0"))
+  synchro_btn_e (.async(BTN_EAST ),.sync(btn_glitch[2]),.clk(clk));
+  debounce db_btn_e ( clk,  btn_glitch[2], btn_out[2] ) ;
+
+  synchro #(.INITIALIZE("LOGIC0"))
+  synchro_btn_s (.async(BTN_SOUTH),.sync(btn_glitch[1]),.clk(clk));
+  debounce db_btn_s ( clk,  btn_glitch[1], btn_out[1] ) ;
+
+  synchro #(.INITIALIZE("LOGIC0"))
+  synchro_btn_w (.async(BTN_WEST ),.sync(btn_glitch[0]),.clk(clk));
+  debounce db_btn_w ( clk,  btn_glitch[0], btn_out[0] ) ;
+
+
+  //******************************************************************//
+  // This is making my head spin!                                     //
+  //******************************************************************//
+
+  wire        sync_rot_c;
+  synchro #(.INITIALIZE("LOGIC0"))
+  synchro_rot_c (.async(ROT_CENTER),.sync(sync_rot_c),.clk(clk));
+
+  wire        sync_rot_b;
+  synchro #(.INITIALIZE("LOGIC1"))
+  synchro_rot_b (.async(ROT_B),.sync(sync_rot_b),.clk(clk));
+
+  wire        sync_rot_a;
+  synchro #(.INITIALIZE("LOGIC1"))
+  synchro_rot_a (.async(ROT_A),.sync(sync_rot_a),.clk(clk));
+
+  //******************************************************************//
+  // Implement rotary knob processing (borrowed from KC/PA design).   //
+  //******************************************************************//
+
+  wire        event_rot_c_on;
+  wire        event_rot_c_off;
+  wire        event_rot_l_one;
+  wire        event_rot_r_one;
+
+  spinner spinner_inst (
+    .sync_rot_a(sync_rot_a),
+    .sync_rot_b(sync_rot_b),
+    .event_rot_l(event_rot_l_one),
+    .event_rot_r(event_rot_r_one),
+    .clk(clk));
+
+  debnce debnce_rot_c (
+    .sync(sync_rot_c),
+    .event_on(event_rot_c_on),
+    .event_off(event_rot_c_off),
+    .clk(clk));
+
+  always @(posedge clk)
+  begin : status_log
+    if (event_rot_c_off) rot_out[3] <= 1'b1;
+    else if (rot_clr) rot_out[3] <= 1'b0;
+    if (event_rot_c_on) rot_out[2] <= 1'b1;
+    else if (rot_clr) rot_out[2] <= 1'b0;
+    if (event_rot_l_one) rot_out[1] <= 1'b1;
+    else if (rot_clr) rot_out[1] <= 1'b0;
+    if (event_rot_r_one) rot_out[0] <= 1'b1;
+    else if (rot_clr) rot_out[0] <= 1'b0;
+  end
+
+  //******************************************************************//
+  //                                                                  //
+  //******************************************************************//
+
+endmodule
 module ascii_font16x8 #(
   parameter addressWidth = 11,
   parameter wordWidth =8 )(

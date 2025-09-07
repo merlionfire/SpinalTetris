@@ -47,6 +47,7 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
     val draw_field_done = in Bool()
     val screen_is_ready = in Bool()
     val force_refresh = in Bool()
+    val ctrl_allowed = out Bool()
   }
 
 
@@ -366,7 +367,7 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
 
   }
 
-
+  io.ctrl_allowed := playfield_fsm.isActive(playfield_fsm.MOVE )
 
   val main_fsm = new StateMachine {
 

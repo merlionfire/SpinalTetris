@@ -19,6 +19,7 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
+`define  CLK_50M
 
 module debounce (
    input      Clk, 
@@ -29,17 +30,19 @@ module debounce (
    `ifdef  SIM 
       parameter NDELAY = 4;
       parameter NBITS =  3 ;
-      reg data_i = 1'b0 ;
-      reg [NBITS-1:0] count;
-
-   `else   
-      parameter NDELAY = 650000;
+   `elsif CLK_25M
+      parameter NDELAY = 650000;  // 26ms
       parameter NBITS = 20;
-      reg data_i;
-      reg [NBITS-1:0] count;
+   `elsif CLK_50M
+       parameter NDELAY = 1200000; // 24ms
+       parameter NBITS = 21;
+   `else
+         parameter NDELAY = 650000;
+         parameter NBITS = 20;
    `endif
 
-
+    reg data_i = 1'b0 ;
+    reg [NBITS-1:0] count;
 
    // Compare DataNoisy to a registered version of itself
    // Must be the same for NDELAY consecutive cycles before
