@@ -1,6 +1,7 @@
 package IPS.bram_2p
 
 import spinal.core._
+import spinal.lib.Counter
 
 import scala.io.Source
 import scala.util.Try
@@ -38,9 +39,16 @@ class bram_2p  ( config :Bram2pConfig ) extends Component {
       val addr = in UInt(addressWidth bits)
       val data = out Bits(wordWidth bits)
     }
+    val clear_start = in Bool()
+    val clear_done = out Bool()
   }
 
   noIoPrefix()
+
+  val addr_inc = RegInit(False) setWhen(io.clear_start)
+  val full_addr = Counter( depth,  addr_inc )
+  addr_inc.clearWhen(full_addr.willOverflow)
+  io.clear_done := addr_inc.fall(False)
 
   // Instantiate the memory
   val memory = Mem(Bits(wordWidth bits), depth)
@@ -48,10 +56,13 @@ class bram_2p  ( config :Bram2pConfig ) extends Component {
   memory.initBigInt(initContent)
 
   // Create the write port and associate it with the writeClockDomain
+  val wr_addr = Mux(addr_inc ,full_addr.value  , io.wr.addr)
+  val wr_data = Mux(addr_inc , B(default_value) , io.wr.data )
+  val wr_en   =  addr_inc | io.wr.en
   memory.write(
-      address = io.wr.addr,
-      data    = io.wr.data,
-      enable  = io.wr.en
+      address = wr_addr ,
+      data    = wr_data,
+      enable  = wr_en
       // mask is optional for byte/bit enables
   )
 
