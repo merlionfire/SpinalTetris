@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : display_top
-// Git hash  : 552d77ebcaed901cbb938e37399a3b955382786d
+// Git hash  : 0ba87d8f6dc393cafd790a511174b6e6b4938351
 
 `timescale 1ns/1ps
 
@@ -42,6 +42,7 @@ module display_top (
   wire                fb_addr_gen_inst_start;
   wire       [3:0]    lbcp_io_addr;
   wire       [3:0]    fb_rd_data;
+  wire                fb_clear_done;
   wire       [8:0]    draw_char_engine_1_h_cnt;
   wire       [7:0]    draw_char_engine_1_v_cnt;
   wire                draw_char_engine_1_is_running;
@@ -69,6 +70,7 @@ module display_top (
   wire       [8:0]    draw_controller_draw_x_orig;
   wire       [7:0]    draw_controller_draw_y_orig;
   wire                draw_controller_draw_field_done;
+  wire                draw_controller_bf_clear_start;
   wire                vga_sync_io_sof;
   wire                vga_sync_io_sol;
   wire                vga_sync_io_sos;
@@ -139,14 +141,16 @@ module display_top (
   assign temp_dma_fb_fetch_addr_valueNext_1 = dma_fb_fetch_addr_willIncrement;
   assign temp_dma_fb_fetch_addr_valueNext = {16'd0, temp_dma_fb_fetch_addr_valueNext_1};
   bram_2p fb (
-    .wr_en    (fb_wr_en                       ), //i
-    .wr_addr  (fb_addr_gen_inst_out_addr[16:0]), //i
-    .wr_data  (fb_wr_data[3:0]                ), //i
-    .rd_en    (dma_fb_fetch_en                ), //i
-    .rd_addr  (dma_fb_fetch_addr_value[16:0]  ), //i
-    .rd_data  (fb_rd_data[3:0]                ), //o
-    .core_clk (core_clk                       ), //i
-    .core_rst (core_rst                       )  //i
+    .wr_en       (fb_wr_en                       ), //i
+    .wr_addr     (fb_addr_gen_inst_out_addr[16:0]), //i
+    .wr_data     (fb_wr_data[3:0]                ), //i
+    .rd_en       (dma_fb_fetch_en                ), //i
+    .rd_addr     (dma_fb_fetch_addr_value[16:0]  ), //i
+    .rd_data     (fb_rd_data[3:0]                ), //o
+    .clear_start (draw_controller_bf_clear_start ), //i
+    .clear_done  (fb_clear_done                  ), //o
+    .core_clk    (core_clk                       ), //i
+    .core_rst    (core_rst                       )  //i
   );
   draw_char_engine draw_char_engine_1 (
     .start      (debug_draw_char_start            ), //i
@@ -190,7 +194,7 @@ module display_top (
   );
   display_controller draw_controller (
     .draw_openning_start     (dma_sof                                     ), //i
-    .game_start              (game_start                                  ), //i
+    .game_start              (1'b0                                        ), //i
     .row_val_valid           (row_val_valid                               ), //i
     .row_val_payload         (row_val_payload[9:0]                        ), //i
     .screen_is_ready         (draw_controller_screen_is_ready             ), //o
@@ -209,6 +213,8 @@ module display_top (
     .draw_x_orig             (draw_controller_draw_x_orig[8:0]            ), //o
     .draw_y_orig             (draw_controller_draw_y_orig[7:0]            ), //o
     .draw_field_done         (draw_controller_draw_field_done             ), //o
+    .bf_clear_start          (draw_controller_bf_clear_start              ), //o
+    .bf_clear_done           (fb_clear_done                               ), //i
     .core_clk                (core_clk                                    ), //i
     .core_rst                (core_rst                                    )  //i
   );
@@ -265,7 +271,7 @@ module display_top (
   );
   assign draw_field_done = draw_controller_draw_field_done;
   assign mux_sel = {draw_char_engine_1_is_running,draw_block_engine_1_is_running};
-  assign fb_addr_gen_inst_start = (draw_controller_draw_char_start || draw_controller_draw_block_start);
+  assign fb_addr_gen_inst_start = (debug_draw_char_start || debug_draw_block_start);
   always @(*) begin
     case(mux_sel)
       2'b01 : begin
@@ -792,6 +798,8 @@ module display_controller (
   output wire [8:0]    draw_x_orig,
   output wire [7:0]    draw_y_orig,
   output reg           draw_field_done,
+  output reg           bf_clear_start,
+  input  wire          bf_clear_done,
   input  wire          core_clk,
   input  wire          core_rst
 );
@@ -800,17 +808,18 @@ module display_controller (
   localparam DATA_READY = 3'd2;
   localparam DRAW = 3'd3;
   localparam WAIT_DONE = 3'd4;
-  localparam IDLE = 4'd0;
-  localparam START_DRAW_OPEN = 4'd1;
-  localparam WAIT_DRAW_OPEN_DONE = 4'd2;
-  localparam WAIT_GAME_START = 4'd3;
-  localparam START_DRAW_STRING = 4'd4;
-  localparam WAIT_DRAW_STRING_DONE = 4'd5;
-  localparam WAIT_DRAW_SCORE = 4'd6;
-  localparam PRE_DRAW_WALL = 4'd7;
-  localparam START_DRAW_WALL = 4'd8;
-  localparam WAIT_DRAW_WALL_DONE = 4'd9;
-  localparam DRAW_SCORE = 4'd10;
+  localparam SETUP_IDLE = 4'd0;
+  localparam CLEAN_SCREEN = 4'd1;
+  localparam START_DRAW_OPEN = 4'd2;
+  localparam WAIT_DRAW_OPEN_DONE = 4'd3;
+  localparam WAIT_GAME_START = 4'd4;
+  localparam START_DRAW_STRING = 4'd5;
+  localparam WAIT_DRAW_STRING_DONE = 4'd6;
+  localparam WAIT_DRAW_SCORE = 4'd7;
+  localparam PRE_DRAW_WALL = 4'd8;
+  localparam START_DRAW_WALL = 4'd9;
+  localparam WAIT_DRAW_WALL_DONE = 4'd10;
+  localparam DRAW_SCORE = 4'd11;
 
   reg        [9:0]    memory_spinal_port1;
   wire       [6:0]    rom_spinal_port0;
@@ -876,7 +885,7 @@ module display_controller (
   wire       [3:0]    itf_color;
   wire                itf_done_1;
   reg                 cnt_willIncrement;
-  reg                 cnt_willClear;
+  wire                cnt_willClear;
   reg        [3:0]    cnt_valueNext;
   reg        [3:0]    cnt_value;
   wire                cnt_willOverflowIfInc;
@@ -903,7 +912,7 @@ module display_controller (
   reg        [3:0]    stepup_color;
   reg                 stepup_start_char_draw;
   reg                 stepup_start_block_draw;
-  reg                 stepup_logoHasRm;
+  reg                 stepup_game_is_running;
   wire                stepup_fsm_wantExit;
   reg                 stepup_fsm_wantStart;
   wire                stepup_fsm_wantKill;
@@ -922,7 +931,8 @@ module display_controller (
   wire                fsm_onEntry_WAIT_DONE;
   reg        [3:0]    stepup_fsm_stateReg;
   reg        [3:0]    stepup_fsm_stateNext;
-  wire                stepup_fsm_onExit_IDLE;
+  wire                stepup_fsm_onExit_SETUP_IDLE;
+  wire                stepup_fsm_onExit_CLEAN_SCREEN;
   wire                stepup_fsm_onExit_START_DRAW_OPEN;
   wire                stepup_fsm_onExit_WAIT_DRAW_OPEN_DONE;
   wire                stepup_fsm_onExit_WAIT_GAME_START;
@@ -933,7 +943,8 @@ module display_controller (
   wire                stepup_fsm_onExit_START_DRAW_WALL;
   wire                stepup_fsm_onExit_WAIT_DRAW_WALL_DONE;
   wire                stepup_fsm_onExit_DRAW_SCORE;
-  wire                stepup_fsm_onEntry_IDLE;
+  wire                stepup_fsm_onEntry_SETUP_IDLE;
+  wire                stepup_fsm_onEntry_CLEAN_SCREEN;
   wire                stepup_fsm_onEntry_START_DRAW_OPEN;
   wire                stepup_fsm_onEntry_WAIT_DRAW_OPEN_DONE;
   wire                stepup_fsm_onEntry_WAIT_GAME_START;
@@ -1010,7 +1021,8 @@ module display_controller (
   end
   always @(*) begin
     case(stepup_fsm_stateReg)
-      IDLE : stepup_fsm_stateReg_string = "IDLE                 ";
+      SETUP_IDLE : stepup_fsm_stateReg_string = "SETUP_IDLE           ";
+      CLEAN_SCREEN : stepup_fsm_stateReg_string = "CLEAN_SCREEN         ";
       START_DRAW_OPEN : stepup_fsm_stateReg_string = "START_DRAW_OPEN      ";
       WAIT_DRAW_OPEN_DONE : stepup_fsm_stateReg_string = "WAIT_DRAW_OPEN_DONE  ";
       WAIT_GAME_START : stepup_fsm_stateReg_string = "WAIT_GAME_START      ";
@@ -1026,7 +1038,8 @@ module display_controller (
   end
   always @(*) begin
     case(stepup_fsm_stateNext)
-      IDLE : stepup_fsm_stateNext_string = "IDLE                 ";
+      SETUP_IDLE : stepup_fsm_stateNext_string = "SETUP_IDLE           ";
+      CLEAN_SCREEN : stepup_fsm_stateNext_string = "CLEAN_SCREEN         ";
       START_DRAW_OPEN : stepup_fsm_stateNext_string = "START_DRAW_OPEN      ";
       WAIT_DRAW_OPEN_DONE : stepup_fsm_stateNext_string = "WAIT_DRAW_OPEN_DONE  ";
       WAIT_GAME_START : stepup_fsm_stateNext_string = "WAIT_GAME_START      ";
@@ -1180,7 +1193,6 @@ module display_controller (
   assign fsm_wantKill = 1'b0;
   always @(*) begin
     cnt_willIncrement = 1'b0;
-    cnt_willClear = 1'b0;
     cnt_willIncrement_1 = 1'b0;
     stepup_fsm_wantStart = 1'b0;
     stepup_start_char_draw = 1'b0;
@@ -1189,6 +1201,15 @@ module display_controller (
     cnt_willIncrement = 1'b0;
     stepup_fsm_stateNext = stepup_fsm_stateReg;
     case(stepup_fsm_stateReg)
+      CLEAN_SCREEN : begin
+        if(bf_clear_done) begin
+          if(stepup_game_is_running) begin
+            stepup_fsm_stateNext = START_DRAW_STRING;
+          end else begin
+            stepup_fsm_stateNext = START_DRAW_OPEN;
+          end
+        end
+      end
       START_DRAW_OPEN : begin
         stepup_start_char_draw = 1'b1;
         stepup_fsm_stateNext = WAIT_DRAW_OPEN_DONE;
@@ -1204,13 +1225,8 @@ module display_controller (
         end
       end
       WAIT_GAME_START : begin
-        if(stepup_logoHasRm) begin
-          stepup_fsm_stateNext = START_DRAW_STRING;
-        end else begin
-          if(game_start) begin
-            cnt_willClear = 1'b1;
-            stepup_fsm_stateNext = START_DRAW_OPEN;
-          end
+        if(game_start) begin
+          stepup_fsm_stateNext = CLEAN_SCREEN;
         end
       end
       START_DRAW_STRING : begin
@@ -1252,16 +1268,17 @@ module display_controller (
       end
       default : begin
         if(draw_openning_start) begin
-          stepup_fsm_stateNext = START_DRAW_OPEN;
+          stepup_fsm_stateNext = CLEAN_SCREEN;
         end
         stepup_fsm_wantStart = 1'b1;
       end
     endcase
     if(stepup_fsm_wantKill) begin
-      stepup_fsm_stateNext = IDLE;
+      stepup_fsm_stateNext = SETUP_IDLE;
     end
   end
 
+  assign cnt_willClear = 1'b0;
   assign cnt_willOverflowIfInc = (cnt_value == 4'b1010);
   assign cnt_willOverflow = (cnt_willOverflowIfInc && cnt_willIncrement);
   always @(*) begin
@@ -1300,6 +1317,13 @@ module display_controller (
   assign itf_start_2 = stepup_start_block_draw;
   assign stepup_fsm_wantExit = 1'b0;
   assign stepup_fsm_wantKill = 1'b0;
+  always @(*) begin
+    bf_clear_start = 1'b0;
+    if(stepup_fsm_onEntry_CLEAN_SCREEN) begin
+      bf_clear_start = 1'b1;
+    end
+  end
+
   assign draw_char_start = itf_start_1;
   assign draw_char_word = itf_word;
   assign draw_char_scale = itf_scale;
@@ -1325,7 +1349,8 @@ module display_controller (
   assign fsm_onEntry_DATA_READY = ((fsm_stateNext == DATA_READY) && (fsm_stateReg != DATA_READY));
   assign fsm_onEntry_DRAW = ((fsm_stateNext == DRAW) && (fsm_stateReg != DRAW));
   assign fsm_onEntry_WAIT_DONE = ((fsm_stateNext == WAIT_DONE) && (fsm_stateReg != WAIT_DONE));
-  assign stepup_fsm_onExit_IDLE = ((stepup_fsm_stateNext != IDLE) && (stepup_fsm_stateReg == IDLE));
+  assign stepup_fsm_onExit_SETUP_IDLE = ((stepup_fsm_stateNext != SETUP_IDLE) && (stepup_fsm_stateReg == SETUP_IDLE));
+  assign stepup_fsm_onExit_CLEAN_SCREEN = ((stepup_fsm_stateNext != CLEAN_SCREEN) && (stepup_fsm_stateReg == CLEAN_SCREEN));
   assign stepup_fsm_onExit_START_DRAW_OPEN = ((stepup_fsm_stateNext != START_DRAW_OPEN) && (stepup_fsm_stateReg == START_DRAW_OPEN));
   assign stepup_fsm_onExit_WAIT_DRAW_OPEN_DONE = ((stepup_fsm_stateNext != WAIT_DRAW_OPEN_DONE) && (stepup_fsm_stateReg == WAIT_DRAW_OPEN_DONE));
   assign stepup_fsm_onExit_WAIT_GAME_START = ((stepup_fsm_stateNext != WAIT_GAME_START) && (stepup_fsm_stateReg == WAIT_GAME_START));
@@ -1336,7 +1361,8 @@ module display_controller (
   assign stepup_fsm_onExit_START_DRAW_WALL = ((stepup_fsm_stateNext != START_DRAW_WALL) && (stepup_fsm_stateReg == START_DRAW_WALL));
   assign stepup_fsm_onExit_WAIT_DRAW_WALL_DONE = ((stepup_fsm_stateNext != WAIT_DRAW_WALL_DONE) && (stepup_fsm_stateReg == WAIT_DRAW_WALL_DONE));
   assign stepup_fsm_onExit_DRAW_SCORE = ((stepup_fsm_stateNext != DRAW_SCORE) && (stepup_fsm_stateReg == DRAW_SCORE));
-  assign stepup_fsm_onEntry_IDLE = ((stepup_fsm_stateNext == IDLE) && (stepup_fsm_stateReg != IDLE));
+  assign stepup_fsm_onEntry_SETUP_IDLE = ((stepup_fsm_stateNext == SETUP_IDLE) && (stepup_fsm_stateReg != SETUP_IDLE));
+  assign stepup_fsm_onEntry_CLEAN_SCREEN = ((stepup_fsm_stateNext == CLEAN_SCREEN) && (stepup_fsm_stateReg != CLEAN_SCREEN));
   assign stepup_fsm_onEntry_START_DRAW_OPEN = ((stepup_fsm_stateNext == START_DRAW_OPEN) && (stepup_fsm_stateReg != START_DRAW_OPEN));
   assign stepup_fsm_onEntry_WAIT_DRAW_OPEN_DONE = ((stepup_fsm_stateNext == WAIT_DRAW_OPEN_DONE) && (stepup_fsm_stateReg != WAIT_DRAW_OPEN_DONE));
   assign stepup_fsm_onEntry_WAIT_GAME_START = ((stepup_fsm_stateNext == WAIT_GAME_START) && (stepup_fsm_stateReg != WAIT_GAME_START));
@@ -1360,9 +1386,9 @@ module display_controller (
       cnt_value_1 <= 2'b00;
       stepup_x <= 9'h0;
       stepup_y <= 8'h0;
-      stepup_logoHasRm <= 1'b0;
+      stepup_game_is_running <= 1'b0;
       fsm_stateReg <= IDLE;
-      stepup_fsm_stateReg <= IDLE;
+      stepup_fsm_stateReg <= SETUP_IDLE;
     end else begin
       wr_row_cnt_value <= wr_row_cnt_valueNext;
       col_cnt_value <= col_cnt_valueNext;
@@ -1392,6 +1418,17 @@ module display_controller (
       fsm_stateReg <= fsm_stateNext;
       stepup_fsm_stateReg <= stepup_fsm_stateNext;
       case(stepup_fsm_stateReg)
+        CLEAN_SCREEN : begin
+          if(bf_clear_done) begin
+            if(stepup_game_is_running) begin
+              stepup_x <= 9'h0d2;
+              stepup_y <= 8'h17;
+            end else begin
+              stepup_x <= 9'h018;
+              stepup_y <= 8'h42;
+            end
+          end
+        end
         START_DRAW_OPEN : begin
         end
         WAIT_DRAW_OPEN_DONE : begin
@@ -1402,16 +1439,8 @@ module display_controller (
           end
         end
         WAIT_GAME_START : begin
-          if(stepup_logoHasRm) begin
-            stepup_x <= 9'h0d2;
-            stepup_y <= 8'h17;
-            stepup_logoHasRm <= 1'b0;
-          end else begin
-            if(game_start) begin
-              stepup_x <= 9'h018;
-              stepup_y <= 8'h42;
-              stepup_logoHasRm <= 1'b1;
-            end
+          if(game_start) begin
+            stepup_game_is_running <= 1'b1;
           end
         end
         START_DRAW_STRING : begin
@@ -1438,10 +1467,7 @@ module display_controller (
           stepup_y <= 8'h0;
         end
         default : begin
-          if(draw_openning_start) begin
-            stepup_x <= 9'h018;
-            stepup_y <= 8'h42;
-          end
+          stepup_game_is_running <= 1'b0;
         end
       endcase
     end
@@ -1456,20 +1482,22 @@ module display_controller (
       end
     end
     case(stepup_fsm_stateReg)
+      CLEAN_SCREEN : begin
+        if(bf_clear_done) begin
+          if(stepup_game_is_running) begin
+            stepup_scale <= 3'b000;
+            stepup_color <= 4'b0110;
+          end else begin
+            stepup_scale <= 3'b010;
+            stepup_color <= 4'b0110;
+          end
+        end
+      end
       START_DRAW_OPEN : begin
       end
       WAIT_DRAW_OPEN_DONE : begin
       end
       WAIT_GAME_START : begin
-        if(stepup_logoHasRm) begin
-          stepup_scale <= 3'b000;
-          stepup_color <= 4'b0110;
-        end else begin
-          if(game_start) begin
-            stepup_scale <= 3'b010;
-            stepup_color <= 4'b0010;
-          end
-        end
       end
       START_DRAW_STRING : begin
       end
@@ -1486,10 +1514,6 @@ module display_controller (
       DRAW_SCORE : begin
       end
       default : begin
-        if(draw_openning_start) begin
-          stepup_scale <= 3'b010;
-          stepup_color <= 4'b0110;
-        end
       end
     endcase
   end
@@ -1966,19 +1990,36 @@ module bram_2p (
   input  wire          rd_en,
   input  wire [16:0]   rd_addr,
   output wire [3:0]    rd_data,
+  input  wire          clear_start,
+  output wire          clear_done,
   input  wire          core_clk,
   input  wire          core_rst
 );
 
   reg        [3:0]    memory_spinal_port1;
+  wire       [16:0]   temp_full_addr_valueNext;
+  wire       [0:0]    temp_full_addr_valueNext_1;
+  reg                 addr_inc;
+  reg                 full_addr_willIncrement;
+  wire                full_addr_willClear;
+  reg        [16:0]   full_addr_valueNext;
+  reg        [16:0]   full_addr_value;
+  wire                full_addr_willOverflowIfInc;
+  wire                full_addr_willOverflow;
+  reg                 addr_inc_regNext;
+  wire       [16:0]   wr_addr_1;
+  wire       [3:0]    wr_data_1;
+  wire                wr_en_1;
   (* ram_style = "block" *) reg [3:0] memory [0:76799];
 
+  assign temp_full_addr_valueNext_1 = full_addr_willIncrement;
+  assign temp_full_addr_valueNext = {16'd0, temp_full_addr_valueNext_1};
   initial begin
     $readmemb("display_top.v_toplevel_fb_memory.bin",memory);
   end
   always @(posedge core_clk) begin
-    if(wr_en) begin
-      memory[wr_addr] <= wr_data;
+    if(wr_en_1) begin
+      memory[wr_addr_1] <= wr_data_1;
     end
   end
 
@@ -1988,6 +2029,48 @@ module bram_2p (
     end
   end
 
+  always @(*) begin
+    full_addr_willIncrement = 1'b0;
+    if(addr_inc) begin
+      full_addr_willIncrement = 1'b1;
+    end
+  end
+
+  assign full_addr_willClear = 1'b0;
+  assign full_addr_willOverflowIfInc = (full_addr_value == 17'h12bff);
+  assign full_addr_willOverflow = (full_addr_willOverflowIfInc && full_addr_willIncrement);
+  always @(*) begin
+    if(full_addr_willOverflow) begin
+      full_addr_valueNext = 17'h0;
+    end else begin
+      full_addr_valueNext = (full_addr_value + temp_full_addr_valueNext);
+    end
+    if(full_addr_willClear) begin
+      full_addr_valueNext = 17'h0;
+    end
+  end
+
+  assign clear_done = ((! addr_inc) && addr_inc_regNext);
+  assign wr_addr_1 = (addr_inc ? full_addr_value : wr_addr);
+  assign wr_data_1 = (addr_inc ? 4'b0010 : wr_data);
+  assign wr_en_1 = (addr_inc || wr_en);
   assign rd_data = memory_spinal_port1;
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      addr_inc <= 1'b0;
+      full_addr_value <= 17'h0;
+      addr_inc_regNext <= 1'b0;
+    end else begin
+      if(clear_start) begin
+        addr_inc <= 1'b1;
+      end
+      full_addr_value <= full_addr_valueNext;
+      if(full_addr_willOverflow) begin
+        addr_inc <= 1'b0;
+      end
+      addr_inc_regNext <= addr_inc;
+    end
+  end
+
 
 endmodule

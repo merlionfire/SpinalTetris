@@ -48,6 +48,7 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
     val screen_is_ready = in Bool()
     val force_refresh = in Bool()
     val ctrl_allowed = out Bool()
+    val softReset  = out Bool()
   }
 
 
@@ -380,6 +381,7 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
 
     playfield_fsm_reset :=  False
     clear_start := False
+    io.softReset := False
 
     val drop_timeout = Timeout( if ( test ) 10000 else levelFallInCycle )  // Timeout who tick after 10 ms
     val lock_timeout = Timeout( if ( test ) 100 else lockDownInCycle  )  // Timeout who tick after 10 ms
@@ -444,6 +446,7 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
 
     val END: State  = new State {
       whenIsActive {
+        io.softReset := True   // Game fail and restart the game
         goto(IDLE)
       }
     }

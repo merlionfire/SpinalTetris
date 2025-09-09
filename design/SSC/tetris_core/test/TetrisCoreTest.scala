@@ -447,7 +447,7 @@ class TetrisCoreTest extends AnyFunSuite {
       dut.coreClockDomain.forkStimulus(4 ns)
       dut.vgaClockDomain.forkStimulus(10 ns)
 
-      SimTimeout(400 ms) // adjust timeout as needed
+      SimTimeout(500 ms) // adjust timeout as needed
       dut.coreClockDomain.waitSampling(20)
 
 
@@ -633,9 +633,9 @@ class TetrisCoreTest extends AnyFunSuite {
 
       //Wait for new block is created and then stop
 
-      //waitState(dut, "FALLING")
+      waitState(dut, "FALLING")
 
-      waitState(dut, "PLACE")
+      //waitState(dut, "PLACE")
 
       println("[DEBUG] Simulation logic finished. Shutting down monitor threads...")
       simulationRunning = false

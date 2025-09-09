@@ -109,6 +109,7 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
   import config.playFieldConfig._
 
   val io = new Bundle {
+    val softRest  = in Bool()
     val draw_openning_start = in Bool()
     val game_start = in Bool()
     val row_val =  slave Flow( Bits(colBlocksNum bits) )
@@ -121,6 +122,8 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
     val draw_y_orig = out UInt (FB_Y_ADDRWIDTH bits) default 0
 
     val draw_field_done = out Bool()
+    val bf_clear_start = out Bool()
+    val bf_clear_done = in Bool()
   }
 
   noIoPrefix()
@@ -383,24 +386,45 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
     }
 
 
-    val logoHasRm = RegInit(False)
+    //val logoHasRm = RegInit(False)
+    val game_is_running = RegInit(False)
 
     val fsm = new StateMachine {
 
       start_char_draw := False
       start_block_draw := False
       io.screen_is_ready := False
-
+      io.bf_clear_start := False
       allStrings.cnt.willIncrement := False
 
       val SETUP_IDLE = makeInstantEntry()
 
       SETUP_IDLE.whenIsActive {
+        game_is_running := False
         when(io.draw_openning_start) {
-          load_chars_info("Tetris")
-          goto(START_DRAW_OPEN)
+          goto(CLEAN_SCREEN)
         }
 
+      }
+
+      val CLEAN_SCREEN : State = new State {
+        onEntry {
+          io.bf_clear_start := True
+        }
+
+        whenIsActive {
+          when ( io.bf_clear_done ) {
+            when ( game_is_running )  {
+              load_chars_info("Score")
+              goto(START_DRAW_STRING)
+            } .otherwise {
+              load_chars_info("Tetris")
+              goto(START_DRAW_OPEN)
+            }
+
+          }
+
+        }
       }
 
       val START_DRAW_OPEN: State = new State {
@@ -428,6 +452,7 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
 
       val WAIT_GAME_START: State = new State {
         whenIsActive {
+          /*
           when(logoHasRm) {
             load_chars_info("Score")
             logoHasRm := False
@@ -438,6 +463,12 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
             allStrings.cnt.clear()
             goto(START_DRAW_OPEN)
           }
+*/
+          when (io.game_start) {
+            game_is_running := True
+            goto(CLEAN_SCREEN)
+          }
+
         }
 
       }
@@ -510,6 +541,10 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
           io.screen_is_ready := True
           x := 0
           y := 0
+
+          when ( io.softRest ) {
+            goto(CLEAN_SCREEN)
+          }
         }
       }
 

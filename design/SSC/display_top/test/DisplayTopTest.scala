@@ -514,11 +514,11 @@ class DisplayTopTest extends AnyFunSuite {
 
       init(dut)
 
-      SimTimeout(5 ms) // adjust timeout as needed
+      SimTimeout(20 ms) // adjust timeout as needed
 
       //SimTimeout(10 ms)
 
-      dut.vgaClockDomain.waitSampling(20)
+      dut.vgaClockDomain.waitSampling(10)
       dut.vgaClockDomain.forkSimSpeedPrinter()
 
 
@@ -536,13 +536,15 @@ class DisplayTopTest extends AnyFunSuite {
       println("@" + simTime() + " Draw Openning Screen" )
       dut.coreClockDomain.waitSampling()
 
-      dut.coreClockDomain.waitSamplingWhere(dut.core.draw_controller.setup_fsm.fsm_debug.toInt == 3   )
+      // Customize code
+      dut.coreClockDomain.waitSamplingWhere(dut.core.draw_controller.setup_fsm.fsm_debug.toInt == 4    )  /* WAIT_GAME_START */
 
       dut.coreClockDomain.waitSampling(10)
       dut.io.game_start #= true
       dut.coreClockDomain.waitSampling(10)
       dut.io.game_start #= false
-      dut.coreClockDomain.waitSamplingWhere(dut.core.draw_controller.setup_fsm.fsm_debug.toInt == 10   )
+      // Customize code
+      dut.coreClockDomain.waitSamplingWhere(dut.core.draw_controller.setup_fsm.fsm_debug.toInt == 11   ) /* DRAW_SCORE */
 
       // Testing Piece draw
 

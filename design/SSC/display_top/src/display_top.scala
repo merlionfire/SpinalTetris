@@ -220,7 +220,7 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
     muxAndConnectIOByName( draw_controller.io.draw_block -> draw_block_engine.io )( List( "start", "width", "height", "in_color", "pat_color", "fill_pattern"  ))("draw_block")
     draw_controller.io.draw_char.done := draw_char_engine.io.done
     draw_controller.io.draw_block.done := draw_block_engine.io.done
-
+    draw_controller.io.softRest := io.softRest
 
     // piece_draw_engine interface
     draw_controller.io.row_val := io.row_val
@@ -258,8 +258,14 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
       fb.io.wr.data := draw_block_engine.io.out_color.asBits
     }
 
+    fb.io.clear_start := draw_controller.io.bf_clear_start
+    draw_controller.io.bf_clear_done := fb.io.clear_done
+
+
     io.draw_done := RegNext( (draw_char_engine.io.done ||  draw_block_engine.io.done), init=False )
     io.screen_is_ready := draw_controller.io.screen_is_ready
+
+
   }.setName("")
 
   val vga = new ClockingArea(vgaClockDomain) {
@@ -331,7 +337,8 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
     pixel_debug.payload := io.vga.color
 
 
-    vga_sync.io.softReset := io.softRest
+    vga_sync.io.softReset := BufferCC( io.softRest, False )
+
 
     val delayNumExpected = LatencyAnalysis(vga_sync.io.colorEn, io.vga.colorEn)
     println(f"[INFO] vga_sync.io.colorEn -> io.vga.colorEn  = ${delayNumExpected} ( Expected ) / ${delayNum} ( Calc ) ")

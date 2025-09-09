@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : logic_top
-// Git hash  : 1966d2c2753e3d447f4de5f4d933de13c0cb6e6b
+// Git hash  : 0ba87d8f6dc393cafd790a511174b6e6b4938351
 
 `timescale 1ns/1ps
 
@@ -10,11 +10,13 @@ module logic_top (
   input  wire          move_right,
   input  wire          move_down,
   input  wire          rotate,
-  input  wire          sof,
   output wire          row_val_valid,
   output wire [9:0]    row_val_payload,
   input  wire          draw_field_done,
   input  wire          screen_is_ready,
+  input  wire          force_refresh,
+  output wire          ctrl_allowed,
+  output reg           game_restart,
   input  wire          clk,
   input  wire          reset
 );
@@ -25,6 +27,14 @@ module logic_top (
   localparam S = 3'd4;
   localparam T = 3'd5;
   localparam Z = 3'd6;
+  localparam STANDBY = 3'd0;
+  localparam MOVE = 3'd1;
+  localparam CHECK = 3'd2;
+  localparam ERASE = 3'd3;
+  localparam UPDATE = 3'd4;
+  localparam START_REFRESH = 3'd5;
+  localparam WAIT_FRESH_DONE = 3'd6;
+  localparam STATUS = 3'd7;
   localparam IDLE = 4'd0;
   localparam GAME_START = 4'd1;
   localparam RANDOM_GEN = 4'd2;
@@ -34,14 +44,6 @@ module logic_top (
   localparam LOCK = 4'd6;
   localparam LOCKDOWN = 4'd7;
   localparam PATTERN = 4'd8;
-  localparam STANDBY = 3'd0;
-  localparam MOVE = 3'd1;
-  localparam CHECK = 3'd2;
-  localparam ERASE = 3'd3;
-  localparam UPDATE = 3'd4;
-  localparam START_REFRESH = 3'd5;
-  localparam WAIT_FRESH_DONE = 3'd6;
-  localparam STATUS = 3'd7;
 
   reg                 play_field_1_fetch;
   wire                piece_gen_io_shape_valid;
@@ -59,9 +61,9 @@ module logic_top (
   wire       [9:0]    play_field_1_row_val_payload;
   wire                play_field_1_lines_cleared_valid;
   wire       [4:0]    play_field_1_lines_cleared_payload;
-  wire       [9:0]    temp_main_fsm_drop_timeout_counter_valueNext;
+  wire       [24:0]   temp_main_fsm_drop_timeout_counter_valueNext;
   wire       [0:0]    temp_main_fsm_drop_timeout_counter_valueNext_1;
-  wire       [3:0]    temp_main_fsm_lock_timeout_counter_valueNext;
+  wire       [24:0]   temp_main_fsm_lock_timeout_counter_valueNext;
   wire       [0:0]    temp_main_fsm_lock_timeout_counter_valueNext_1;
   wire       [7:0]    temp_score_total_score;
   wire                temp_when;
@@ -114,16 +116,16 @@ module logic_top (
   reg                 main_fsm_drop_timeout_stateRise;
   wire                main_fsm_drop_timeout_counter_willIncrement;
   reg                 main_fsm_drop_timeout_counter_willClear;
-  reg        [9:0]    main_fsm_drop_timeout_counter_valueNext;
-  reg        [9:0]    main_fsm_drop_timeout_counter_value;
+  reg        [24:0]   main_fsm_drop_timeout_counter_valueNext;
+  reg        [24:0]   main_fsm_drop_timeout_counter_value;
   wire                main_fsm_drop_timeout_counter_willOverflowIfInc;
   wire                main_fsm_drop_timeout_counter_willOverflow;
   reg                 main_fsm_lock_timeout_state;
   reg                 main_fsm_lock_timeout_stateRise;
   wire                main_fsm_lock_timeout_counter_willIncrement;
   reg                 main_fsm_lock_timeout_counter_willClear;
-  reg        [3:0]    main_fsm_lock_timeout_counter_valueNext;
-  reg        [3:0]    main_fsm_lock_timeout_counter_value;
+  reg        [24:0]   main_fsm_lock_timeout_counter_valueNext;
+  reg        [24:0]   main_fsm_lock_timeout_counter_value;
   wire                main_fsm_lock_timeout_counter_willOverflowIfInc;
   wire                main_fsm_lock_timeout_counter_willOverflow;
   wire       [3:0]    main_fsm_debug;
@@ -186,9 +188,9 @@ module logic_top (
   assign temp_when_2 = (ctrl_en && rotate);
   assign temp_when_3 = ((ctrl_en && move_down) || drop_down);
   assign temp_main_fsm_drop_timeout_counter_valueNext_1 = main_fsm_drop_timeout_counter_willIncrement;
-  assign temp_main_fsm_drop_timeout_counter_valueNext = {9'd0, temp_main_fsm_drop_timeout_counter_valueNext_1};
+  assign temp_main_fsm_drop_timeout_counter_valueNext = {24'd0, temp_main_fsm_drop_timeout_counter_valueNext_1};
   assign temp_main_fsm_lock_timeout_counter_valueNext_1 = main_fsm_lock_timeout_counter_willIncrement;
-  assign temp_main_fsm_lock_timeout_counter_valueNext = {3'd0, temp_main_fsm_lock_timeout_counter_valueNext_1};
+  assign temp_main_fsm_lock_timeout_counter_valueNext = {24'd0, temp_main_fsm_lock_timeout_counter_valueNext_1};
   assign temp_score_total_score = {5'd0, score_score_with_bonus};
   seven_bag_rng piece_gen (
     .io_enable        (gen_piece_en                   ), //i
@@ -400,7 +402,7 @@ module logic_top (
         end
       end
       START_REFRESH : begin
-        if(sof) begin
+        if(force_refresh) begin
           play_field_1_fetch = 1'b1;
           playfield_fsm_stateNext = WAIT_FRESH_DONE;
         end
@@ -429,9 +431,11 @@ module logic_top (
   assign piece_req_valid = req_valid;
   assign playfield_fsm_wantExit = 1'b0;
   assign playfield_fsm_wantKill = 1'b0;
+  assign ctrl_allowed = (playfield_fsm_stateReg == MOVE);
   assign main_fsm_wantExit = 1'b0;
   always @(*) begin
     main_fsm_wantStart = 1'b0;
+    game_restart = 1'b1;
     main_fsm_stateNext = main_fsm_stateReg;
     case(main_fsm_stateReg)
       GAME_START : begin
@@ -454,6 +458,7 @@ module logic_top (
         end
       end
       END_1 : begin
+        game_restart = 1'b1;
         main_fsm_stateNext = IDLE;
       end
       FALLING : begin
@@ -505,16 +510,16 @@ module logic_top (
     end
   end
 
-  assign main_fsm_drop_timeout_counter_willOverflowIfInc = (main_fsm_drop_timeout_counter_value == 10'h3e7);
+  assign main_fsm_drop_timeout_counter_willOverflowIfInc = (main_fsm_drop_timeout_counter_value == 25'h168decf);
   assign main_fsm_drop_timeout_counter_willOverflow = (main_fsm_drop_timeout_counter_willOverflowIfInc && main_fsm_drop_timeout_counter_willIncrement);
   always @(*) begin
     if(main_fsm_drop_timeout_counter_willOverflow) begin
-      main_fsm_drop_timeout_counter_valueNext = 10'h0;
+      main_fsm_drop_timeout_counter_valueNext = 25'h0;
     end else begin
       main_fsm_drop_timeout_counter_valueNext = (main_fsm_drop_timeout_counter_value + temp_main_fsm_drop_timeout_counter_valueNext);
     end
     if(main_fsm_drop_timeout_counter_willClear) begin
-      main_fsm_drop_timeout_counter_valueNext = 10'h0;
+      main_fsm_drop_timeout_counter_valueNext = 25'h0;
     end
   end
 
@@ -531,16 +536,16 @@ module logic_top (
     end
   end
 
-  assign main_fsm_lock_timeout_counter_willOverflowIfInc = (main_fsm_lock_timeout_counter_value == 4'b1001);
+  assign main_fsm_lock_timeout_counter_willOverflowIfInc = (main_fsm_lock_timeout_counter_value == 25'h17d783f);
   assign main_fsm_lock_timeout_counter_willOverflow = (main_fsm_lock_timeout_counter_willOverflowIfInc && main_fsm_lock_timeout_counter_willIncrement);
   always @(*) begin
     if(main_fsm_lock_timeout_counter_willOverflow) begin
-      main_fsm_lock_timeout_counter_valueNext = 4'b0000;
+      main_fsm_lock_timeout_counter_valueNext = 25'h0;
     end else begin
       main_fsm_lock_timeout_counter_valueNext = (main_fsm_lock_timeout_counter_value + temp_main_fsm_lock_timeout_counter_valueNext);
     end
     if(main_fsm_lock_timeout_counter_willClear) begin
-      main_fsm_lock_timeout_counter_valueNext = 4'b0000;
+      main_fsm_lock_timeout_counter_valueNext = 25'h0;
     end
   end
 
@@ -628,9 +633,9 @@ module logic_top (
       playfield_fsm_reset <= 1'b0;
       debug_move_type <= 3'b000;
       main_fsm_drop_timeout_state <= 1'b0;
-      main_fsm_drop_timeout_counter_value <= 10'h0;
+      main_fsm_drop_timeout_counter_value <= 25'h0;
       main_fsm_lock_timeout_state <= 1'b0;
-      main_fsm_lock_timeout_counter_value <= 4'b0000;
+      main_fsm_lock_timeout_counter_value <= 25'h0;
       score_total_score <= 8'h0;
       playfield_fsm_stateReg <= STANDBY;
       main_fsm_stateReg <= IDLE;
@@ -3286,94 +3291,6 @@ module piece_checker (
         piece_in_rValid <= piece_in_valid;
       end
       case(piece_payload_type)
-        I : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b11;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b10;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b11;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b11;
-              blks_offset_3_y <= 2'b10;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b11;
-            end
-          endcase
-        end
-        J : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b00;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b10;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b10;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b01;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b00;
-            end
-          endcase
-        end
         Z : begin
           case(piece_payload_rot)
             2'b00 : begin
@@ -3462,47 +3379,47 @@ module piece_checker (
             end
           endcase
         end
-        O : begin
+        I : begin
           case(piece_payload_rot)
             2'b00 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b11;
               blks_offset_3_y <= 2'b01;
             end
             2'b01 : begin
-              blks_offset_0_x <= 2'b01;
+              blks_offset_0_x <= 2'b10;
               blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
+              blks_offset_1_x <= 2'b10;
               blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
+              blks_offset_2_y <= 2'b10;
               blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
+              blks_offset_3_y <= 2'b11;
             end
             2'b10 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b10;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
+              blks_offset_1_y <= 2'b10;
               blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b11;
+              blks_offset_3_y <= 2'b10;
             end
             default : begin
               blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b00;
               blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b11;
             end
           endcase
         end
@@ -3550,7 +3467,7 @@ module piece_checker (
             end
           endcase
         end
-        default : begin
+        L : begin
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
@@ -3591,6 +3508,94 @@ module piece_checker (
               blks_offset_2_y <= 2'b00;
               blks_offset_3_x <= 2'b01;
               blks_offset_3_y <= 2'b00;
+            end
+          endcase
+        end
+        J : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b00;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b10;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b10;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b00;
+              blks_offset_3_y <= 2'b01;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b00;
+            end
+          endcase
+        end
+        default : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
             end
           endcase
         end
