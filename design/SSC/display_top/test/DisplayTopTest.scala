@@ -1,11 +1,10 @@
 package SSC.display_top
 
+import SSC.tetris_core.tetris_core
 import utils.PathUtils
 import config._
-
 import spinal.core._
 import spinal.core.sim._
-
 import org.scalatest.funsuite.AnyFunSuite
 import spinal.core.{Bits, ClockDomain}
 import spinal.lib.sim.FlowMonitor
@@ -34,9 +33,10 @@ class DisplayTopTest extends AnyFunSuite {
   // ***************************************
   //  CUSTOM CODE END
   // ***************************************
-  val compiler : String = "verilator"
-  //val compiler : String = "vcs"
+  //val compiler : String = "verilator"
+  val compiler : String = "vcs"
   val runFolder : String = PathUtils.getRtlOutputPath(getClass, middlePath = "design/SSC", targetName = "sim").toString
+  val workFolder = runFolder+"/"+compiler
 
   val memory_model : String  = compiler match  {
     case "verilator" => "RAMB16_S9_VERILATOR.v"
@@ -53,6 +53,7 @@ class DisplayTopTest extends AnyFunSuite {
   val expectedData, receivedData = ArrayBuffer[Int]()
   val receivedHitStatus = mutable.Queue[Boolean]()
   var obs_mem = mutable.Queue[(Int, Int, Int)]()
+
   val shift_mem = mutable.Queue[ArrayBuffer[BigInt]]()
 
   val  config = DisplayTopConfig(offset_x = 32 )
@@ -218,7 +219,8 @@ class DisplayTopTest extends AnyFunSuite {
   }
 
   def init(dut:display_top): Unit = {
-    dut.io.softRest #= true
+    dut.io.softRest #= false
+    dut.io.game_restart #= false
     if (debugMode) {
       dut.io.debug.draw_char_start #= false
       dut.io.debug.draw_block_start #= false
@@ -231,6 +233,65 @@ class DisplayTopTest extends AnyFunSuite {
    }
   }
 
+
+  def createScreenImg () = {
+    def vga4BitTo8Bit(color : ( Int, Int, Int) ): Int = {
+      // Scale the 4-bit value (0-15) to the 8-bit range (0-255)
+      // Multiplying by 17 (255 / 15 is approximately 17) often works well for this.
+      // (value & 0xF) * 17
+      // Alternatively, you can also try bit shifting and replication:
+      // (value & 0xF) | ((value & 0xF) << 4)
+      val r = color._1 | color._1 << 4
+      val g = color._2 | color._2 << 4
+      val color8bit = List( color._1, color._2,color._3 ).map(  x => x | ( x << 4 ))
+      color8bit(0) << 16 | color8bit(1) << 8 | color8bit(2)
+
+    }
+
+    val width = config.xWidth
+    val height = config.yWidth
+
+    // Define the output directory
+    val outputDirName = "screenShotsnap"
+    val outputDir = new File(s"${workFolder}/${outputDirName}")
+
+    // Create the directory if it doesn't exist
+    if (!outputDir.exists()) {
+      if (outputDir.mkdir()) {
+        println(s"Created directory: ${outputDir.getAbsolutePath}")
+      } else {
+        // Handle the case where directory creation fails (e.g., permissions)
+        println(s"[Error] Failed to create directory: ${outputDir.getAbsolutePath}. Images might not be saved.")
+      }
+    }
+
+    var idx = 0
+    while ( obs_mem.length >= ( 640 * 480 )   ) {
+      println(s"Start to generate screen image : ${idx}")
+      val img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+
+      for (y <- 0 until height) {
+        for (x <- 0 until width) {
+          val rgb = obs_mem.dequeue()
+          img.setRGB(x, y, vga4BitTo8Bit(rgb))
+        }
+      }
+
+      val g = img.createGraphics()
+      val image_file_name:String = s"screen_640x480_${idx}.png"
+      g.dispose()
+      val outputFile = new File(outputDir, image_file_name)
+      ImageIO.write(img, "png", outputFile)
+      println(s"Image saved to ${outputFile.getAbsolutePath}")
+      idx = idx + 1
+
+    }
+
+    if ( obs_mem.nonEmpty ) {
+      println(f"[Error] obs_mem is NOT empty and number of the remaining items : ${obs_mem.size}")
+    }
+
+  }
 
   test("Test char and block - ") {
 
@@ -597,5 +658,49 @@ class DisplayTopTest extends AnyFunSuite {
 
     }
   }
+
+  test("Test : Stimulate that game fails and then screen is cleared ") {
+    compiled.doSimUntilVoid(seed = 42) { dut =>
+
+      require(!debugMode, "<debugMode> must be false because this test uses draw_fsm to drawn screen")
+      dut.coreClockDomain.forkStimulus(4 ns)
+      dut.vgaClockDomain.forkStimulus(10 ns)
+
+      init(dut)
+
+      SimTimeout(20 ms) // adjust timeout as needed
+
+      FlowMonitor(dut.vga.pixel_debug, dut.vgaClockDomain) { payload =>
+        obs_mem.enqueue((payload.r.toInt, payload.g.toInt, payload.b.toInt))
+      }
+
+      dut.vgaClockDomain.waitSampling(10)
+      // Customize code
+      dut.coreClockDomain.waitSamplingWhere(dut.core.draw_controller.setup_fsm.fsm_debug.toInt == 4    )  /* WAIT_GAME_START */
+
+      dut.coreClockDomain.waitSamplingWhere(dut.io.sof.toBoolean)
+      dut.io.game_start #= true
+      dut.coreClockDomain.waitSampling(10)
+      dut.io.game_start #= false
+
+      // Wait a new Frame
+      dut.coreClockDomain.waitSamplingWhere(dut.io.sof.toBoolean)
+      dut.vgaClockDomain.waitSampling(10)
+
+      // Assert input softReset
+      dut.io.game_restart #= true
+      dut.coreClockDomain.waitSampling(10)
+      dut.io.game_restart #= false
+
+      // Wait a new Frame
+      dut.coreClockDomain.waitSamplingWhere(dut.io.sof.toBoolean)
+      println("[DEBUG] doSim is exited !!!")
+      println("simTime : " + simTime())
+      createScreenImg ()
+      simSuccess()
+
+    }
+  }
+
 
 }

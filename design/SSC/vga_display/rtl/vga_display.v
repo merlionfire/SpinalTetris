@@ -11,7 +11,7 @@ module vga_display (
   output reg  [3:0]    vga_color_r,
   output reg  [3:0]    vga_color_g,
   output reg  [3:0]    vga_color_b,
-  input  wire          softRest,
+  input  wire          game_restart,
   input  wire          core_clk,
   input  wire          core_rst,
   input  wire          vga_clk,
@@ -165,7 +165,7 @@ module vga_display (
     .core_rst (core_rst                            )  //i
   );
   vga_sync_gen vga_sync (
-    .io_softReset (softRest            ), //i
+    .io_softReset (game_restart            ), //i
     .io_sof       (vga_sync_io_sof     ), //o
     .io_sol       (vga_sync_io_sol     ), //o
     .io_sos       (vga_sync_io_sos     ), //o

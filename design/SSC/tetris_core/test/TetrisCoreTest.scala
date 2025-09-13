@@ -28,8 +28,8 @@ class TetrisCoreTest extends AnyFunSuite {
   // ***************************************
   //  CUSTOM CODE END
   // ***************************************
-  val compiler : String = "verilator"
-  //val compiler : String = "vcs"
+  //val compiler : String = "verilator"
+  val compiler : String = "vcs"
   val runFolder : String = PathUtils.getRtlOutputPath(getClass, middlePath = "design/SSC", targetName = "sim").toString
 
   val workFolder = runFolder+"/"+compiler

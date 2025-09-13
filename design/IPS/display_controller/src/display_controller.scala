@@ -109,7 +109,7 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
   import config.playFieldConfig._
 
   val io = new Bundle {
-    val softRest  = in Bool()
+    val game_restart  = in Bool()
     val draw_openning_start = in Bool()
     val game_start = in Bool()
     val row_val =  slave Flow( Bits(colBlocksNum bits) )
@@ -416,6 +416,7 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
           when ( io.bf_clear_done ) {
             when ( game_is_running )  {
               load_chars_info("Score")
+              allStrings.cnt.load( offset("Score") )  // Reset offset index to "Score"
               goto(START_DRAW_STRING)
             } .otherwise {
               load_chars_info("Tetris")
@@ -542,7 +543,7 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
           x := 0
           y := 0
 
-          when ( io.softRest ) {
+          when ( io.game_restart ) {
             goto(CLEAN_SCREEN)
           }
         }

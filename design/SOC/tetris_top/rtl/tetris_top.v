@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : tetris_top
-// Git hash  : 552d77ebcaed901cbb938e37399a3b955382786d
+// Git hash  : 7c2973ed3e0432844c4e8d0f0dd5f674e7dd449e
 
 `timescale 1ns/1ps
 
@@ -320,6 +320,7 @@ module tetris_core (
   wire                game_logic_inst_row_val_valid;
   wire       [9:0]    game_logic_inst_row_val_payload;
   wire                game_logic_inst_ctrl_allowed;
+  wire                game_logic_inst_softReset;
   wire                game_display_inst_vga_vSync;
   wire                game_display_inst_vga_hSync;
   wire                game_display_inst_vga_colorEn;
@@ -343,6 +344,7 @@ module tetris_core (
     .screen_is_ready (game_display_inst_screen_is_ready   ), //i
     .force_refresh   (game_display_inst_sof               ), //i
     .ctrl_allowed    (game_logic_inst_ctrl_allowed        ), //o
+    .softReset       (game_logic_inst_softReset           ), //o
     .core_clk        (core_clk                            ), //i
     .core_rst        (core_rst                            )  //i
   );
@@ -353,7 +355,7 @@ module tetris_core (
     .vga_color_r     (game_display_inst_vga_color_r[3:0]  ), //o
     .vga_color_g     (game_display_inst_vga_color_g[3:0]  ), //o
     .vga_color_b     (game_display_inst_vga_color_b[3:0]  ), //o
-    .softRest        (1'b0                                ), //i
+    .game_restart        (game_logic_inst_softReset           ), //i
     .core_clk        (core_clk                            ), //i
     .core_rst        (core_rst                            ), //i
     .vga_clk         (vga_clk                             ), //i
@@ -383,7 +385,7 @@ module display_top (
   output reg  [3:0]    vga_color_r,
   output reg  [3:0]    vga_color_g,
   output reg  [3:0]    vga_color_b,
-  input  wire          softRest,
+  input  wire          game_restart,
   input  wire          core_clk,
   input  wire          core_rst,
   input  wire          vga_clk,
@@ -397,51 +399,40 @@ module display_top (
   output wire          sof
 );
 
-  wire                core_fb_wr_en;
-  reg        [3:0]    core_fb_wr_data;
-  wire                core_draw_block_engine_start;
-  wire       [7:0]    core_draw_block_engine_width;
-  wire       [7:0]    core_draw_block_engine_height;
-  wire       [3:0]    core_draw_block_engine_in_color;
-  wire       [1:0]    core_draw_block_engine_fill_pattern;
-  wire       [8:0]    core_fb_addr_gen_inst_x;
-  wire       [7:0]    core_fb_addr_gen_inst_y;
-  wire                core_fb_addr_gen_inst_start;
+  wire                fb_wr_en;
+  reg        [3:0]    fb_wr_data;
+  wire                fb_addr_gen_inst_start;
   wire       [3:0]    lbcp_io_addr;
-  wire       [3:0]    core_fb_rd_data;
-  wire       [8:0]    core_draw_char_engine_h_cnt;
-  wire       [7:0]    core_draw_char_engine_v_cnt;
-  wire                core_draw_char_engine_is_running;
-  wire                core_draw_char_engine_out_valid;
-  wire       [3:0]    core_draw_char_engine_out_color;
-  wire                core_draw_char_engine_done;
-  wire       [8:0]    core_draw_block_engine_h_cnt;
-  wire       [7:0]    core_draw_block_engine_v_cnt;
-  wire                core_draw_block_engine_is_running;
-  wire                core_draw_block_engine_out_valid;
-  wire       [3:0]    core_draw_block_engine_out_color;
-  wire                core_draw_block_engine_done;
-  wire       [7:0]    core_piece_draw_gen_length;
-  wire       [3:0]    core_piece_draw_gen_ft_color;
-  wire       [1:0]    core_piece_draw_gen_fill_pattern;
-  wire                core_piece_draw_gen_start_draw;
-  wire       [8:0]    core_piece_draw_gen_draw_x_orig;
-  wire       [7:0]    core_piece_draw_gen_draw_y_orig;
-  wire                core_piece_draw_gen_gen_done;
-  wire       [16:0]   core_fb_addr_gen_inst_out_addr;
-  wire                core_draw_fsm_inst_screen_is_ready;
-  wire                core_draw_fsm_inst_draw_char_start;
-  wire       [6:0]    core_draw_fsm_inst_draw_char_word;
-  wire       [2:0]    core_draw_fsm_inst_draw_char_scale;
-  wire       [3:0]    core_draw_fsm_inst_draw_char_color;
-  wire                core_draw_fsm_inst_draw_block_start;
-  wire       [8:0]    core_draw_fsm_inst_draw_x_orig;
-  wire       [7:0]    core_draw_fsm_inst_draw_y_orig;
-  wire       [7:0]    core_draw_fsm_inst_draw_block_width;
-  wire       [7:0]    core_draw_fsm_inst_draw_block_height;
-  wire       [3:0]    core_draw_fsm_inst_draw_block_color;
-  wire       [3:0]    core_draw_fsm_inst_draw_block_pat_color;
-  wire       [1:0]    core_draw_fsm_inst_draw_block_fill_pattern;
+  wire       [3:0]    fb_rd_data;
+  wire                fb_clear_done;
+  wire       [8:0]    draw_char_engine_1_h_cnt;
+  wire       [7:0]    draw_char_engine_1_v_cnt;
+  wire                draw_char_engine_1_is_running;
+  wire                draw_char_engine_1_out_valid;
+  wire       [3:0]    draw_char_engine_1_out_color;
+  wire                draw_char_engine_1_done;
+  wire       [8:0]    draw_block_engine_1_h_cnt;
+  wire       [7:0]    draw_block_engine_1_v_cnt;
+  wire                draw_block_engine_1_is_running;
+  wire                draw_block_engine_1_out_valid;
+  wire       [3:0]    draw_block_engine_1_out_color;
+  wire                draw_block_engine_1_done;
+  wire       [16:0]   fb_addr_gen_inst_out_addr;
+  wire                draw_controller_screen_is_ready;
+  wire                draw_controller_draw_char_start;
+  wire       [6:0]    draw_controller_draw_char_word;
+  wire       [2:0]    draw_controller_draw_char_scale;
+  wire       [3:0]    draw_controller_draw_char_color;
+  wire                draw_controller_draw_block_start;
+  wire       [7:0]    draw_controller_draw_block_width;
+  wire       [7:0]    draw_controller_draw_block_height;
+  wire       [3:0]    draw_controller_draw_block_in_color;
+  wire       [3:0]    draw_controller_draw_block_pat_color;
+  wire       [1:0]    draw_controller_draw_block_fill_pattern;
+  wire       [8:0]    draw_controller_draw_x_orig;
+  wire       [7:0]    draw_controller_draw_y_orig;
+  wire                draw_controller_draw_field_done;
+  wire                draw_controller_bf_clear_start;
   wire                vga_sync_io_sof;
   wire                vga_sync_io_sol;
   wire                vga_sync_io_sos;
@@ -455,6 +446,7 @@ module display_top (
   wire       [11:0]   lbcp_io_color_payload;
   wire                lb_rd_out_valid;
   wire       [3:0]    lb_rd_out_payload;
+  wire                softRest_buffercc_io_dataOut;
   wire                vga_sync_io_sos_buffercc_io_dataOut;
   wire                vga_sync_io_sof_buffercc_io_dataOut;
   wire                lb_load_valid_buffercc_io_dataOut;
@@ -462,7 +454,7 @@ module display_top (
   wire       [0:0]    temp_dma_fb_fetch_en_cnt_valueNext_1;
   wire       [16:0]   temp_dma_fb_fetch_addr_valueNext;
   wire       [0:0]    temp_dma_fb_fetch_addr_valueNext_1;
-  wire       [1:0]    core_mux_sel;
+  wire       [1:0]    mux_sel;
   reg        [8:0]    temp_h_cnt;
   reg        [7:0]    temp_v_cnt;
   reg                 temp_draw_done;
@@ -511,104 +503,98 @@ module display_top (
   assign temp_dma_fb_fetch_en_cnt_valueNext = {8'd0, temp_dma_fb_fetch_en_cnt_valueNext_1};
   assign temp_dma_fb_fetch_addr_valueNext_1 = dma_fb_fetch_addr_willIncrement;
   assign temp_dma_fb_fetch_addr_valueNext = {16'd0, temp_dma_fb_fetch_addr_valueNext_1};
-  bram_2p core_fb (
-    .wr_en    (core_fb_wr_en                       ), //i
-    .wr_addr  (core_fb_addr_gen_inst_out_addr[16:0]), //i
-    .wr_data  (core_fb_wr_data[3:0]                ), //i
-    .rd_en    (dma_fb_fetch_en                     ), //i
-    .rd_addr  (dma_fb_fetch_addr_value[16:0]       ), //i
-    .rd_data  (core_fb_rd_data[3:0]                ), //o
-    .core_clk (core_clk                            ), //i
-    .core_rst (core_rst                            )  //i
+  bram_2p fb (
+    .wr_en       (fb_wr_en                       ), //i
+    .wr_addr     (fb_addr_gen_inst_out_addr[16:0]), //i
+    .wr_data     (fb_wr_data[3:0]                ), //i
+    .rd_en       (dma_fb_fetch_en                ), //i
+    .rd_addr     (dma_fb_fetch_addr_value[16:0]  ), //i
+    .rd_data     (fb_rd_data[3:0]                ), //o
+    .clear_start (draw_controller_bf_clear_start ), //i
+    .clear_done  (fb_clear_done                  ), //o
+    .core_clk    (core_clk                       ), //i
+    .core_rst    (core_rst                       )  //i
   );
-  draw_char_engine core_draw_char_engine (
-    .start      (core_draw_fsm_inst_draw_char_start     ), //i
-    .word       (core_draw_fsm_inst_draw_char_word[6:0] ), //i
-    .color      (core_draw_fsm_inst_draw_char_color[3:0]), //i
-    .scale      (core_draw_fsm_inst_draw_char_scale[2:0]), //i
-    .h_cnt      (core_draw_char_engine_h_cnt[8:0]       ), //o
-    .v_cnt      (core_draw_char_engine_v_cnt[7:0]       ), //o
-    .is_running (core_draw_char_engine_is_running       ), //o
-    .out_valid  (core_draw_char_engine_out_valid        ), //o
-    .out_color  (core_draw_char_engine_out_color[3:0]   ), //o
-    .done       (core_draw_char_engine_done             ), //o
-    .core_clk   (core_clk                               ), //i
-    .core_rst   (core_rst                               )  //i
+  draw_char_engine draw_char_engine_1 (
+    .start      (draw_controller_draw_char_start     ), //i
+    .word       (draw_controller_draw_char_word[6:0] ), //i
+    .color      (draw_controller_draw_char_color[3:0]), //i
+    .scale      (draw_controller_draw_char_scale[2:0]), //i
+    .h_cnt      (draw_char_engine_1_h_cnt[8:0]       ), //o
+    .v_cnt      (draw_char_engine_1_v_cnt[7:0]       ), //o
+    .is_running (draw_char_engine_1_is_running       ), //o
+    .out_valid  (draw_char_engine_1_out_valid        ), //o
+    .out_color  (draw_char_engine_1_out_color[3:0]   ), //o
+    .done       (draw_char_engine_1_done             ), //o
+    .core_clk   (core_clk                            ), //i
+    .core_rst   (core_rst                            )  //i
   );
-  draw_block_engine core_draw_block_engine (
-    .start        (core_draw_block_engine_start                ), //i
-    .width        (core_draw_block_engine_width[7:0]           ), //i
-    .height       (core_draw_block_engine_height[7:0]          ), //i
-    .in_color     (core_draw_block_engine_in_color[3:0]        ), //i
-    .pat_color    (core_draw_fsm_inst_draw_block_pat_color[3:0]), //i
-    .fill_pattern (core_draw_block_engine_fill_pattern[1:0]    ), //i
-    .h_cnt        (core_draw_block_engine_h_cnt[8:0]           ), //o
-    .v_cnt        (core_draw_block_engine_v_cnt[7:0]           ), //o
-    .is_running   (core_draw_block_engine_is_running           ), //o
-    .out_valid    (core_draw_block_engine_out_valid            ), //o
-    .out_color    (core_draw_block_engine_out_color[3:0]       ), //o
-    .done         (core_draw_block_engine_done                 ), //o
+  draw_block_engine draw_block_engine_1 (
+    .start        (draw_controller_draw_block_start            ), //i
+    .width        (draw_controller_draw_block_width[7:0]       ), //i
+    .height       (draw_controller_draw_block_height[7:0]      ), //i
+    .in_color     (draw_controller_draw_block_in_color[3:0]    ), //i
+    .pat_color    (draw_controller_draw_block_pat_color[3:0]   ), //i
+    .fill_pattern (draw_controller_draw_block_fill_pattern[1:0]), //i
+    .h_cnt        (draw_block_engine_1_h_cnt[8:0]              ), //o
+    .v_cnt        (draw_block_engine_1_v_cnt[7:0]              ), //o
+    .is_running   (draw_block_engine_1_is_running              ), //o
+    .out_valid    (draw_block_engine_1_out_valid               ), //o
+    .out_color    (draw_block_engine_1_out_color[3:0]          ), //o
+    .done         (draw_block_engine_1_done                    ), //o
     .core_clk     (core_clk                                    ), //i
     .core_rst     (core_rst                                    )  //i
   );
-  piece_draw_engine core_piece_draw_gen (
-    .row_val_valid   (row_val_valid                        ), //i
-    .row_val_payload (row_val_payload[9:0]                 ), //i
-    .length          (core_piece_draw_gen_length[7:0]      ), //o
-    .ft_color        (core_piece_draw_gen_ft_color[3:0]    ), //o
-    .fill_pattern    (core_piece_draw_gen_fill_pattern[1:0]), //o
-    .start_draw      (core_piece_draw_gen_start_draw       ), //o
-    .draw_x_orig     (core_piece_draw_gen_draw_x_orig[8:0] ), //o
-    .draw_y_orig     (core_piece_draw_gen_draw_y_orig[7:0] ), //o
-    .draw_done       (core_draw_block_engine_done          ), //i
-    .gen_done        (core_piece_draw_gen_gen_done         ), //o
-    .core_clk        (core_clk                             ), //i
-    .core_rst        (core_rst                             )  //i
+  fb_addr_gen fb_addr_gen_inst (
+    .x        (draw_controller_draw_x_orig[8:0]), //i
+    .y        (draw_controller_draw_y_orig[7:0]), //i
+    .start    (fb_addr_gen_inst_start          ), //i
+    .h_cnt    (temp_h_cnt[8:0]                 ), //i
+    .v_cnt    (temp_v_cnt[7:0]                 ), //i
+    .out_addr (fb_addr_gen_inst_out_addr[16:0] ), //o
+    .core_clk (core_clk                        ), //i
+    .core_rst (core_rst                        )  //i
   );
-  fb_addr_gen core_fb_addr_gen_inst (
-    .x        (core_fb_addr_gen_inst_x[8:0]        ), //i
-    .y        (core_fb_addr_gen_inst_y[7:0]        ), //i
-    .start    (core_fb_addr_gen_inst_start         ), //i
-    .h_cnt    (temp_h_cnt[8:0]                     ), //i
-    .v_cnt    (temp_v_cnt[7:0]                     ), //i
-    .out_addr (core_fb_addr_gen_inst_out_addr[16:0]), //o
-    .core_clk (core_clk                            ), //i
-    .core_rst (core_rst                            )  //i
-  );
-  string_draw_engine core_draw_fsm_inst (
-    .draw_openning_start     (dma_sof                                        ), //i
-    .game_start              (game_start                                     ), //i
-    .clear_playfield         (                                               ), //i
-    .draw_done               (draw_done                                      ), //i
-    .screen_is_ready         (core_draw_fsm_inst_screen_is_ready             ), //o
-    .draw_char_start         (core_draw_fsm_inst_draw_char_start             ), //o
-    .draw_char_word          (core_draw_fsm_inst_draw_char_word[6:0]         ), //o
-    .draw_char_scale         (core_draw_fsm_inst_draw_char_scale[2:0]        ), //o
-    .draw_char_color         (core_draw_fsm_inst_draw_char_color[3:0]        ), //o
-    .draw_block_start        (core_draw_fsm_inst_draw_block_start            ), //o
-    .draw_x_orig             (core_draw_fsm_inst_draw_x_orig[8:0]            ), //o
-    .draw_y_orig             (core_draw_fsm_inst_draw_y_orig[7:0]            ), //o
-    .draw_block_width        (core_draw_fsm_inst_draw_block_width[7:0]       ), //o
-    .draw_block_height       (core_draw_fsm_inst_draw_block_height[7:0]      ), //o
-    .draw_block_color        (core_draw_fsm_inst_draw_block_color[3:0]       ), //o
-    .draw_block_pat_color    (core_draw_fsm_inst_draw_block_pat_color[3:0]   ), //o
-    .draw_block_fill_pattern (core_draw_fsm_inst_draw_block_fill_pattern[1:0]), //o
-    .core_clk                (core_clk                                       ), //i
-    .core_rst                (core_rst                                       )  //i
+  display_controller draw_controller (
+    .game_restart                (game_restart                                    ), //i
+    .draw_openning_start     (dma_sof                                     ), //i
+    .game_start              (game_start                                  ), //i
+    .row_val_valid           (row_val_valid                               ), //i
+    .row_val_payload         (row_val_payload[9:0]                        ), //i
+    .screen_is_ready         (draw_controller_screen_is_ready             ), //o
+    .draw_char_start         (draw_controller_draw_char_start             ), //o
+    .draw_char_word          (draw_controller_draw_char_word[6:0]         ), //o
+    .draw_char_scale         (draw_controller_draw_char_scale[2:0]        ), //o
+    .draw_char_color         (draw_controller_draw_char_color[3:0]        ), //o
+    .draw_char_done          (draw_char_engine_1_done                     ), //i
+    .draw_block_start        (draw_controller_draw_block_start            ), //o
+    .draw_block_width        (draw_controller_draw_block_width[7:0]       ), //o
+    .draw_block_height       (draw_controller_draw_block_height[7:0]      ), //o
+    .draw_block_in_color     (draw_controller_draw_block_in_color[3:0]    ), //o
+    .draw_block_pat_color    (draw_controller_draw_block_pat_color[3:0]   ), //o
+    .draw_block_fill_pattern (draw_controller_draw_block_fill_pattern[1:0]), //o
+    .draw_block_done         (draw_block_engine_1_done                    ), //i
+    .draw_x_orig             (draw_controller_draw_x_orig[8:0]            ), //o
+    .draw_y_orig             (draw_controller_draw_y_orig[7:0]            ), //o
+    .draw_field_done         (draw_controller_draw_field_done             ), //o
+    .bf_clear_start          (draw_controller_bf_clear_start              ), //o
+    .bf_clear_done           (fb_clear_done                               ), //i
+    .core_clk                (core_clk                                    ), //i
+    .core_rst                (core_rst                                    )  //i
   );
   vga_sync_gen vga_sync (
-    .io_softReset (softRest            ), //i
-    .io_sof       (vga_sync_io_sof     ), //o
-    .io_sol       (vga_sync_io_sol     ), //o
-    .io_sos       (vga_sync_io_sos     ), //o
-    .io_hSync     (vga_sync_io_hSync   ), //o
-    .io_vSync     (vga_sync_io_vSync   ), //o
-    .io_colorEn   (vga_sync_io_colorEn ), //o
-    .io_vColorEn  (vga_sync_io_vColorEn), //o
-    .io_x         (vga_sync_io_x[9:0]  ), //o
-    .io_y         (vga_sync_io_y[9:0]  ), //o
-    .vga_clk      (vga_clk             ), //i
-    .vga_rst      (vga_rst             )  //i
+    .io_softReset (softRest_buffercc_io_dataOut), //i
+    .io_sof       (vga_sync_io_sof             ), //o
+    .io_sol       (vga_sync_io_sol             ), //o
+    .io_sos       (vga_sync_io_sos             ), //o
+    .io_hSync     (vga_sync_io_hSync           ), //o
+    .io_vSync     (vga_sync_io_vSync           ), //o
+    .io_colorEn   (vga_sync_io_colorEn         ), //o
+    .io_vColorEn  (vga_sync_io_vColorEn        ), //o
+    .io_x         (vga_sync_io_x[9:0]          ), //o
+    .io_y         (vga_sync_io_y[9:0]          ), //o
+    .vga_clk      (vga_clk                     ), //i
+    .vga_rst      (vga_rst                     )  //i
   );
   color_palettes lbcp (
     .io_addr          (lbcp_io_addr[3:0]          ), //i
@@ -629,41 +615,40 @@ module display_top (
     .vga_clk        (vga_clk               ), //i
     .vga_rst        (vga_rst               )  //i
   );
-  (* keep_hierarchy = "TRUE" *) BufferCC vga_sync_io_sos_buffercc (
+  (* keep_hierarchy = "TRUE" *) BufferCC softRest_buffercc (
+    .io_dataIn  (game_restart                    ), //i
+    .io_dataOut (softRest_buffercc_io_dataOut), //o
+    .vga_clk    (vga_clk                     ), //i
+    .vga_rst    (vga_rst                     )  //i
+  );
+  (* keep_hierarchy = "TRUE" *) BufferCC_1 vga_sync_io_sos_buffercc (
     .io_dataIn  (vga_sync_io_sos                    ), //i
     .io_dataOut (vga_sync_io_sos_buffercc_io_dataOut), //o
     .core_clk   (core_clk                           ), //i
     .core_rst   (core_rst                           )  //i
   );
-  (* keep_hierarchy = "TRUE" *) BufferCC vga_sync_io_sof_buffercc (
+  (* keep_hierarchy = "TRUE" *) BufferCC_1 vga_sync_io_sof_buffercc (
     .io_dataIn  (vga_sync_io_sof                    ), //i
     .io_dataOut (vga_sync_io_sof_buffercc_io_dataOut), //o
     .core_clk   (core_clk                           ), //i
     .core_rst   (core_rst                           )  //i
   );
-  (* keep_hierarchy = "TRUE" *) BufferCC lb_load_valid_buffercc (
+  (* keep_hierarchy = "TRUE" *) BufferCC_1 lb_load_valid_buffercc (
     .io_dataIn  (lb_load_valid                    ), //i
     .io_dataOut (lb_load_valid_buffercc_io_dataOut), //o
     .core_clk   (core_clk                         ), //i
     .core_rst   (core_rst                         )  //i
   );
-  assign core_draw_block_engine_start = (core_draw_fsm_inst_draw_block_start || core_piece_draw_gen_start_draw);
-  assign core_draw_block_engine_width = (core_piece_draw_gen_start_draw ? core_piece_draw_gen_length : core_draw_fsm_inst_draw_block_width);
-  assign core_draw_block_engine_height = (core_piece_draw_gen_start_draw ? core_piece_draw_gen_length : core_draw_fsm_inst_draw_block_height);
-  assign core_draw_block_engine_in_color = (core_piece_draw_gen_start_draw ? core_piece_draw_gen_ft_color : core_draw_fsm_inst_draw_block_color);
-  assign core_draw_block_engine_fill_pattern = (core_piece_draw_gen_start_draw ? core_piece_draw_gen_fill_pattern : core_draw_fsm_inst_draw_block_fill_pattern);
-  assign draw_field_done = core_piece_draw_gen_gen_done;
-  assign core_mux_sel = {core_draw_char_engine_is_running,core_draw_block_engine_is_running};
-  assign core_fb_addr_gen_inst_x = (core_draw_fsm_inst_draw_x_orig | core_piece_draw_gen_draw_x_orig);
-  assign core_fb_addr_gen_inst_y = (core_draw_fsm_inst_draw_y_orig | core_piece_draw_gen_draw_y_orig);
-  assign core_fb_addr_gen_inst_start = ((core_draw_fsm_inst_draw_char_start || core_draw_fsm_inst_draw_block_start) || core_piece_draw_gen_start_draw);
+  assign draw_field_done = draw_controller_draw_field_done;
+  assign mux_sel = {draw_char_engine_1_is_running,draw_block_engine_1_is_running};
+  assign fb_addr_gen_inst_start = (draw_controller_draw_char_start || draw_controller_draw_block_start);
   always @(*) begin
-    case(core_mux_sel)
+    case(mux_sel)
       2'b01 : begin
-        temp_h_cnt = core_draw_block_engine_h_cnt;
+        temp_h_cnt = draw_block_engine_1_h_cnt;
       end
       2'b10 : begin
-        temp_h_cnt = core_draw_char_engine_h_cnt;
+        temp_h_cnt = draw_char_engine_1_h_cnt;
       end
       default : begin
         temp_h_cnt = 9'h0;
@@ -672,12 +657,12 @@ module display_top (
   end
 
   always @(*) begin
-    case(core_mux_sel)
+    case(mux_sel)
       2'b01 : begin
-        temp_v_cnt = core_draw_block_engine_v_cnt;
+        temp_v_cnt = draw_block_engine_1_v_cnt;
       end
       2'b10 : begin
-        temp_v_cnt = core_draw_char_engine_v_cnt;
+        temp_v_cnt = draw_char_engine_1_v_cnt;
       end
       default : begin
         temp_v_cnt = 8'h0;
@@ -685,17 +670,17 @@ module display_top (
     endcase
   end
 
-  assign core_fb_wr_en = (core_draw_char_engine_out_valid || core_draw_block_engine_out_valid);
+  assign fb_wr_en = (draw_char_engine_1_out_valid || draw_block_engine_1_out_valid);
   always @(*) begin
-    if(core_draw_char_engine_out_valid) begin
-      core_fb_wr_data = core_draw_char_engine_out_color;
+    if(draw_char_engine_1_out_valid) begin
+      fb_wr_data = draw_char_engine_1_out_color;
     end else begin
-      core_fb_wr_data = core_draw_block_engine_out_color;
+      fb_wr_data = draw_block_engine_1_out_color;
     end
   end
 
   assign draw_done = temp_draw_done;
-  assign screen_is_ready = core_draw_fsm_inst_screen_is_ready;
+  assign screen_is_ready = draw_controller_screen_is_ready;
   always @(*) begin
     fb_scale_cnt_willIncrement = 1'b0;
     if(((! vga_sync_io_colorEn) && vga_sync_io_colorEn_regNext)) begin
@@ -801,7 +786,7 @@ module display_top (
   end
 
   assign dma_lb_wr_valid = dma_fb_fetch_en_regNext;
-  assign dma_lb_wr_payload = core_fb_rd_data;
+  assign dma_lb_wr_payload = fb_rd_data;
   assign sof = dma_sof;
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
@@ -812,7 +797,7 @@ module display_top (
       dma_fb_fetch_addr_value <= 17'h0;
       dma_fb_fetch_en_regNext <= 1'b0;
     end else begin
-      temp_draw_done <= (core_draw_char_engine_done || core_draw_block_engine_done);
+      temp_draw_done <= (draw_char_engine_1_done || draw_block_engine_1_done);
       temp_dma_sos_1 <= temp_dma_sos;
       dma_fb_fetch_en_cnt_value <= dma_fb_fetch_en_cnt_valueNext;
       dma_fb_fetch_addr_value <= dma_fb_fetch_addr_valueNext;
@@ -864,6 +849,7 @@ module logic_top (
   input  wire          screen_is_ready,
   input  wire          force_refresh,
   output wire          ctrl_allowed,
+  output reg           softReset,
   input  wire          core_clk,
   input  wire          core_rst
 );
@@ -1282,6 +1268,7 @@ module logic_top (
   assign main_fsm_wantExit = 1'b0;
   always @(*) begin
     main_fsm_wantStart = 1'b0;
+    softReset = 1'b0;
     main_fsm_stateNext = main_fsm_stateReg;
     case(main_fsm_stateReg)
       GAME_START : begin
@@ -1304,6 +1291,7 @@ module logic_top (
         end
       end
       END_1 : begin
+        softReset = 1'b1;
         main_fsm_stateNext = IDLE;
       end
       FALLING : begin
@@ -1683,11 +1671,11 @@ module logic_top (
 
 endmodule
 
-//BufferCC_2 replaced by BufferCC
+//BufferCC_3 replaced by BufferCC_1
 
-//BufferCC_1 replaced by BufferCC
+//BufferCC_2 replaced by BufferCC_1
 
-module BufferCC (
+module BufferCC_1 (
   input  wire          io_dataIn,
   output wire          io_dataOut,
   input  wire          core_clk,
@@ -1700,6 +1688,30 @@ module BufferCC (
   assign io_dataOut = buffers_1;
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
+      buffers_0 <= 1'b0;
+      buffers_1 <= 1'b0;
+    end else begin
+      buffers_0 <= io_dataIn;
+      buffers_1 <= buffers_0;
+    end
+  end
+
+
+endmodule
+
+module BufferCC (
+  input  wire          io_dataIn,
+  output wire          io_dataOut,
+  input  wire          vga_clk,
+  input  wire          vga_rst
+);
+
+  (* async_reg = "true" *) reg                 buffers_0;
+  (* async_reg = "true" *) reg                 buffers_1;
+
+  assign io_dataOut = buffers_1;
+  always @(posedge vga_clk or posedge vga_rst) begin
+    if(vga_rst) begin
       buffers_0 <= 1'b0;
       buffers_1 <= 1'b0;
     end else begin
@@ -1993,474 +2005,30 @@ module vga_sync_gen (
 
 endmodule
 
-module string_draw_engine (
+module display_controller (
+  input  wire          game_restart,
   input  wire          draw_openning_start,
   input  wire          game_start,
-  input  wire          clear_playfield,
-  input  wire          draw_done,
+  input  wire          row_val_valid,
+  input  wire [9:0]    row_val_payload,
   output reg           screen_is_ready,
   output wire          draw_char_start,
   output wire [6:0]    draw_char_word,
   output wire [2:0]    draw_char_scale,
   output wire [3:0]    draw_char_color,
+  input  wire          draw_char_done,
   output wire          draw_block_start,
-  output wire [8:0]    draw_x_orig,
-  output wire [7:0]    draw_y_orig,
   output wire [7:0]    draw_block_width,
   output wire [7:0]    draw_block_height,
-  output wire [3:0]    draw_block_color,
+  output wire [3:0]    draw_block_in_color,
   output wire [3:0]    draw_block_pat_color,
   output wire [1:0]    draw_block_fill_pattern,
-  input  wire          core_clk,
-  input  wire          core_rst
-);
-  localparam IDLE = 4'd0;
-  localparam START_DRAW_OPEN = 4'd1;
-  localparam WAIT_DRAW_OPEN_DONE = 4'd2;
-  localparam WAIT_GAME_START = 4'd3;
-  localparam START_DRAW_STRING = 4'd4;
-  localparam WAIT_DRAW_STRING_DONE = 4'd5;
-  localparam WAIT_DRAW_SCORE = 4'd6;
-  localparam PRE_DRAW_WALL = 4'd7;
-  localparam START_DRAW_WALL = 4'd8;
-  localparam WAIT_DRAW_WALL_DONE = 4'd9;
-  localparam DRAW_SCORE = 4'd10;
-
-  wire       [6:0]    rom_spinal_port0;
-  wire       [42:0]   wall_wall_rom_spinal_port0;
-  wire       [3:0]    temp_cnt_valueNext;
-  wire       [0:0]    temp_cnt_valueNext_1;
-  wire       [1:0]    temp_wall_cnt_valueNext;
-  wire       [0:0]    temp_wall_cnt_valueNext_1;
-  wire                temp_when;
-  wire                temp_when_1;
-  reg                 cnt_willIncrement;
-  reg                 cnt_willClear;
-  reg        [3:0]    cnt_valueNext;
-  reg        [3:0]    cnt_value;
-  wire                cnt_willOverflowIfInc;
-  wire                cnt_willOverflow;
-  wire       [8:0]    wall_x;
-  wire       [7:0]    wall_y;
-  reg                 wall_cnt_willIncrement;
-  wire                wall_cnt_willClear;
-  reg        [1:0]    wall_cnt_valueNext;
-  reg        [1:0]    wall_cnt_value;
-  wire                wall_cnt_willOverflowIfInc;
-  wire                wall_cnt_willOverflow;
-  wire       [42:0]   wall_blockInfo;
-  reg        [8:0]    x;
-  reg        [7:0]    y;
-  reg        [2:0]    scale;
-  reg        [3:0]    color;
-  reg                 start_char_draw;
-  reg                 start_block_draw;
-  reg                 logoHasRm;
-  wire                fsm_wantExit;
-  reg                 fsm_wantStart;
-  wire                fsm_wantKill;
-  wire       [3:0]    fsm_debug;
-  reg        [3:0]    fsm_stateReg;
-  reg        [3:0]    fsm_stateNext;
-  wire                fsm_onExit_IDLE;
-  wire                fsm_onExit_START_DRAW_OPEN;
-  wire                fsm_onExit_WAIT_DRAW_OPEN_DONE;
-  wire                fsm_onExit_WAIT_GAME_START;
-  wire                fsm_onExit_START_DRAW_STRING;
-  wire                fsm_onExit_WAIT_DRAW_STRING_DONE;
-  wire                fsm_onExit_WAIT_DRAW_SCORE;
-  wire                fsm_onExit_PRE_DRAW_WALL;
-  wire                fsm_onExit_START_DRAW_WALL;
-  wire                fsm_onExit_WAIT_DRAW_WALL_DONE;
-  wire                fsm_onExit_DRAW_SCORE;
-  wire                fsm_onEntry_IDLE;
-  wire                fsm_onEntry_START_DRAW_OPEN;
-  wire                fsm_onEntry_WAIT_DRAW_OPEN_DONE;
-  wire                fsm_onEntry_WAIT_GAME_START;
-  wire                fsm_onEntry_START_DRAW_STRING;
-  wire                fsm_onEntry_WAIT_DRAW_STRING_DONE;
-  wire                fsm_onEntry_WAIT_DRAW_SCORE;
-  wire                fsm_onEntry_PRE_DRAW_WALL;
-  wire                fsm_onEntry_START_DRAW_WALL;
-  wire                fsm_onEntry_WAIT_DRAW_WALL_DONE;
-  wire                fsm_onEntry_DRAW_SCORE;
-  `ifndef SYNTHESIS
-  reg [167:0] fsm_stateReg_string;
-  reg [167:0] fsm_stateNext_string;
-  `endif
-
-  (* ram_style = "distributed" *) reg [6:0] rom [0:10];
-  reg [42:0] wall_wall_rom [0:3];
-
-  assign temp_when = (cnt_value == 4'b0101);
-  assign temp_when_1 = (cnt_value == 4'b1010);
-  assign temp_cnt_valueNext_1 = cnt_willIncrement;
-  assign temp_cnt_valueNext = {3'd0, temp_cnt_valueNext_1};
-  assign temp_wall_cnt_valueNext_1 = wall_cnt_willIncrement;
-  assign temp_wall_cnt_valueNext = {1'd0, temp_wall_cnt_valueNext_1};
-  initial begin
-    $readmemb("tetris_top.v_toplevel_tetris_core_inst_game_display_inst_core_draw_fsm_inst_rom.bin",rom);
-  end
-  assign rom_spinal_port0 = rom[cnt_value];
-  initial begin
-    $readmemb("tetris_top.v_toplevel_tetris_core_inst_game_display_inst_core_draw_fsm_inst_wall_wall_rom.bin",wall_wall_rom);
-  end
-  assign wall_wall_rom_spinal_port0 = wall_wall_rom[wall_cnt_value];
-  `ifndef SYNTHESIS
-  always @(*) begin
-    case(fsm_stateReg)
-      IDLE : fsm_stateReg_string = "IDLE                 ";
-      START_DRAW_OPEN : fsm_stateReg_string = "START_DRAW_OPEN      ";
-      WAIT_DRAW_OPEN_DONE : fsm_stateReg_string = "WAIT_DRAW_OPEN_DONE  ";
-      WAIT_GAME_START : fsm_stateReg_string = "WAIT_GAME_START      ";
-      START_DRAW_STRING : fsm_stateReg_string = "START_DRAW_STRING    ";
-      WAIT_DRAW_STRING_DONE : fsm_stateReg_string = "WAIT_DRAW_STRING_DONE";
-      WAIT_DRAW_SCORE : fsm_stateReg_string = "WAIT_DRAW_SCORE      ";
-      PRE_DRAW_WALL : fsm_stateReg_string = "PRE_DRAW_WALL        ";
-      START_DRAW_WALL : fsm_stateReg_string = "START_DRAW_WALL      ";
-      WAIT_DRAW_WALL_DONE : fsm_stateReg_string = "WAIT_DRAW_WALL_DONE  ";
-      DRAW_SCORE : fsm_stateReg_string = "DRAW_SCORE           ";
-      default : fsm_stateReg_string = "?????????????????????";
-    endcase
-  end
-  always @(*) begin
-    case(fsm_stateNext)
-      IDLE : fsm_stateNext_string = "IDLE                 ";
-      START_DRAW_OPEN : fsm_stateNext_string = "START_DRAW_OPEN      ";
-      WAIT_DRAW_OPEN_DONE : fsm_stateNext_string = "WAIT_DRAW_OPEN_DONE  ";
-      WAIT_GAME_START : fsm_stateNext_string = "WAIT_GAME_START      ";
-      START_DRAW_STRING : fsm_stateNext_string = "START_DRAW_STRING    ";
-      WAIT_DRAW_STRING_DONE : fsm_stateNext_string = "WAIT_DRAW_STRING_DONE";
-      WAIT_DRAW_SCORE : fsm_stateNext_string = "WAIT_DRAW_SCORE      ";
-      PRE_DRAW_WALL : fsm_stateNext_string = "PRE_DRAW_WALL        ";
-      START_DRAW_WALL : fsm_stateNext_string = "START_DRAW_WALL      ";
-      WAIT_DRAW_WALL_DONE : fsm_stateNext_string = "WAIT_DRAW_WALL_DONE  ";
-      DRAW_SCORE : fsm_stateNext_string = "DRAW_SCORE           ";
-      default : fsm_stateNext_string = "?????????????????????";
-    endcase
-  end
-  `endif
-
-  always @(*) begin
-    cnt_willIncrement = 1'b0;
-    cnt_willClear = 1'b0;
-    wall_cnt_willIncrement = 1'b0;
-    fsm_wantStart = 1'b0;
-    start_char_draw = 1'b0;
-    start_block_draw = 1'b0;
-    screen_is_ready = 1'b0;
-    cnt_willIncrement = 1'b0;
-    fsm_stateNext = fsm_stateReg;
-    case(fsm_stateReg)
-      START_DRAW_OPEN : begin
-        start_char_draw = 1'b1;
-        fsm_stateNext = WAIT_DRAW_OPEN_DONE;
-      end
-      WAIT_DRAW_OPEN_DONE : begin
-        if(draw_done) begin
-          cnt_willIncrement = 1'b1;
-          if(temp_when) begin
-            fsm_stateNext = WAIT_GAME_START;
-          end else begin
-            fsm_stateNext = START_DRAW_OPEN;
-          end
-        end
-      end
-      WAIT_GAME_START : begin
-        if(logoHasRm) begin
-          fsm_stateNext = START_DRAW_STRING;
-        end else begin
-          if(game_start) begin
-            cnt_willClear = 1'b1;
-            fsm_stateNext = START_DRAW_OPEN;
-          end
-        end
-      end
-      START_DRAW_STRING : begin
-        start_char_draw = 1'b1;
-        fsm_stateNext = WAIT_DRAW_STRING_DONE;
-      end
-      WAIT_DRAW_STRING_DONE : begin
-        if(draw_done) begin
-          cnt_willIncrement = 1'b1;
-          if(temp_when_1) begin
-            fsm_stateNext = WAIT_DRAW_SCORE;
-          end else begin
-            fsm_stateNext = START_DRAW_STRING;
-          end
-        end
-      end
-      WAIT_DRAW_SCORE : begin
-        fsm_stateNext = PRE_DRAW_WALL;
-      end
-      PRE_DRAW_WALL : begin
-        fsm_stateNext = START_DRAW_WALL;
-      end
-      START_DRAW_WALL : begin
-        start_block_draw = 1'b1;
-        fsm_stateNext = WAIT_DRAW_WALL_DONE;
-      end
-      WAIT_DRAW_WALL_DONE : begin
-        if(draw_done) begin
-          wall_cnt_willIncrement = 1'b1;
-          if(wall_cnt_willOverflow) begin
-            fsm_stateNext = DRAW_SCORE;
-          end else begin
-            fsm_stateNext = PRE_DRAW_WALL;
-          end
-        end
-      end
-      DRAW_SCORE : begin
-        screen_is_ready = 1'b1;
-      end
-      default : begin
-        if(draw_openning_start) begin
-          fsm_stateNext = START_DRAW_OPEN;
-        end
-        fsm_wantStart = 1'b1;
-      end
-    endcase
-    if(fsm_wantKill) begin
-      fsm_stateNext = IDLE;
-    end
-  end
-
-  assign cnt_willOverflowIfInc = (cnt_value == 4'b1010);
-  assign cnt_willOverflow = (cnt_willOverflowIfInc && cnt_willIncrement);
-  always @(*) begin
-    if(cnt_willOverflow) begin
-      cnt_valueNext = 4'b0000;
-    end else begin
-      cnt_valueNext = (cnt_value + temp_cnt_valueNext);
-    end
-    if(cnt_willClear) begin
-      cnt_valueNext = 4'b0000;
-    end
-  end
-
-  assign draw_char_word = rom_spinal_port0;
-  assign wall_cnt_willClear = 1'b0;
-  assign wall_cnt_willOverflowIfInc = (wall_cnt_value == 2'b11);
-  assign wall_cnt_willOverflow = (wall_cnt_willOverflowIfInc && wall_cnt_willIncrement);
-  always @(*) begin
-    wall_cnt_valueNext = (wall_cnt_value + temp_wall_cnt_valueNext);
-    if(wall_cnt_willClear) begin
-      wall_cnt_valueNext = 2'b00;
-    end
-  end
-
-  assign wall_blockInfo = wall_wall_rom_spinal_port0;
-  assign wall_x = wall_blockInfo[8 : 0];
-  assign wall_y = wall_blockInfo[16 : 9];
-  assign draw_block_width = wall_blockInfo[24 : 17];
-  assign draw_block_height = wall_blockInfo[32 : 25];
-  assign draw_block_color = wall_blockInfo[36 : 33];
-  assign draw_block_pat_color = wall_blockInfo[40 : 37];
-  assign draw_block_fill_pattern = wall_blockInfo[42 : 41];
-  assign draw_x_orig = x;
-  assign draw_y_orig = y;
-  assign draw_char_scale = scale;
-  assign draw_char_color = color;
-  assign draw_char_start = start_char_draw;
-  assign draw_block_start = start_block_draw;
-  assign fsm_wantExit = 1'b0;
-  assign fsm_wantKill = 1'b0;
-  assign fsm_onExit_IDLE = ((fsm_stateNext != IDLE) && (fsm_stateReg == IDLE));
-  assign fsm_onExit_START_DRAW_OPEN = ((fsm_stateNext != START_DRAW_OPEN) && (fsm_stateReg == START_DRAW_OPEN));
-  assign fsm_onExit_WAIT_DRAW_OPEN_DONE = ((fsm_stateNext != WAIT_DRAW_OPEN_DONE) && (fsm_stateReg == WAIT_DRAW_OPEN_DONE));
-  assign fsm_onExit_WAIT_GAME_START = ((fsm_stateNext != WAIT_GAME_START) && (fsm_stateReg == WAIT_GAME_START));
-  assign fsm_onExit_START_DRAW_STRING = ((fsm_stateNext != START_DRAW_STRING) && (fsm_stateReg == START_DRAW_STRING));
-  assign fsm_onExit_WAIT_DRAW_STRING_DONE = ((fsm_stateNext != WAIT_DRAW_STRING_DONE) && (fsm_stateReg == WAIT_DRAW_STRING_DONE));
-  assign fsm_onExit_WAIT_DRAW_SCORE = ((fsm_stateNext != WAIT_DRAW_SCORE) && (fsm_stateReg == WAIT_DRAW_SCORE));
-  assign fsm_onExit_PRE_DRAW_WALL = ((fsm_stateNext != PRE_DRAW_WALL) && (fsm_stateReg == PRE_DRAW_WALL));
-  assign fsm_onExit_START_DRAW_WALL = ((fsm_stateNext != START_DRAW_WALL) && (fsm_stateReg == START_DRAW_WALL));
-  assign fsm_onExit_WAIT_DRAW_WALL_DONE = ((fsm_stateNext != WAIT_DRAW_WALL_DONE) && (fsm_stateReg == WAIT_DRAW_WALL_DONE));
-  assign fsm_onExit_DRAW_SCORE = ((fsm_stateNext != DRAW_SCORE) && (fsm_stateReg == DRAW_SCORE));
-  assign fsm_onEntry_IDLE = ((fsm_stateNext == IDLE) && (fsm_stateReg != IDLE));
-  assign fsm_onEntry_START_DRAW_OPEN = ((fsm_stateNext == START_DRAW_OPEN) && (fsm_stateReg != START_DRAW_OPEN));
-  assign fsm_onEntry_WAIT_DRAW_OPEN_DONE = ((fsm_stateNext == WAIT_DRAW_OPEN_DONE) && (fsm_stateReg != WAIT_DRAW_OPEN_DONE));
-  assign fsm_onEntry_WAIT_GAME_START = ((fsm_stateNext == WAIT_GAME_START) && (fsm_stateReg != WAIT_GAME_START));
-  assign fsm_onEntry_START_DRAW_STRING = ((fsm_stateNext == START_DRAW_STRING) && (fsm_stateReg != START_DRAW_STRING));
-  assign fsm_onEntry_WAIT_DRAW_STRING_DONE = ((fsm_stateNext == WAIT_DRAW_STRING_DONE) && (fsm_stateReg != WAIT_DRAW_STRING_DONE));
-  assign fsm_onEntry_WAIT_DRAW_SCORE = ((fsm_stateNext == WAIT_DRAW_SCORE) && (fsm_stateReg != WAIT_DRAW_SCORE));
-  assign fsm_onEntry_PRE_DRAW_WALL = ((fsm_stateNext == PRE_DRAW_WALL) && (fsm_stateReg != PRE_DRAW_WALL));
-  assign fsm_onEntry_START_DRAW_WALL = ((fsm_stateNext == START_DRAW_WALL) && (fsm_stateReg != START_DRAW_WALL));
-  assign fsm_onEntry_WAIT_DRAW_WALL_DONE = ((fsm_stateNext == WAIT_DRAW_WALL_DONE) && (fsm_stateReg != WAIT_DRAW_WALL_DONE));
-  assign fsm_onEntry_DRAW_SCORE = ((fsm_stateNext == DRAW_SCORE) && (fsm_stateReg != DRAW_SCORE));
-  assign fsm_debug = fsm_stateReg;
-  always @(posedge core_clk or posedge core_rst) begin
-    if(core_rst) begin
-      cnt_value <= 4'b0000;
-      wall_cnt_value <= 2'b00;
-      logoHasRm <= 1'b0;
-      fsm_stateReg <= IDLE;
-    end else begin
-      cnt_value <= cnt_valueNext;
-      wall_cnt_value <= wall_cnt_valueNext;
-      fsm_stateReg <= fsm_stateNext;
-      case(fsm_stateReg)
-        START_DRAW_OPEN : begin
-        end
-        WAIT_DRAW_OPEN_DONE : begin
-        end
-        WAIT_GAME_START : begin
-          if(logoHasRm) begin
-            logoHasRm <= 1'b0;
-          end else begin
-            if(game_start) begin
-              logoHasRm <= 1'b1;
-            end
-          end
-        end
-        START_DRAW_STRING : begin
-        end
-        WAIT_DRAW_STRING_DONE : begin
-        end
-        WAIT_DRAW_SCORE : begin
-        end
-        PRE_DRAW_WALL : begin
-        end
-        START_DRAW_WALL : begin
-        end
-        WAIT_DRAW_WALL_DONE : begin
-        end
-        DRAW_SCORE : begin
-        end
-        default : begin
-        end
-      endcase
-    end
-  end
-
-  always @(posedge core_clk) begin
-    case(fsm_stateReg)
-      START_DRAW_OPEN : begin
-      end
-      WAIT_DRAW_OPEN_DONE : begin
-        if(draw_done) begin
-          if(!temp_when) begin
-            x <= (x + 9'h02e);
-          end
-        end
-      end
-      WAIT_GAME_START : begin
-        if(logoHasRm) begin
-          x <= 9'h0d2;
-          y <= 8'h17;
-          scale <= 3'b000;
-          color <= 4'b0110;
-        end else begin
-          if(game_start) begin
-            x <= 9'h01c;
-            y <= 8'h42;
-            scale <= 3'b010;
-            color <= 4'b0010;
-          end
-        end
-      end
-      START_DRAW_STRING : begin
-      end
-      WAIT_DRAW_STRING_DONE : begin
-        if(draw_done) begin
-          if(!temp_when_1) begin
-            x <= (x + 9'h00c);
-          end
-        end
-      end
-      WAIT_DRAW_SCORE : begin
-      end
-      PRE_DRAW_WALL : begin
-        x <= wall_x;
-        y <= wall_y;
-      end
-      START_DRAW_WALL : begin
-      end
-      WAIT_DRAW_WALL_DONE : begin
-      end
-      DRAW_SCORE : begin
-        x <= 9'h0;
-        y <= 8'h0;
-      end
-      default : begin
-        if(draw_openning_start) begin
-          x <= 9'h01c;
-          y <= 8'h42;
-          scale <= 3'b010;
-          color <= 4'b0110;
-        end
-      end
-    endcase
-  end
-
-
-endmodule
-
-module fb_addr_gen (
-  input  wire [8:0]    x,
-  input  wire [7:0]    y,
-  input  wire          start,
-  input  wire [8:0]    h_cnt,
-  input  wire [7:0]    v_cnt,
-  output wire [16:0]   out_addr,
-  input  wire          core_clk,
-  input  wire          core_rst
-);
-
-  wire       [10:0]   temp_v_next_in_fb;
-  wire       [9:0]    temp_v_next_in_fb_1;
-  wire       [10:0]   temp_v_next_in_fb_2;
-  wire       [16:0]   temp_addr;
-  wire       [16:0]   temp_addr_1;
-  reg        [8:0]    x_reg;
-  reg        [7:0]    y_reg;
-  wire       [7:0]    v_next;
-  wire       [10:0]   v_next_in_fb;
-  reg        [8:0]    h_reg;
-  reg        [10:0]   v_reg;
-  reg        [16:0]   addr;
-
-  assign temp_v_next_in_fb_1 = ({2'd0,v_next} <<< 2'd2);
-  assign temp_v_next_in_fb = {1'd0, temp_v_next_in_fb_1};
-  assign temp_v_next_in_fb_2 = {3'd0, v_next};
-  assign temp_addr = {8'd0, h_reg};
-  assign temp_addr_1 = ({6'd0,v_reg} <<< 3'd6);
-  assign v_next = (y_reg + v_cnt);
-  assign v_next_in_fb = (temp_v_next_in_fb + temp_v_next_in_fb_2);
-  assign out_addr = addr;
-  always @(posedge core_clk or posedge core_rst) begin
-    if(core_rst) begin
-      x_reg <= 9'h0;
-      y_reg <= 8'h0;
-      h_reg <= 9'h0;
-      v_reg <= 11'h0;
-      addr <= 17'h0;
-    end else begin
-      if(start) begin
-        x_reg <= x;
-      end
-      if(start) begin
-        y_reg <= y;
-      end
-      h_reg <= (x_reg + h_cnt);
-      v_reg <= v_next_in_fb;
-      addr <= (temp_addr + temp_addr_1);
-    end
-  end
-
-
-endmodule
-
-module piece_draw_engine (
-  input  wire          row_val_valid,
-  input  wire [9:0]    row_val_payload,
-  output wire [7:0]    length,
-  output wire [3:0]    ft_color,
-  output wire [1:0]    fill_pattern,
-  output reg           start_draw,
+  input  wire          draw_block_done,
   output wire [8:0]    draw_x_orig,
   output wire [7:0]    draw_y_orig,
-  input  wire          draw_done,
-  output reg           gen_done,
+  output reg           draw_field_done,
+  output reg           bf_clear_start,
+  input  wire          bf_clear_done,
   input  wire          core_clk,
   input  wire          core_rst
 );
@@ -2469,14 +2037,34 @@ module piece_draw_engine (
   localparam DATA_READY = 3'd2;
   localparam DRAW = 3'd3;
   localparam WAIT_DONE = 3'd4;
+  localparam SETUP_IDLE = 4'd0;
+  localparam CLEAN_SCREEN = 4'd1;
+  localparam START_DRAW_OPEN = 4'd2;
+  localparam WAIT_DRAW_OPEN_DONE = 4'd3;
+  localparam WAIT_GAME_START = 4'd4;
+  localparam START_DRAW_STRING = 4'd5;
+  localparam WAIT_DRAW_STRING_DONE = 4'd6;
+  localparam WAIT_DRAW_SCORE = 4'd7;
+  localparam PRE_DRAW_WALL = 4'd8;
+  localparam START_DRAW_WALL = 4'd9;
+  localparam WAIT_DRAW_WALL_DONE = 4'd10;
+  localparam DRAW_SCORE = 4'd11;
 
   reg        [9:0]    memory_spinal_port1;
+  wire       [6:0]    rom_spinal_port0;
+  wire       [42:0]   wall_rom_spinal_port0;
   wire       [4:0]    temp_wr_row_cnt_valueNext;
   wire       [0:0]    temp_wr_row_cnt_valueNext_1;
   wire       [3:0]    temp_col_cnt_valueNext;
   wire       [0:0]    temp_col_cnt_valueNext_1;
   wire       [4:0]    temp_row_cnt_valueNext;
   wire       [0:0]    temp_row_cnt_valueNext_1;
+  wire       [3:0]    temp_cnt_valueNext;
+  wire       [0:0]    temp_cnt_valueNext_1;
+  wire       [1:0]    temp_cnt_valueNext_1_1;
+  wire       [0:0]    temp_cnt_valueNext_1_2;
+  wire                temp_when;
+  wire                temp_when_1;
   reg                 wr_row_cnt_willIncrement;
   wire                wr_row_cnt_willClear;
   reg        [4:0]    wr_row_cnt_valueNext;
@@ -2505,14 +2093,59 @@ module piece_draw_engine (
   wire       [9:0]    row_bits_next;
   reg                 row_val_valid_regNext;
   wire                gen_start;
-  reg        [3:0]    ft_color_1;
+  reg        [3:0]    ft_color;
   reg        [8:0]    x;
   reg        [7:0]    y;
   wire       [8:0]    x_next;
   wire       [7:0]    y_next;
+  reg                 itf_start;
+  wire       [7:0]    itf_width;
+  wire       [7:0]    itf_height;
+  wire       [3:0]    itf_in_color;
+  wire       [3:0]    itf_pat_color;
+  wire       [1:0]    itf_fill_pattern;
+  wire                itf_done;
   wire                fsm_wantExit;
   reg                 fsm_wantStart;
   wire                fsm_wantKill;
+  wire                itf_start_1;
+  wire       [6:0]    itf_word;
+  wire       [2:0]    itf_scale;
+  wire       [3:0]    itf_color;
+  wire                itf_done_1;
+  reg                 cnt_willIncrement;
+  wire                cnt_willClear;
+  reg        [3:0]    cnt_valueNext;
+  reg        [3:0]    cnt_value;
+  wire                cnt_willOverflowIfInc;
+  wire                cnt_willOverflow;
+  wire       [8:0]    x_1;
+  wire       [7:0]    y_1;
+  wire                itf_start_2;
+  wire       [7:0]    itf_width_1;
+  wire       [7:0]    itf_height_1;
+  wire       [3:0]    itf_in_color_1;
+  wire       [3:0]    itf_pat_color_1;
+  wire       [1:0]    itf_fill_pattern_1;
+  wire                itf_done_2;
+  reg                 cnt_willIncrement_1;
+  wire                cnt_willClear_1;
+  reg        [1:0]    cnt_valueNext_1;
+  reg        [1:0]    cnt_value_1;
+  wire                cnt_willOverflowIfInc_1;
+  wire                cnt_willOverflow_1;
+  wire       [42:0]   blockInfo;
+  reg        [8:0]    stepup_x;
+  reg        [7:0]    stepup_y;
+  reg        [2:0]    stepup_scale;
+  reg        [3:0]    stepup_color;
+  reg                 stepup_start_char_draw;
+  reg                 stepup_start_block_draw;
+  reg                 stepup_game_is_running;
+  wire                stepup_fsm_wantExit;
+  reg                 stepup_fsm_wantStart;
+  wire                stepup_fsm_wantKill;
+  wire       [3:0]    stepup_fsm_debug;
   reg        [2:0]    fsm_stateReg;
   reg        [2:0]    fsm_stateNext;
   wire                fsm_onExit_IDLE;
@@ -2525,19 +2158,55 @@ module piece_draw_engine (
   wire                fsm_onEntry_DATA_READY;
   wire                fsm_onEntry_DRAW;
   wire                fsm_onEntry_WAIT_DONE;
+  reg        [3:0]    stepup_fsm_stateReg;
+  reg        [3:0]    stepup_fsm_stateNext;
+  wire                stepup_fsm_onExit_SETUP_IDLE;
+  wire                stepup_fsm_onExit_CLEAN_SCREEN;
+  wire                stepup_fsm_onExit_START_DRAW_OPEN;
+  wire                stepup_fsm_onExit_WAIT_DRAW_OPEN_DONE;
+  wire                stepup_fsm_onExit_WAIT_GAME_START;
+  wire                stepup_fsm_onExit_START_DRAW_STRING;
+  wire                stepup_fsm_onExit_WAIT_DRAW_STRING_DONE;
+  wire                stepup_fsm_onExit_WAIT_DRAW_SCORE;
+  wire                stepup_fsm_onExit_PRE_DRAW_WALL;
+  wire                stepup_fsm_onExit_START_DRAW_WALL;
+  wire                stepup_fsm_onExit_WAIT_DRAW_WALL_DONE;
+  wire                stepup_fsm_onExit_DRAW_SCORE;
+  wire                stepup_fsm_onEntry_SETUP_IDLE;
+  wire                stepup_fsm_onEntry_CLEAN_SCREEN;
+  wire                stepup_fsm_onEntry_START_DRAW_OPEN;
+  wire                stepup_fsm_onEntry_WAIT_DRAW_OPEN_DONE;
+  wire                stepup_fsm_onEntry_WAIT_GAME_START;
+  wire                stepup_fsm_onEntry_START_DRAW_STRING;
+  wire                stepup_fsm_onEntry_WAIT_DRAW_STRING_DONE;
+  wire                stepup_fsm_onEntry_WAIT_DRAW_SCORE;
+  wire                stepup_fsm_onEntry_PRE_DRAW_WALL;
+  wire                stepup_fsm_onEntry_START_DRAW_WALL;
+  wire                stepup_fsm_onEntry_WAIT_DRAW_WALL_DONE;
+  wire                stepup_fsm_onEntry_DRAW_SCORE;
   `ifndef SYNTHESIS
   reg [79:0] fsm_stateReg_string;
   reg [79:0] fsm_stateNext_string;
+  reg [167:0] stepup_fsm_stateReg_string;
+  reg [167:0] stepup_fsm_stateNext_string;
   `endif
 
   (* ram_style = "distributed" *) reg [9:0] memory [0:21];
+  (* ram_style = "distributed" *) reg [6:0] rom [0:10];
+  reg [42:0] wall_rom [0:3];
 
+  assign temp_when = (cnt_value == 4'b0101);
+  assign temp_when_1 = (cnt_value == 4'b1010);
   assign temp_wr_row_cnt_valueNext_1 = wr_row_cnt_willIncrement;
   assign temp_wr_row_cnt_valueNext = {4'd0, temp_wr_row_cnt_valueNext_1};
   assign temp_col_cnt_valueNext_1 = col_cnt_willIncrement;
   assign temp_col_cnt_valueNext = {3'd0, temp_col_cnt_valueNext_1};
   assign temp_row_cnt_valueNext_1 = row_cnt_willIncrement;
   assign temp_row_cnt_valueNext = {4'd0, temp_row_cnt_valueNext_1};
+  assign temp_cnt_valueNext_1 = cnt_willIncrement;
+  assign temp_cnt_valueNext = {3'd0, temp_cnt_valueNext_1};
+  assign temp_cnt_valueNext_1_2 = cnt_willIncrement_1;
+  assign temp_cnt_valueNext_1_1 = {1'd0, temp_cnt_valueNext_1_2};
   always @(posedge core_clk) begin
     if(row_val_valid) begin
       memory[wr_row_cnt_value] <= row_val_payload;
@@ -2550,6 +2219,14 @@ module piece_draw_engine (
     end
   end
 
+  initial begin
+    $readmemb("tetris_top.v_toplevel_tetris_core_inst_game_display_inst_draw_controller_rom.bin",rom);
+  end
+  assign rom_spinal_port0 = rom[cnt_value];
+  initial begin
+    $readmemb("tetris_top.v_toplevel_tetris_core_inst_game_display_inst_draw_controller_wall_rom.bin",wall_rom);
+  end
+  assign wall_rom_spinal_port0 = wall_rom[cnt_value_1];
   `ifndef SYNTHESIS
   always @(*) begin
     case(fsm_stateReg)
@@ -2569,6 +2246,40 @@ module piece_draw_engine (
       DRAW : fsm_stateNext_string = "DRAW      ";
       WAIT_DONE : fsm_stateNext_string = "WAIT_DONE ";
       default : fsm_stateNext_string = "??????????";
+    endcase
+  end
+  always @(*) begin
+    case(stepup_fsm_stateReg)
+      SETUP_IDLE : stepup_fsm_stateReg_string = "SETUP_IDLE           ";
+      CLEAN_SCREEN : stepup_fsm_stateReg_string = "CLEAN_SCREEN         ";
+      START_DRAW_OPEN : stepup_fsm_stateReg_string = "START_DRAW_OPEN      ";
+      WAIT_DRAW_OPEN_DONE : stepup_fsm_stateReg_string = "WAIT_DRAW_OPEN_DONE  ";
+      WAIT_GAME_START : stepup_fsm_stateReg_string = "WAIT_GAME_START      ";
+      START_DRAW_STRING : stepup_fsm_stateReg_string = "START_DRAW_STRING    ";
+      WAIT_DRAW_STRING_DONE : stepup_fsm_stateReg_string = "WAIT_DRAW_STRING_DONE";
+      WAIT_DRAW_SCORE : stepup_fsm_stateReg_string = "WAIT_DRAW_SCORE      ";
+      PRE_DRAW_WALL : stepup_fsm_stateReg_string = "PRE_DRAW_WALL        ";
+      START_DRAW_WALL : stepup_fsm_stateReg_string = "START_DRAW_WALL      ";
+      WAIT_DRAW_WALL_DONE : stepup_fsm_stateReg_string = "WAIT_DRAW_WALL_DONE  ";
+      DRAW_SCORE : stepup_fsm_stateReg_string = "DRAW_SCORE           ";
+      default : stepup_fsm_stateReg_string = "?????????????????????";
+    endcase
+  end
+  always @(*) begin
+    case(stepup_fsm_stateNext)
+      SETUP_IDLE : stepup_fsm_stateNext_string = "SETUP_IDLE           ";
+      CLEAN_SCREEN : stepup_fsm_stateNext_string = "CLEAN_SCREEN         ";
+      START_DRAW_OPEN : stepup_fsm_stateNext_string = "START_DRAW_OPEN      ";
+      WAIT_DRAW_OPEN_DONE : stepup_fsm_stateNext_string = "WAIT_DRAW_OPEN_DONE  ";
+      WAIT_GAME_START : stepup_fsm_stateNext_string = "WAIT_GAME_START      ";
+      START_DRAW_STRING : stepup_fsm_stateNext_string = "START_DRAW_STRING    ";
+      WAIT_DRAW_STRING_DONE : stepup_fsm_stateNext_string = "WAIT_DRAW_STRING_DONE";
+      WAIT_DRAW_SCORE : stepup_fsm_stateNext_string = "WAIT_DRAW_SCORE      ";
+      PRE_DRAW_WALL : stepup_fsm_stateNext_string = "PRE_DRAW_WALL        ";
+      START_DRAW_WALL : stepup_fsm_stateNext_string = "START_DRAW_WALL      ";
+      WAIT_DRAW_WALL_DONE : stepup_fsm_stateNext_string = "WAIT_DRAW_WALL_DONE  ";
+      DRAW_SCORE : stepup_fsm_stateNext_string = "DRAW_SCORE           ";
+      default : stepup_fsm_stateNext_string = "?????????????????????";
     endcase
   end
   `endif
@@ -2640,22 +2351,17 @@ module piece_draw_engine (
   assign row_bits_next = (row_bits >>> 1);
   assign gen_start = ((! row_val_valid) && row_val_valid_regNext);
   always @(*) begin
-    ft_color_1 = 4'b0010;
+    ft_color = 4'b0010;
     if(row_bits[0]) begin
-      ft_color_1 = 4'b1001;
+      ft_color = 4'b1001;
     end
   end
 
   assign x_next = (x + 9'h009);
   assign y_next = (y + 8'h09);
-  assign draw_x_orig = x;
-  assign draw_y_orig = y;
-  assign ft_color = ft_color_1;
-  assign length = 8'h08;
-  assign fill_pattern = 2'b00;
   always @(*) begin
-    gen_done = 1'b0;
-    start_draw = 1'b0;
+    itf_start = 1'b0;
+    draw_field_done = 1'b0;
     fsm_wantStart = 1'b0;
     rd_en = 1'b0;
     load = 1'b0;
@@ -2673,15 +2379,15 @@ module piece_draw_engine (
         fsm_stateNext = DRAW;
       end
       DRAW : begin
-        start_draw = 1'b1;
+        itf_start = 1'b1;
         fsm_stateNext = WAIT_DONE;
       end
       WAIT_DONE : begin
-        if(draw_done) begin
+        if(itf_done) begin
           if((row_cnt_willOverflowIfInc && col_cnt_willOverflowIfInc)) begin
             row_cnt_inc = 1'b1;
             col_cnt_inc = 1'b1;
-            gen_done = 1'b1;
+            draw_field_done = 1'b1;
             fsm_stateNext = IDLE;
           end else begin
             col_cnt_inc = 1'b1;
@@ -2707,8 +2413,164 @@ module piece_draw_engine (
     end
   end
 
+  assign itf_in_color = ft_color;
+  assign itf_width = 8'h08;
+  assign itf_height = 8'h08;
+  assign itf_fill_pattern = 2'b00;
+  assign itf_pat_color = 4'b0000;
   assign fsm_wantExit = 1'b0;
   assign fsm_wantKill = 1'b0;
+  always @(*) begin
+    cnt_willIncrement = 1'b0;
+    cnt_willIncrement_1 = 1'b0;
+    stepup_fsm_wantStart = 1'b0;
+    stepup_start_char_draw = 1'b0;
+    stepup_start_block_draw = 1'b0;
+    screen_is_ready = 1'b0;
+    cnt_willIncrement = 1'b0;
+    stepup_fsm_stateNext = stepup_fsm_stateReg;
+    case(stepup_fsm_stateReg)
+      CLEAN_SCREEN : begin
+        if(bf_clear_done) begin
+          if(stepup_game_is_running) begin
+            stepup_fsm_stateNext = START_DRAW_STRING;
+          end else begin
+            stepup_fsm_stateNext = START_DRAW_OPEN;
+          end
+        end
+      end
+      START_DRAW_OPEN : begin
+        stepup_start_char_draw = 1'b1;
+        stepup_fsm_stateNext = WAIT_DRAW_OPEN_DONE;
+      end
+      WAIT_DRAW_OPEN_DONE : begin
+        if(itf_done_1) begin
+          cnt_willIncrement = 1'b1;
+          if(temp_when) begin
+            stepup_fsm_stateNext = WAIT_GAME_START;
+          end else begin
+            stepup_fsm_stateNext = START_DRAW_OPEN;
+          end
+        end
+      end
+      WAIT_GAME_START : begin
+        if(game_start) begin
+          stepup_fsm_stateNext = CLEAN_SCREEN;
+        end
+      end
+      START_DRAW_STRING : begin
+        stepup_start_char_draw = 1'b1;
+        stepup_fsm_stateNext = WAIT_DRAW_STRING_DONE;
+      end
+      WAIT_DRAW_STRING_DONE : begin
+        if(itf_done_1) begin
+          cnt_willIncrement = 1'b1;
+          if(temp_when_1) begin
+            stepup_fsm_stateNext = WAIT_DRAW_SCORE;
+          end else begin
+            stepup_fsm_stateNext = START_DRAW_STRING;
+          end
+        end
+      end
+      WAIT_DRAW_SCORE : begin
+        stepup_fsm_stateNext = PRE_DRAW_WALL;
+      end
+      PRE_DRAW_WALL : begin
+        stepup_fsm_stateNext = START_DRAW_WALL;
+      end
+      START_DRAW_WALL : begin
+        stepup_start_block_draw = 1'b1;
+        stepup_fsm_stateNext = WAIT_DRAW_WALL_DONE;
+      end
+      WAIT_DRAW_WALL_DONE : begin
+        if(itf_done_2) begin
+          cnt_willIncrement_1 = 1'b1;
+          if(cnt_willOverflow_1) begin
+            stepup_fsm_stateNext = DRAW_SCORE;
+          end else begin
+            stepup_fsm_stateNext = PRE_DRAW_WALL;
+          end
+        end
+      end
+      DRAW_SCORE : begin
+        screen_is_ready = 1'b1;
+        if(game_restart) begin
+          stepup_fsm_stateNext = CLEAN_SCREEN;
+        end
+      end
+      default : begin
+        if(draw_openning_start) begin
+          stepup_fsm_stateNext = CLEAN_SCREEN;
+        end
+        stepup_fsm_wantStart = 1'b1;
+      end
+    endcase
+    if(stepup_fsm_wantKill) begin
+      stepup_fsm_stateNext = SETUP_IDLE;
+    end
+  end
+
+  assign cnt_willClear = 1'b0;
+  assign cnt_willOverflowIfInc = (cnt_value == 4'b1010);
+  assign cnt_willOverflow = (cnt_willOverflowIfInc && cnt_willIncrement);
+  always @(*) begin
+    if(cnt_willOverflow) begin
+      cnt_valueNext = 4'b0000;
+    end else begin
+      cnt_valueNext = (cnt_value + temp_cnt_valueNext);
+    end
+    if(cnt_willClear) begin
+      cnt_valueNext = 4'b0000;
+    end
+  end
+
+  assign itf_word = rom_spinal_port0;
+  assign cnt_willClear_1 = 1'b0;
+  assign cnt_willOverflowIfInc_1 = (cnt_value_1 == 2'b11);
+  assign cnt_willOverflow_1 = (cnt_willOverflowIfInc_1 && cnt_willIncrement_1);
+  always @(*) begin
+    cnt_valueNext_1 = (cnt_value_1 + temp_cnt_valueNext_1_1);
+    if(cnt_willClear_1) begin
+      cnt_valueNext_1 = 2'b00;
+    end
+  end
+
+  assign blockInfo = wall_rom_spinal_port0;
+  assign x_1 = blockInfo[8 : 0];
+  assign y_1 = blockInfo[16 : 9];
+  assign itf_width_1 = blockInfo[24 : 17];
+  assign itf_height_1 = blockInfo[32 : 25];
+  assign itf_in_color_1 = blockInfo[36 : 33];
+  assign itf_pat_color_1 = blockInfo[40 : 37];
+  assign itf_fill_pattern_1 = blockInfo[42 : 41];
+  assign itf_scale = stepup_scale;
+  assign itf_color = stepup_color;
+  assign itf_start_1 = stepup_start_char_draw;
+  assign itf_start_2 = stepup_start_block_draw;
+  assign stepup_fsm_wantExit = 1'b0;
+  assign stepup_fsm_wantKill = 1'b0;
+  always @(*) begin
+    bf_clear_start = 1'b0;
+    if(stepup_fsm_onEntry_CLEAN_SCREEN) begin
+      bf_clear_start = 1'b1;
+    end
+  end
+
+  assign draw_char_start = itf_start_1;
+  assign draw_char_word = itf_word;
+  assign draw_char_scale = itf_scale;
+  assign draw_char_color = itf_color;
+  assign itf_done_1 = draw_char_done;
+  assign draw_block_start = (itf_start || itf_start_2);
+  assign draw_block_width = (itf_start ? itf_width : itf_width_1);
+  assign draw_block_height = (itf_start ? itf_height : itf_height_1);
+  assign draw_block_in_color = (itf_start ? itf_in_color : itf_in_color_1);
+  assign draw_block_pat_color = itf_pat_color_1;
+  assign draw_block_fill_pattern = (itf_start ? itf_fill_pattern : itf_fill_pattern_1);
+  assign itf_done = draw_block_done;
+  assign itf_done_2 = draw_block_done;
+  assign draw_x_orig = (x | stepup_x);
+  assign draw_y_orig = (y | stepup_y);
   assign fsm_onExit_IDLE = ((fsm_stateNext != IDLE) && (fsm_stateReg == IDLE));
   assign fsm_onExit_FETCH = ((fsm_stateNext != FETCH) && (fsm_stateReg == FETCH));
   assign fsm_onExit_DATA_READY = ((fsm_stateNext != DATA_READY) && (fsm_stateReg == DATA_READY));
@@ -2719,6 +2581,31 @@ module piece_draw_engine (
   assign fsm_onEntry_DATA_READY = ((fsm_stateNext == DATA_READY) && (fsm_stateReg != DATA_READY));
   assign fsm_onEntry_DRAW = ((fsm_stateNext == DRAW) && (fsm_stateReg != DRAW));
   assign fsm_onEntry_WAIT_DONE = ((fsm_stateNext == WAIT_DONE) && (fsm_stateReg != WAIT_DONE));
+  assign stepup_fsm_onExit_SETUP_IDLE = ((stepup_fsm_stateNext != SETUP_IDLE) && (stepup_fsm_stateReg == SETUP_IDLE));
+  assign stepup_fsm_onExit_CLEAN_SCREEN = ((stepup_fsm_stateNext != CLEAN_SCREEN) && (stepup_fsm_stateReg == CLEAN_SCREEN));
+  assign stepup_fsm_onExit_START_DRAW_OPEN = ((stepup_fsm_stateNext != START_DRAW_OPEN) && (stepup_fsm_stateReg == START_DRAW_OPEN));
+  assign stepup_fsm_onExit_WAIT_DRAW_OPEN_DONE = ((stepup_fsm_stateNext != WAIT_DRAW_OPEN_DONE) && (stepup_fsm_stateReg == WAIT_DRAW_OPEN_DONE));
+  assign stepup_fsm_onExit_WAIT_GAME_START = ((stepup_fsm_stateNext != WAIT_GAME_START) && (stepup_fsm_stateReg == WAIT_GAME_START));
+  assign stepup_fsm_onExit_START_DRAW_STRING = ((stepup_fsm_stateNext != START_DRAW_STRING) && (stepup_fsm_stateReg == START_DRAW_STRING));
+  assign stepup_fsm_onExit_WAIT_DRAW_STRING_DONE = ((stepup_fsm_stateNext != WAIT_DRAW_STRING_DONE) && (stepup_fsm_stateReg == WAIT_DRAW_STRING_DONE));
+  assign stepup_fsm_onExit_WAIT_DRAW_SCORE = ((stepup_fsm_stateNext != WAIT_DRAW_SCORE) && (stepup_fsm_stateReg == WAIT_DRAW_SCORE));
+  assign stepup_fsm_onExit_PRE_DRAW_WALL = ((stepup_fsm_stateNext != PRE_DRAW_WALL) && (stepup_fsm_stateReg == PRE_DRAW_WALL));
+  assign stepup_fsm_onExit_START_DRAW_WALL = ((stepup_fsm_stateNext != START_DRAW_WALL) && (stepup_fsm_stateReg == START_DRAW_WALL));
+  assign stepup_fsm_onExit_WAIT_DRAW_WALL_DONE = ((stepup_fsm_stateNext != WAIT_DRAW_WALL_DONE) && (stepup_fsm_stateReg == WAIT_DRAW_WALL_DONE));
+  assign stepup_fsm_onExit_DRAW_SCORE = ((stepup_fsm_stateNext != DRAW_SCORE) && (stepup_fsm_stateReg == DRAW_SCORE));
+  assign stepup_fsm_onEntry_SETUP_IDLE = ((stepup_fsm_stateNext == SETUP_IDLE) && (stepup_fsm_stateReg != SETUP_IDLE));
+  assign stepup_fsm_onEntry_CLEAN_SCREEN = ((stepup_fsm_stateNext == CLEAN_SCREEN) && (stepup_fsm_stateReg != CLEAN_SCREEN));
+  assign stepup_fsm_onEntry_START_DRAW_OPEN = ((stepup_fsm_stateNext == START_DRAW_OPEN) && (stepup_fsm_stateReg != START_DRAW_OPEN));
+  assign stepup_fsm_onEntry_WAIT_DRAW_OPEN_DONE = ((stepup_fsm_stateNext == WAIT_DRAW_OPEN_DONE) && (stepup_fsm_stateReg != WAIT_DRAW_OPEN_DONE));
+  assign stepup_fsm_onEntry_WAIT_GAME_START = ((stepup_fsm_stateNext == WAIT_GAME_START) && (stepup_fsm_stateReg != WAIT_GAME_START));
+  assign stepup_fsm_onEntry_START_DRAW_STRING = ((stepup_fsm_stateNext == START_DRAW_STRING) && (stepup_fsm_stateReg != START_DRAW_STRING));
+  assign stepup_fsm_onEntry_WAIT_DRAW_STRING_DONE = ((stepup_fsm_stateNext == WAIT_DRAW_STRING_DONE) && (stepup_fsm_stateReg != WAIT_DRAW_STRING_DONE));
+  assign stepup_fsm_onEntry_WAIT_DRAW_SCORE = ((stepup_fsm_stateNext == WAIT_DRAW_SCORE) && (stepup_fsm_stateReg != WAIT_DRAW_SCORE));
+  assign stepup_fsm_onEntry_PRE_DRAW_WALL = ((stepup_fsm_stateNext == PRE_DRAW_WALL) && (stepup_fsm_stateReg != PRE_DRAW_WALL));
+  assign stepup_fsm_onEntry_START_DRAW_WALL = ((stepup_fsm_stateNext == START_DRAW_WALL) && (stepup_fsm_stateReg != START_DRAW_WALL));
+  assign stepup_fsm_onEntry_WAIT_DRAW_WALL_DONE = ((stepup_fsm_stateNext == WAIT_DRAW_WALL_DONE) && (stepup_fsm_stateReg != WAIT_DRAW_WALL_DONE));
+  assign stepup_fsm_onEntry_DRAW_SCORE = ((stepup_fsm_stateNext == DRAW_SCORE) && (stepup_fsm_stateReg != DRAW_SCORE));
+  assign stepup_fsm_debug = stepup_fsm_stateReg;
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
       wr_row_cnt_value <= 5'h0;
@@ -2727,7 +2614,13 @@ module piece_draw_engine (
       row_val_valid_regNext <= 1'b0;
       x <= 9'h0;
       y <= 8'h0;
+      cnt_value <= 4'b0000;
+      cnt_value_1 <= 2'b00;
+      stepup_x <= 9'h0;
+      stepup_y <= 8'h0;
+      stepup_game_is_running <= 1'b0;
       fsm_stateReg <= IDLE;
+      stepup_fsm_stateReg <= SETUP_IDLE;
     end else begin
       wr_row_cnt_value <= wr_row_cnt_valueNext;
       col_cnt_value <= col_cnt_valueNext;
@@ -2737,7 +2630,7 @@ module piece_draw_engine (
         x <= 9'h03b;
         y <= 8'h14;
       end
-      if(gen_done) begin
+      if(draw_field_done) begin
         x <= 9'h0;
         y <= 8'h0;
       end else begin
@@ -2752,7 +2645,63 @@ module piece_draw_engine (
           y <= y_next;
         end
       end
+      cnt_value <= cnt_valueNext;
+      cnt_value_1 <= cnt_valueNext_1;
       fsm_stateReg <= fsm_stateNext;
+      stepup_fsm_stateReg <= stepup_fsm_stateNext;
+      case(stepup_fsm_stateReg)
+        CLEAN_SCREEN : begin
+          if(bf_clear_done) begin
+            if(stepup_game_is_running) begin
+              stepup_x <= 9'h0d2;
+              stepup_y <= 8'h17;
+            end else begin
+              stepup_x <= 9'h018;
+              stepup_y <= 8'h42;
+            end
+          end
+        end
+        START_DRAW_OPEN : begin
+        end
+        WAIT_DRAW_OPEN_DONE : begin
+          if(itf_done_1) begin
+            if(!temp_when) begin
+              stepup_x <= (stepup_x + 9'h02e);
+            end
+          end
+        end
+        WAIT_GAME_START : begin
+          if(game_start) begin
+            stepup_game_is_running <= 1'b1;
+          end
+        end
+        START_DRAW_STRING : begin
+        end
+        WAIT_DRAW_STRING_DONE : begin
+          if(itf_done_1) begin
+            if(!temp_when_1) begin
+              stepup_x <= (stepup_x + 9'h00c);
+            end
+          end
+        end
+        WAIT_DRAW_SCORE : begin
+        end
+        PRE_DRAW_WALL : begin
+          stepup_x <= x_1;
+          stepup_y <= y_1;
+        end
+        START_DRAW_WALL : begin
+        end
+        WAIT_DRAW_WALL_DONE : begin
+        end
+        DRAW_SCORE : begin
+          stepup_x <= 9'h0;
+          stepup_y <= 8'h0;
+        end
+        default : begin
+          stepup_game_is_running <= 1'b0;
+        end
+      endcase
     end
   end
 
@@ -2763,6 +2712,96 @@ module piece_draw_engine (
       if(shift_en) begin
         row_bits <= row_bits_next;
       end
+    end
+    case(stepup_fsm_stateReg)
+      CLEAN_SCREEN : begin
+        if(bf_clear_done) begin
+          if(stepup_game_is_running) begin
+            stepup_scale <= 3'b000;
+            stepup_color <= 4'b0110;
+          end else begin
+            stepup_scale <= 3'b010;
+            stepup_color <= 4'b0110;
+          end
+        end
+      end
+      START_DRAW_OPEN : begin
+      end
+      WAIT_DRAW_OPEN_DONE : begin
+      end
+      WAIT_GAME_START : begin
+      end
+      START_DRAW_STRING : begin
+      end
+      WAIT_DRAW_STRING_DONE : begin
+      end
+      WAIT_DRAW_SCORE : begin
+      end
+      PRE_DRAW_WALL : begin
+      end
+      START_DRAW_WALL : begin
+      end
+      WAIT_DRAW_WALL_DONE : begin
+      end
+      DRAW_SCORE : begin
+      end
+      default : begin
+      end
+    endcase
+  end
+
+
+endmodule
+
+module fb_addr_gen (
+  input  wire [8:0]    x,
+  input  wire [7:0]    y,
+  input  wire          start,
+  input  wire [8:0]    h_cnt,
+  input  wire [7:0]    v_cnt,
+  output wire [16:0]   out_addr,
+  input  wire          core_clk,
+  input  wire          core_rst
+);
+
+  wire       [10:0]   temp_v_next_in_fb;
+  wire       [9:0]    temp_v_next_in_fb_1;
+  wire       [10:0]   temp_v_next_in_fb_2;
+  wire       [16:0]   temp_addr;
+  wire       [16:0]   temp_addr_1;
+  reg        [8:0]    x_reg;
+  reg        [7:0]    y_reg;
+  wire       [7:0]    v_next;
+  wire       [10:0]   v_next_in_fb;
+  reg        [8:0]    h_reg;
+  reg        [10:0]   v_reg;
+  reg        [16:0]   addr;
+
+  assign temp_v_next_in_fb_1 = ({2'd0,v_next} <<< 2'd2);
+  assign temp_v_next_in_fb = {1'd0, temp_v_next_in_fb_1};
+  assign temp_v_next_in_fb_2 = {3'd0, v_next};
+  assign temp_addr = {8'd0, h_reg};
+  assign temp_addr_1 = ({6'd0,v_reg} <<< 3'd6);
+  assign v_next = (y_reg + v_cnt);
+  assign v_next_in_fb = (temp_v_next_in_fb + temp_v_next_in_fb_2);
+  assign out_addr = addr;
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      x_reg <= 9'h0;
+      y_reg <= 8'h0;
+      h_reg <= 9'h0;
+      v_reg <= 11'h0;
+      addr <= 17'h0;
+    end else begin
+      if(start) begin
+        x_reg <= x;
+      end
+      if(start) begin
+        y_reg <= y;
+      end
+      h_reg <= (x_reg + h_cnt);
+      v_reg <= v_next_in_fb;
+      addr <= (temp_addr + temp_addr_1);
     end
   end
 
@@ -3183,19 +3222,36 @@ module bram_2p (
   input  wire          rd_en,
   input  wire [16:0]   rd_addr,
   output wire [3:0]    rd_data,
+  input  wire          clear_start,
+  output wire          clear_done,
   input  wire          core_clk,
   input  wire          core_rst
 );
 
   reg        [3:0]    memory_spinal_port1;
+  wire       [16:0]   temp_full_addr_valueNext;
+  wire       [0:0]    temp_full_addr_valueNext_1;
+  reg                 addr_inc;
+  reg                 full_addr_willIncrement;
+  wire                full_addr_willClear;
+  reg        [16:0]   full_addr_valueNext;
+  reg        [16:0]   full_addr_value;
+  wire                full_addr_willOverflowIfInc;
+  wire                full_addr_willOverflow;
+  reg                 addr_inc_regNext;
+  wire       [16:0]   wr_addr_1;
+  wire       [3:0]    wr_data_1;
+  wire                wr_en_1;
   (* ram_style = "block" *) reg [3:0] memory [0:76799];
 
+  assign temp_full_addr_valueNext_1 = full_addr_willIncrement;
+  assign temp_full_addr_valueNext = {16'd0, temp_full_addr_valueNext_1};
   initial begin
-    $readmemb("tetris_top.v_toplevel_tetris_core_inst_game_display_inst_core_fb_memory.bin",memory);
+    $readmemb("tetris_top.v_toplevel_tetris_core_inst_game_display_inst_fb_memory.bin",memory);
   end
   always @(posedge core_clk) begin
-    if(wr_en) begin
-      memory[wr_addr] <= wr_data;
+    if(wr_en_1) begin
+      memory[wr_addr_1] <= wr_data_1;
     end
   end
 
@@ -3205,7 +3261,49 @@ module bram_2p (
     end
   end
 
+  always @(*) begin
+    full_addr_willIncrement = 1'b0;
+    if(addr_inc) begin
+      full_addr_willIncrement = 1'b1;
+    end
+  end
+
+  assign full_addr_willClear = 1'b0;
+  assign full_addr_willOverflowIfInc = (full_addr_value == 17'h12bff);
+  assign full_addr_willOverflow = (full_addr_willOverflowIfInc && full_addr_willIncrement);
+  always @(*) begin
+    if(full_addr_willOverflow) begin
+      full_addr_valueNext = 17'h0;
+    end else begin
+      full_addr_valueNext = (full_addr_value + temp_full_addr_valueNext);
+    end
+    if(full_addr_willClear) begin
+      full_addr_valueNext = 17'h0;
+    end
+  end
+
+  assign clear_done = ((! addr_inc) && addr_inc_regNext);
+  assign wr_addr_1 = (addr_inc ? full_addr_value : wr_addr);
+  assign wr_data_1 = (addr_inc ? 4'b0010 : wr_data);
+  assign wr_en_1 = (addr_inc || wr_en);
   assign rd_data = memory_spinal_port1;
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      addr_inc <= 1'b0;
+      full_addr_value <= 17'h0;
+      addr_inc_regNext <= 1'b0;
+    end else begin
+      if(clear_start) begin
+        addr_inc <= 1'b1;
+      end
+      full_addr_value <= full_addr_valueNext;
+      if(full_addr_willOverflow) begin
+        addr_inc <= 1'b0;
+      end
+      addr_inc_regNext <= addr_inc;
+    end
+  end
+
 
 endmodule
 
@@ -5662,47 +5760,47 @@ module piece_checker (
         piece_in_rValid <= piece_in_valid;
       end
       case(piece_payload_type)
-        T : begin
+        I : begin
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
               blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
-              blks_offset_2_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
               blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
+              blks_offset_3_x <= 2'b11;
               blks_offset_3_y <= 2'b01;
             end
             2'b01 : begin
-              blks_offset_0_x <= 2'b01;
+              blks_offset_0_x <= 2'b10;
               blks_offset_0_y <= 2'b00;
               blks_offset_1_x <= 2'b10;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b10;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b11;
             end
             2'b10 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b01;
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b10;
               blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b11;
+              blks_offset_3_y <= 2'b10;
             end
             default : begin
               blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b00;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
+              blks_offset_2_y <= 2'b10;
               blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b00;
+              blks_offset_3_y <= 2'b11;
             end
           endcase
         end
@@ -5750,67 +5848,67 @@ module piece_checker (
             end
           endcase
         end
-        S : begin
+        L : begin
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
               blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
               blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b00;
+              blks_offset_3_y <= 2'b01;
             end
             2'b01 : begin
               blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b10;
+              blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b10;
+              blks_offset_3_x <= 2'b01;
               blks_offset_3_y <= 2'b10;
             end
             2'b10 : begin
               blks_offset_0_x <= 2'b10;
               blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b00;
+              blks_offset_2_y <= 2'b10;
               blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b10;
+              blks_offset_3_y <= 2'b01;
             end
             default : begin
               blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b00;
+              blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b00;
+              blks_offset_2_x <= 2'b00;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b01;
               blks_offset_3_y <= 2'b00;
             end
           endcase
         end
-        J : begin
+        T : begin
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b00;
-              blks_offset_1_y <= 2'b01;
+              blks_offset_0_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b00;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b10;
               blks_offset_3_y <= 2'b01;
             end
             2'b01 : begin
-              blks_offset_0_x <= 2'b10;
+              blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
+              blks_offset_1_x <= 2'b10;
+              blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b01;
@@ -5818,19 +5916,19 @@ module piece_checker (
             end
             2'b10 : begin
               blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b10;
-              blks_offset_1_y <= 2'b01;
+              blks_offset_0_y <= 2'b01;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b10;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b00;
               blks_offset_3_y <= 2'b01;
             end
             default : begin
-              blks_offset_0_x <= 2'b00;
+              blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
+              blks_offset_1_x <= 2'b00;
+              blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b01;
@@ -5882,47 +5980,47 @@ module piece_checker (
             end
           endcase
         end
-        I : begin
+        J : begin
           case(piece_payload_rot)
             2'b00 : begin
               blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b00;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
+              blks_offset_2_x <= 2'b01;
               blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b11;
+              blks_offset_3_x <= 2'b10;
               blks_offset_3_y <= 2'b01;
             end
             2'b01 : begin
               blks_offset_0_x <= 2'b10;
               blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b10;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b11;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b10;
             end
             2'b10 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b10;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b00;
+              blks_offset_3_y <= 2'b01;
+            end
+            default : begin
               blks_offset_0_x <= 2'b00;
               blks_offset_0_y <= 2'b10;
               blks_offset_1_x <= 2'b01;
               blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b11;
-              blks_offset_3_y <= 2'b10;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
               blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b10;
+              blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b11;
+              blks_offset_3_y <= 2'b00;
             end
           endcase
         end
@@ -5932,40 +6030,40 @@ module piece_checker (
               blks_offset_0_x <= 2'b00;
               blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
+              blks_offset_1_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
+              blks_offset_3_y <= 2'b00;
             end
             2'b01 : begin
               blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
+              blks_offset_1_x <= 2'b10;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b10;
-              blks_offset_3_x <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b10;
               blks_offset_3_y <= 2'b10;
             end
             2'b10 : begin
               blks_offset_0_x <= 2'b10;
               blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b00;
-              blks_offset_2_y <= 2'b10;
+              blks_offset_1_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b01;
+              blks_offset_3_y <= 2'b10;
             end
             default : begin
               blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b01;
+              blks_offset_1_x <= 2'b00;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b00;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b00;
               blks_offset_3_y <= 2'b00;
             end
           endcase

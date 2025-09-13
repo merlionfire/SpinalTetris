@@ -46,7 +46,7 @@ class brd_btns( ) extends Bundle with IMasterSlave {
   }
 }
 
-class tetris_top ( config : TetrisCoreConfig ) extends Component {
+class tetris_top ( config : TetrisCoreConfig , rot_dir_swap : Boolean = false ) extends Component {
 
   import config._
   val io = new Bundle {
@@ -100,8 +100,9 @@ class tetris_top ( config : TetrisCoreConfig ) extends Component {
 
   tetris_core_inst.io.game_start := io.btns.btn_west
   tetris_core_inst.io.move_down  := io.btns.rot_push
-  tetris_core_inst.io.move_left  := io.btns.rot_left
-  tetris_core_inst.io.move_right := io.btns.rot_right
+
+  tetris_core_inst.io.move_left  :=  { if (rot_dir_swap) io.btns.rot_right else  io.btns.rot_left  }
+  tetris_core_inst.io.move_right :=  { if (rot_dir_swap) io.btns.rot_left  else  io.btns.rot_right }
 
   new ClockingArea(tetris_core_inst.coreClockDomain) {
     io.btns.rot_clr := tetris_core_inst.io.ctrl_allowed.rise(False)

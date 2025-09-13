@@ -115,7 +115,8 @@ class pcb extends  Component {
   // --------------------------------------------
   //val tetris_top_inst = new tetris_top(TetrisCoreConfig())
   val tetris_top_inst = new tetris_top(
-    TetrisCoreConfig(offset_x = 32 )
+    TetrisCoreConfig(offset_x = 32 ),
+    rot_dir_swap = true
   ) // For Spartan 3A with limitd BRAM
   tetris_top_inst.addAttribute( "keep_hierarchy", "yes")
   tetris_top_inst.io.core_clk := core_clk

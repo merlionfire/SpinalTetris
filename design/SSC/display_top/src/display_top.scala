@@ -153,6 +153,7 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
     val vga_rst = in Bool()
     val row_val =  slave Flow( Bits(colBlocksNum bits) )
     val game_start            = in Bool()
+    val game_restart          = in Bool()
 
     val debug = if (test) new Bundle {
       val draw_char_start = in Bool()
@@ -220,7 +221,7 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
     muxAndConnectIOByName( draw_controller.io.draw_block -> draw_block_engine.io )( List( "start", "width", "height", "in_color", "pat_color", "fill_pattern"  ))("draw_block")
     draw_controller.io.draw_char.done := draw_char_engine.io.done
     draw_controller.io.draw_block.done := draw_block_engine.io.done
-    draw_controller.io.softRest := io.softRest
+    draw_controller.io.game_restart := io.game_restart
 
     // piece_draw_engine interface
     draw_controller.io.row_val := io.row_val

@@ -56,7 +56,7 @@ module tetris_core (
     .vga_color_r     (game_display_inst_vga_color_r[3:0]  ), //o
     .vga_color_g     (game_display_inst_vga_color_g[3:0]  ), //o
     .vga_color_b     (game_display_inst_vga_color_b[3:0]  ), //o
-    .softRest        (1'b0                                ), //i
+    .game_restart        (1'b0                                ), //i
     .core_clk        (core_clk                            ), //i
     .core_rst        (core_rst                            ), //i
     .vga_clk         (vga_clk                             ), //i
@@ -85,7 +85,7 @@ module display_top (
   output reg  [3:0]    vga_color_r,
   output reg  [3:0]    vga_color_g,
   output reg  [3:0]    vga_color_b,
-  input  wire          softRest,
+  input  wire          game_restart,
   input  wire          core_clk,
   input  wire          core_rst,
   input  wire          vga_clk,
@@ -299,7 +299,7 @@ module display_top (
     .core_rst                (core_rst                                       )  //i
   );
   vga_sync_gen vga_sync (
-    .io_softReset (softRest            ), //i
+    .io_softReset (game_restart            ), //i
     .io_sof       (vga_sync_io_sof     ), //o
     .io_sol       (vga_sync_io_sol     ), //o
     .io_sos       (vga_sync_io_sos     ), //o
