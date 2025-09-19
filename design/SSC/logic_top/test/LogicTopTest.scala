@@ -30,14 +30,14 @@ class LogicTopTest extends AnyFunSuite {
   val lastCol = colNum - 1   /* 0 and 11 are col index of left and right wall */
   val bottomRow = rowNum - 1
 
-  val config = LogicTopConfig( rowNum, colNum )
+  val config = LogicTopConfig( rowNum, colNum , 1 )
 
   // ***************************************
   //  CUSTOM CODE END
   // ***************************************
 
-  //val compiler : String = "verilator"
-  val compiler : String = "vcs"
+  val compiler : String = "verilator"
+  //val compiler : String = "vcs"
 
   val runFolder : String = PathUtils.getRtlOutputPath(getClass, middlePath = "design/SSC", targetName = "sim").toString
   lazy val compiled : SimCompiled[logic_top] = runSimConfig(runFolder, compiler)
@@ -69,7 +69,7 @@ class LogicTopTest extends AnyFunSuite {
     dut.io.move_down #= false
     dut.io.rotate #= false
     dut.io.screen_is_ready #= true
-    dut.io.force_refresh #= true  // start refresh immediately
+    dut.io.vga_sof #= true  // start refresh immediately
     dut.io.draw_field_done #= true // Simulate refresh done
     dut.clockDomain.waitSampling()
   }
@@ -341,7 +341,6 @@ class LogicTopTest extends AnyFunSuite {
 
 
 
-
   def waitForMainState(dut: logic_top, state : String ) = {
     println(f"@${simTime()} [DEBUG] Wait FSM state  : <$state> ...... ")
     dut.clockDomain.waitSamplingWhere(dut.main_fsm_debug.toInt == stateMap(state)  )
@@ -363,7 +362,7 @@ class LogicTopTest extends AnyFunSuite {
       var obs_mem = mutable.Queue[ArrayBuffer[BigInt]]()
 
       dut.clockDomain.forkStimulus(10)
-      SimTimeout(0.5 ms) // adjust timeout as needed
+      SimTimeout(60 ms) // adjust timeout as needed
       dut.clockDomain.waitSampling(20)
 
       init(dut)

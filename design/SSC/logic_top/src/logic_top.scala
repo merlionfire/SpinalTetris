@@ -11,7 +11,7 @@ import utils._
 import spinal.lib.fsm.{State, StateFsm, StateMachine}
 
 
-case class  LogicTopConfig ( rowNum : Int, colNum : Int  ) {
+case class  LogicTopConfig ( rowNum : Int, colNum : Int , freeze_screen_in_frames : Int = 40  ) {
 
   val rowBitsWidth = log2Up(rowNum)
   val colBitsWidth = log2Up(colNum)
@@ -31,6 +31,7 @@ case class  LogicTopConfig ( rowNum : Int, colNum : Int  ) {
 
   val picollerConfig =  PicollerConfig( colBitsWidth, rowBitsWidth)
 
+
 }
 
 class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Component {
@@ -46,9 +47,11 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
     val row_val = master Flow( Bits(colBlocksNum bits) )
     val draw_field_done = in Bool()
     val screen_is_ready = in Bool()
-    val force_refresh = in Bool()
+    //val force_refresh = in Bool()
+    val vga_sof = in Bool()
     val ctrl_allowed = out Bool()
     val softReset  = out Bool()
+    val game_restart = out Bool()
   }
 
 
@@ -160,6 +163,8 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
   val playfield_fsm_reset = RegInit( False)
 
   val fsm_is_place = Bool()
+  val force_refresh = io.vga_sof
+  val freeze_ctrl_cnt = Counter(freeze_screen_in_frames, io.vga_sof)
 
   /* Debug signal  */
   val debug_move_type = RegInit( U(0, 3 bits))
@@ -338,7 +343,7 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
     val START_REFRESH : State = new State {
       whenIsActive {
         block_set := False
-        when(  io.force_refresh ) {
+        when(  force_refresh ) {
           play_field.io.fetch := True
           goto(WAIT_FRESH_DONE)
         }
@@ -361,7 +366,21 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
       whenIsActive{
         //temp add
         block_set := False
-        goto(MOVE)
+        goto(FREEZE_CTRL)
+      }
+    }
+
+
+    // Disable control input sometime before next in case consistent moves are invisible to player
+    val FREEZE_CTRL: State = new State {
+      onEntry {
+        freeze_ctrl_cnt.clear()
+      }
+
+      whenIsActive{
+        when ( freeze_ctrl_cnt.willOverflow ) {
+          goto(MOVE)
+        }
       }
     }
 
@@ -369,6 +388,7 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
   }
 
   io.ctrl_allowed := playfield_fsm.isActive(playfield_fsm.MOVE )
+  io.game_restart := False
 
   val main_fsm = new StateMachine {
 
@@ -447,6 +467,7 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
     val END: State  = new State {
       whenIsActive {
         io.softReset := True   // Game fail and restart the game
+        io.game_restart := True
         goto(IDLE)
       }
     }

@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : logic_top
-// Git hash  : 0ba87d8f6dc393cafd790a511174b6e6b4938351
+// Git hash  : 57c638189b4e0ddb5195fdfb622c25acf3882cef
 
 `timescale 1ns/1ps
 
@@ -14,9 +14,9 @@ module logic_top (
   output wire [9:0]    row_val_payload,
   input  wire          draw_field_done,
   input  wire          screen_is_ready,
-  input  wire          force_refresh,
+  input  wire          vga_sof,
   output wire          ctrl_allowed,
-  output reg           game_restart,
+  output reg           softReset,
   input  wire          clk,
   input  wire          reset
 );
@@ -27,14 +27,15 @@ module logic_top (
   localparam S = 3'd4;
   localparam T = 3'd5;
   localparam Z = 3'd6;
-  localparam STANDBY = 3'd0;
-  localparam MOVE = 3'd1;
-  localparam CHECK = 3'd2;
-  localparam ERASE = 3'd3;
-  localparam UPDATE = 3'd4;
-  localparam START_REFRESH = 3'd5;
-  localparam WAIT_FRESH_DONE = 3'd6;
-  localparam STATUS = 3'd7;
+  localparam STANDBY = 4'd0;
+  localparam MOVE = 4'd1;
+  localparam CHECK = 4'd2;
+  localparam ERASE = 4'd3;
+  localparam UPDATE = 4'd4;
+  localparam START_REFRESH = 4'd5;
+  localparam WAIT_FRESH_DONE = 4'd6;
+  localparam STATUS = 4'd7;
+  localparam FREEZE_CTRL = 4'd8;
   localparam IDLE = 4'd0;
   localparam GAME_START = 4'd1;
   localparam RANDOM_GEN = 4'd2;
@@ -61,6 +62,8 @@ module logic_top (
   wire       [9:0]    play_field_1_row_val_payload;
   wire                play_field_1_lines_cleared_valid;
   wire       [4:0]    play_field_1_lines_cleared_payload;
+  wire       [4:0]    temp_freeze_ctrl_cnt_valueNext;
+  wire       [0:0]    temp_freeze_ctrl_cnt_valueNext_1;
   wire       [24:0]   temp_main_fsm_drop_timeout_counter_valueNext;
   wire       [0:0]    temp_main_fsm_drop_timeout_counter_valueNext_1;
   wire       [24:0]   temp_main_fsm_lock_timeout_counter_valueNext;
@@ -105,6 +108,12 @@ module logic_top (
   reg                 playfield_fsm_result;
   reg                 playfield_fsm_reset;
   wire                fsm_is_place;
+  reg                 freeze_ctrl_cnt_willIncrement;
+  reg                 freeze_ctrl_cnt_willClear;
+  reg        [4:0]    freeze_ctrl_cnt_valueNext;
+  reg        [4:0]    freeze_ctrl_cnt_value;
+  wire                freeze_ctrl_cnt_willOverflowIfInc;
+  wire                freeze_ctrl_cnt_willOverflow;
   reg        [2:0]    debug_move_type;
   wire                playfield_fsm_wantExit;
   reg                 playfield_fsm_wantStart;
@@ -129,11 +138,11 @@ module logic_top (
   wire                main_fsm_lock_timeout_counter_willOverflowIfInc;
   wire                main_fsm_lock_timeout_counter_willOverflow;
   wire       [3:0]    main_fsm_debug;
-  wire       [2:0]    playfield_fsm_debug;
+  wire       [3:0]    playfield_fsm_debug;
   reg        [7:0]    score_total_score;
   reg        [2:0]    score_score_with_bonus;
-  reg        [2:0]    playfield_fsm_stateReg;
-  reg        [2:0]    playfield_fsm_stateNext;
+  reg        [3:0]    playfield_fsm_stateReg;
+  reg        [3:0]    playfield_fsm_stateNext;
   wire                playfield_fsm_onExit_STANDBY;
   wire                playfield_fsm_onExit_MOVE;
   wire                playfield_fsm_onExit_CHECK;
@@ -142,6 +151,7 @@ module logic_top (
   wire                playfield_fsm_onExit_START_REFRESH;
   wire                playfield_fsm_onExit_WAIT_FRESH_DONE;
   wire                playfield_fsm_onExit_STATUS;
+  wire                playfield_fsm_onExit_FREEZE_CTRL;
   wire                playfield_fsm_onEntry_STANDBY;
   wire                playfield_fsm_onEntry_MOVE;
   wire                playfield_fsm_onEntry_CHECK;
@@ -150,6 +160,7 @@ module logic_top (
   wire                playfield_fsm_onEntry_START_REFRESH;
   wire                playfield_fsm_onEntry_WAIT_FRESH_DONE;
   wire                playfield_fsm_onEntry_STATUS;
+  wire                playfield_fsm_onEntry_FREEZE_CTRL;
   reg        [3:0]    main_fsm_stateReg;
   reg        [3:0]    main_fsm_stateNext;
   wire                main_fsm_onExit_IDLE;
@@ -187,6 +198,8 @@ module logic_top (
   assign temp_when_1 = (ctrl_en && move_right);
   assign temp_when_2 = (ctrl_en && rotate);
   assign temp_when_3 = ((ctrl_en && move_down) || drop_down);
+  assign temp_freeze_ctrl_cnt_valueNext_1 = freeze_ctrl_cnt_willIncrement;
+  assign temp_freeze_ctrl_cnt_valueNext = {4'd0, temp_freeze_ctrl_cnt_valueNext_1};
   assign temp_main_fsm_drop_timeout_counter_valueNext_1 = main_fsm_drop_timeout_counter_willIncrement;
   assign temp_main_fsm_drop_timeout_counter_valueNext = {24'd0, temp_main_fsm_drop_timeout_counter_valueNext_1};
   assign temp_main_fsm_lock_timeout_counter_valueNext_1 = main_fsm_lock_timeout_counter_willIncrement;
@@ -285,6 +298,7 @@ module logic_top (
       START_REFRESH : playfield_fsm_stateReg_string = "START_REFRESH  ";
       WAIT_FRESH_DONE : playfield_fsm_stateReg_string = "WAIT_FRESH_DONE";
       STATUS : playfield_fsm_stateReg_string = "STATUS         ";
+      FREEZE_CTRL : playfield_fsm_stateReg_string = "FREEZE_CTRL    ";
       default : playfield_fsm_stateReg_string = "???????????????";
     endcase
   end
@@ -298,6 +312,7 @@ module logic_top (
       START_REFRESH : playfield_fsm_stateNext_string = "START_REFRESH  ";
       WAIT_FRESH_DONE : playfield_fsm_stateNext_string = "WAIT_FRESH_DONE";
       STATUS : playfield_fsm_stateNext_string = "STATUS         ";
+      FREEZE_CTRL : playfield_fsm_stateNext_string = "FREEZE_CTRL    ";
       default : playfield_fsm_stateNext_string = "???????????????";
     endcase
   end
@@ -402,7 +417,7 @@ module logic_top (
         end
       end
       START_REFRESH : begin
-        if(force_refresh) begin
+        if(vga_sof) begin
           play_field_1_fetch = 1'b1;
           playfield_fsm_stateNext = WAIT_FRESH_DONE;
         end
@@ -413,7 +428,12 @@ module logic_top (
         end
       end
       STATUS : begin
-        playfield_fsm_stateNext = MOVE;
+        playfield_fsm_stateNext = FREEZE_CTRL;
+      end
+      FREEZE_CTRL : begin
+        if(freeze_ctrl_cnt_willOverflow) begin
+          playfield_fsm_stateNext = MOVE;
+        end
       end
       default : begin
         if(move_en) begin
@@ -429,13 +449,40 @@ module logic_top (
 
   assign piece_req_payload_type = shape_cur;
   assign piece_req_valid = req_valid;
+  always @(*) begin
+    freeze_ctrl_cnt_willIncrement = 1'b0;
+    if(vga_sof) begin
+      freeze_ctrl_cnt_willIncrement = 1'b1;
+    end
+  end
+
+  always @(*) begin
+    freeze_ctrl_cnt_willClear = 1'b0;
+    if(playfield_fsm_onEntry_FREEZE_CTRL) begin
+      freeze_ctrl_cnt_willClear = 1'b1;
+    end
+  end
+
+  assign freeze_ctrl_cnt_willOverflowIfInc = (freeze_ctrl_cnt_value == 5'h13);
+  assign freeze_ctrl_cnt_willOverflow = (freeze_ctrl_cnt_willOverflowIfInc && freeze_ctrl_cnt_willIncrement);
+  always @(*) begin
+    if(freeze_ctrl_cnt_willOverflow) begin
+      freeze_ctrl_cnt_valueNext = 5'h0;
+    end else begin
+      freeze_ctrl_cnt_valueNext = (freeze_ctrl_cnt_value + temp_freeze_ctrl_cnt_valueNext);
+    end
+    if(freeze_ctrl_cnt_willClear) begin
+      freeze_ctrl_cnt_valueNext = 5'h0;
+    end
+  end
+
   assign playfield_fsm_wantExit = 1'b0;
   assign playfield_fsm_wantKill = 1'b0;
   assign ctrl_allowed = (playfield_fsm_stateReg == MOVE);
   assign main_fsm_wantExit = 1'b0;
   always @(*) begin
     main_fsm_wantStart = 1'b0;
-    game_restart = 1'b1;
+    softReset = 1'b0;
     main_fsm_stateNext = main_fsm_stateReg;
     case(main_fsm_stateReg)
       GAME_START : begin
@@ -458,7 +505,7 @@ module logic_top (
         end
       end
       END_1 : begin
-        game_restart = 1'b1;
+        softReset = 1'b1;
         main_fsm_stateNext = IDLE;
       end
       FALLING : begin
@@ -579,6 +626,7 @@ module logic_top (
   assign playfield_fsm_onExit_START_REFRESH = ((playfield_fsm_stateNext != START_REFRESH) && (playfield_fsm_stateReg == START_REFRESH));
   assign playfield_fsm_onExit_WAIT_FRESH_DONE = ((playfield_fsm_stateNext != WAIT_FRESH_DONE) && (playfield_fsm_stateReg == WAIT_FRESH_DONE));
   assign playfield_fsm_onExit_STATUS = ((playfield_fsm_stateNext != STATUS) && (playfield_fsm_stateReg == STATUS));
+  assign playfield_fsm_onExit_FREEZE_CTRL = ((playfield_fsm_stateNext != FREEZE_CTRL) && (playfield_fsm_stateReg == FREEZE_CTRL));
   assign playfield_fsm_onEntry_STANDBY = ((playfield_fsm_stateNext == STANDBY) && (playfield_fsm_stateReg != STANDBY));
   assign playfield_fsm_onEntry_MOVE = ((playfield_fsm_stateNext == MOVE) && (playfield_fsm_stateReg != MOVE));
   assign playfield_fsm_onEntry_CHECK = ((playfield_fsm_stateNext == CHECK) && (playfield_fsm_stateReg != CHECK));
@@ -587,6 +635,7 @@ module logic_top (
   assign playfield_fsm_onEntry_START_REFRESH = ((playfield_fsm_stateNext == START_REFRESH) && (playfield_fsm_stateReg != START_REFRESH));
   assign playfield_fsm_onEntry_WAIT_FRESH_DONE = ((playfield_fsm_stateNext == WAIT_FRESH_DONE) && (playfield_fsm_stateReg != WAIT_FRESH_DONE));
   assign playfield_fsm_onEntry_STATUS = ((playfield_fsm_stateNext == STATUS) && (playfield_fsm_stateReg != STATUS));
+  assign playfield_fsm_onEntry_FREEZE_CTRL = ((playfield_fsm_stateNext == FREEZE_CTRL) && (playfield_fsm_stateReg != FREEZE_CTRL));
   assign playfield_fsm_debug = playfield_fsm_stateReg;
   assign main_fsm_onExit_IDLE = ((main_fsm_stateNext != IDLE) && (main_fsm_stateReg == IDLE));
   assign main_fsm_onExit_GAME_START = ((main_fsm_stateNext != GAME_START) && (main_fsm_stateReg == GAME_START));
@@ -631,6 +680,7 @@ module logic_top (
       place_en <= 1'b0;
       playfield_fsm_result <= 1'b0;
       playfield_fsm_reset <= 1'b0;
+      freeze_ctrl_cnt_value <= 5'h0;
       debug_move_type <= 3'b000;
       main_fsm_drop_timeout_state <= 1'b0;
       main_fsm_drop_timeout_counter_value <= 25'h0;
@@ -644,6 +694,7 @@ module logic_top (
       req_valid <= 1'b0;
       update <= 1'b0;
       block_set <= 1'b1;
+      freeze_ctrl_cnt_value <= freeze_ctrl_cnt_valueNext;
       gen_piece_en <= 1'b0;
       drop_down <= 1'b0;
       move_en <= 1'b0;
@@ -732,6 +783,8 @@ module logic_top (
         end
         STATUS : begin
           block_set <= 1'b0;
+        end
+        FREEZE_CTRL : begin
         end
         default : begin
         end
@@ -826,6 +879,8 @@ module logic_top (
       WAIT_FRESH_DONE : begin
       end
       STATUS : begin
+      end
+      FREEZE_CTRL : begin
       end
       default : begin
       end
@@ -3291,94 +3346,6 @@ module piece_checker (
         piece_in_rValid <= piece_in_valid;
       end
       case(piece_payload_type)
-        Z : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b10;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b10;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b01;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b00;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b00;
-            end
-          endcase
-        end
-        T : begin
-          case(piece_payload_rot)
-            2'b00 : begin
-              blks_offset_0_x <= 2'b00;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b00;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
-            end
-            2'b01 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b10;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b10;
-            end
-            2'b10 : begin
-              blks_offset_0_x <= 2'b10;
-              blks_offset_0_y <= 2'b01;
-              blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b10;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b00;
-              blks_offset_3_y <= 2'b01;
-            end
-            default : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b10;
-              blks_offset_1_x <= 2'b00;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b01;
-              blks_offset_2_y <= 2'b01;
-              blks_offset_3_x <= 2'b01;
-              blks_offset_3_y <= 2'b00;
-            end
-          endcase
-        end
         I : begin
           case(piece_payload_rot)
             2'b00 : begin
@@ -3511,6 +3478,50 @@ module piece_checker (
             end
           endcase
         end
+        O : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b01;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b10;
+              blks_offset_2_y <= 2'b00;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+          endcase
+        end
         J : begin
           case(piece_payload_rot)
             2'b00 : begin
@@ -3555,47 +3566,91 @@ module piece_checker (
             end
           endcase
         end
+        Z : begin
+          case(piece_payload_rot)
+            2'b00 : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b10;
+              blks_offset_3_y <= 2'b01;
+            end
+            2'b01 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b00;
+              blks_offset_1_x <= 2'b10;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b10;
+            end
+            2'b10 : begin
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b01;
+              blks_offset_1_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b00;
+              blks_offset_3_y <= 2'b01;
+            end
+            default : begin
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b00;
+              blks_offset_1_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b00;
+            end
+          endcase
+        end
         default : begin
           case(piece_payload_rot)
             2'b00 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
+              blks_offset_0_x <= 2'b00;
+              blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
+              blks_offset_1_y <= 2'b00;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
               blks_offset_3_x <= 2'b10;
               blks_offset_3_y <= 2'b01;
             end
             2'b01 : begin
               blks_offset_0_x <= 2'b01;
               blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
+              blks_offset_1_x <= 2'b10;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b10;
             end
             2'b10 : begin
-              blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
+              blks_offset_0_x <= 2'b10;
+              blks_offset_0_y <= 2'b01;
               blks_offset_1_x <= 2'b01;
-              blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
+              blks_offset_1_y <= 2'b10;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b00;
               blks_offset_3_y <= 2'b01;
             end
             default : begin
               blks_offset_0_x <= 2'b01;
-              blks_offset_0_y <= 2'b00;
-              blks_offset_1_x <= 2'b01;
+              blks_offset_0_y <= 2'b10;
+              blks_offset_1_x <= 2'b00;
               blks_offset_1_y <= 2'b01;
-              blks_offset_2_x <= 2'b10;
-              blks_offset_2_y <= 2'b00;
-              blks_offset_3_x <= 2'b10;
-              blks_offset_3_y <= 2'b01;
+              blks_offset_2_x <= 2'b01;
+              blks_offset_2_y <= 2'b01;
+              blks_offset_3_x <= 2'b01;
+              blks_offset_3_y <= 2'b00;
             end
           endcase
         end
