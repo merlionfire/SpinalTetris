@@ -243,9 +243,9 @@ class CheckersPlayFieldTest  extends AnyFunSuite {
         expectedBlocks.enqueue((x + piece.x , y + piece.y))
       }
 
-      // Since wall hist is higher priority than occupied in HW, model will check if block hit wall followed by occupied.
+      // Since wall hist is higher priority than occupied in HW, model will checker if block hit wall followed by occupied.
       val result = expectedBlocks.toList.map[(Boolean,Boolean), List[(Boolean,Boolean)]] {
-        // check if any block hits wall
+        // checker if any block hits wall
         case (0, _) => {
           println(f"[DEBUG] Hit left Wall");
           (false, true)

@@ -88,6 +88,37 @@ package object config {
       )
     )
 
+    // Convert coordinates to binary representation
+    def coordinatesToBinary(coordinates: List[(Int, Int)]): List[Int] = {
+      (0 until 4).map { row =>
+        coordinates
+          .filter(_._2 == row)  // Get coordinates for this row
+          .map(_._1)            // Extract x coordinates
+          .foldLeft(0) { (acc, x) => acc | (1 << (3 - x)) }  // Convert to binary
+      }.toList
+    }
+
+    // Create the binary representation map
+    val binaryTypeOffsetTable = typeOffsetTable.map { case (tetrominoType, rotationMap) =>
+      tetrominoType -> rotationMap.map { case (rotation, coordinates) =>
+        rotation -> coordinatesToBinary(coordinates)
+      }
+    }
+
+  }
+
+
+}
+
+
+object TetrisConfigMain extends  App {
+  import config.TetrominoesConfig._
+  for (  (tetrominoType, rotationMap) <-  binaryTypeOffsetTable ) {
+    for ( ( rot, value ) <- rotationMap ) {
+      println {
+        s"${tetrominoType.name} [${rot}] = ${value.toString()}"
+      }
+    }
   }
 }
 

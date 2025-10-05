@@ -384,7 +384,7 @@ class playFieldTest extends AnyFunSuite  {
     }
   }
 
-  test("usecase 1 - random fill all pixel and read-back check") {
+  test("usecase 1 - random fill all pixel and read-back checker") {
     compiled.doSimUntilVoid(seed = 42) { dut =>
 
       dut.clockDomain.forkStimulus(10)

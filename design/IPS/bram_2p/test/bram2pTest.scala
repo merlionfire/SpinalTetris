@@ -67,9 +67,9 @@ class bram2pTest extends AnyFunSuite {
       dut.clockDomain.waitSamplingWhere(dut.io.clear_done.toBoolean)
 
       //--------------------------------------------------------------------
-      //          Read each item and check if it is background color index
+      //          Read each item and checker if it is background color index
       //--------------------------------------------------------------------
-      println(s"@${simTime()} Start read content of memory and check if it is 2 ")
+      println(s"@${simTime()} Start read content of memory and checker if it is 2 ")
       var rd_data_valid = false
       val readContentThread = fork {
         dut.io.rd.en #= true

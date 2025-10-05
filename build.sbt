@@ -48,12 +48,13 @@ val spinalIdslPlugin = compilerPlugin("com.github.spinalhdl" %% "spinalhdl-idsl-
 val spinalSim = "com.github.spinalhdl" %% "spinalhdl-sim" % spinalVersion // For simulation
 val scalaTest = "org.scalatest" %% "scalatest" % scalatestVersion
 val swing = "org.scala-lang.modules" %% "scala-swing" % "3.0.0"
+val scalaCheck = "org.scalacheck" %% "scalacheck" % "1.19.0"
 
 lazy val projectname = (project in file("."))
   .settings(
     name := "SpinalTetris",
     Compile / scalaSource := baseDirectory.value / "design" ,
-    libraryDependencies ++= Seq(spinalCore, spinalLib, spinalIdslPlugin, spinalSim, scalaTest,swing)
+    libraryDependencies ++= Seq(spinalCore, spinalLib, spinalIdslPlugin, spinalSim, scalaTest,swing, scalaCheck  )
 
     //Compile / scalacOptions += "-Xplugin:" + (update.value.allFiles.filter(_.getName.contains("spinalhdl-idsl-plugin")).headOption.getOrElse(throw new Exception("SpinalHDL IDSL plugin not found"))).toString,
     //Compile / scalacOptions += "-Xplugin-require:spinalhdl-idsl-plugin"

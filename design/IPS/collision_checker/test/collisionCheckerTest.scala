@@ -236,7 +236,7 @@ class collisionCheckerTest extends AnyFunSuite {
   }
 
 
-  test("random single - transfer one position to check if it is wall-hit or occupied ") {
+  test("random single - transfer one position to checker if it is wall-hit or occupied ") {
     compiled.doSimUntilVoid(seed = 44) { dut =>
       init(dut)
 
@@ -293,8 +293,8 @@ class collisionCheckerTest extends AnyFunSuite {
         val piece = sentPieces.dequeue()
         println(f" <$index> @ ${piece.time} ns ( ${piece.x}, ${piece.y} ) ")
 
-        // Since wall hist is higher priority than occupied in HW, model will check if block hit wall followed by occupied.
-        (piece.x, piece.y) match { // check if any block hits wall
+        // Since wall hist is higher priority than occupied in HW, model will checker if block hit wall followed by occupied.
+        (piece.x, piece.y) match { // checker if any block hits wall
           case (0, _) => {
             println(f"[DEBUG] Hit left Wall");
             expectedHitStatus.enqueue((false, true));
@@ -395,10 +395,10 @@ class collisionCheckerTest extends AnyFunSuite {
           (piece.x, piece.y)
         }
 
-        // Since wall hist is higher priority than occupied in HW, model will check if block hit wall followed by occupied.
+        // Since wall hist is higher priority than occupied in HW, model will checker if block hit wall followed by occupied.
 
         val result = blocks_pos.toList.map[(Boolean, Boolean), List[(Boolean, Boolean)]] {
-          // check if any block hits wall
+          // checker if any block hits wall
           case (0, _) => {
             println(f"[DEBUG] Hit left Wall");
             (false, true)

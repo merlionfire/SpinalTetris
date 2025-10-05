@@ -1,49 +1,86 @@
 package utils
 import config._
-
 import spinal.core._
+import spinal.lib.Delay
 
 object Counter2 {
 
   def apply( end : UInt, inc: Bool): Counter2 = {
-    val counter = new Counter2(end)
+
+    val start = cloneOf(end )
+    start := U(0)
+    val counter = new Counter2( start , end)
     when( inc ) {
       counter.increment()
     }
     counter
   }
 
+  def apply ( start : UInt, end : UInt , inc : Bool )  ={
+
+    val counter = new Counter2( start, end )
+    when ( inc ) {
+      counter.increment()
+    }
+    counter
+  }
+
+  def apply (  latch : Bool , start : UInt, size: UInt )  ={
+
+
+    val end_reg = RegNextWhen( ( start + size - 1 ) , latch, U(0) )
+
+    val inc_reg = RegNextWhen( True, latch, False )
+
+    val counter = new Counter2( start, end_reg  )
+    when ( latch ) { counter.load( start ) }
+
+    when ( inc_reg ) {
+      counter.increment()
+    }
+
+    inc_reg.clearWhen( counter.willOverflow )
+
+    counter
+  }
+
 }
 
-class Counter2(val end : UInt) extends ImplicitArea[UInt] {
+class Counter2(val start : UInt , val end : UInt) extends ImplicitArea[UInt] {
 
   val willIncrement = False.allowOverride
   val willClear = False.allowOverride
 
 
+
   def clear() : Unit = willClear := True
   def increment() : Unit = willIncrement := True
+  def load(value: UInt): Unit = valueNext := value
+
 
   val valueNext = cloneOf(end)
 
-  val value = RegNext(valueNext) init (0)
+  val value = RegNext(valueNext) init (start)
 
   val willOverflowIfInc = value === end
   val willOverflow = willOverflowIfInc && willIncrement
 
 
   when ( willOverflow) {
-    valueNext := 0
+    valueNext := start
   } otherwise {
     valueNext := (value + U(willIncrement)).resized
   }
 
   when(willClear) {
-    valueNext := 0
+    valueNext := start
   }
 
+  willOverflowIfInc.allowPruning()
+  willOverflow.allowPruning()
   override def implicitValue: UInt = this.value
 
+  val isDone = RegNextWhen( willOverflow, False )
 }
 
 case class  Offset( ) extends  Bundle {
