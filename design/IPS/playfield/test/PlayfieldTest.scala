@@ -30,7 +30,7 @@ trait PlayFieldTestHelper {
 
 
   def backdoorWritePlayfieldRow( dut : playfield, row : Int, data : Int  ) = {
-    println(s"[INFO] Backdoor write row[${row}] \t=\t0b${String.format("%10s", Integer.toBinaryString(data)).replace(' ', '0')}")
+    println(s"[INFO] @${simTime()} Backdoor write playfield row[${row}] \t=\t0b${String.format("%10s", Integer.toBinaryString(data)).replace(' ', '0')}")
     dut.clockDomain.waitSampling()
     dut.io.playfield_backdoor.valid #= true
     dut.io.playfield_backdoor.row #= row
@@ -49,12 +49,16 @@ trait PlayFieldTestHelper {
   }
 
   def backdoorWriteFlowRegion(dut : playfield, content : Seq[Int], row : Int ) = {
+
     dut.clockDomain.waitSampling()
     dut.io.flow_backdoor.valid #= false
     dut.clockDomain.waitSampling()
     dut.io.flow_backdoor.valid #= true
     dut.io.flow_backdoor.row #= row
-    content.zipWithIndex.foreach { case (data, i) => dut.io.flow_backdoor.data(i) #= data  }
+    content.zipWithIndex.foreach { case (data, i) =>
+      dut.io.flow_backdoor.data(i) #= data
+      println(s"[INFO] @${simTime()} Backdoor write flow regin[${i}] \t=\t0b${String.format("%10s", Integer.toBinaryString(data)).replace(' ', '0')}")
+    }
     dut.clockDomain.waitSampling()
     dut.io.flow_backdoor.valid #= false
     dut.io.flow_backdoor.row.randomize()
@@ -98,13 +102,13 @@ trait PlayFieldTestHelper {
    * Execute a sequence of test actions
    */
   def executeTestReadoutActions(
-                                  dut: playfield,
-                                  scbd: PlayFieldScoreboard,
-                                  length : Int,
-                                  width : Int,
-                                  row : Int,
-                                  actions: Seq[TestAction],
-                                  verbose: Boolean
+                                 dut: playfield,
+                                 scbd: PlayFieldScoreboard,
+                                 length : Int,
+                                 width : Int,
+                                 row : Int,
+                                 actions: Seq[TestPatternPair],
+                                 verbose: Boolean
                                 ): Unit = {
 
     assert(
@@ -137,12 +141,24 @@ trait PlayFieldTestHelper {
 
     var actionIndex = 0
 
+    // Print Test suits Summary
+    println(s"\n${"=" * 120}\n")
+    println(s"\t\t\t\tTest Group Summary\n")
+    println(s"\tFlow Region Row : ${row}")
+    println(f"\tTest Pattern :\t Playfield  x\t Flow region\t\tCount")
+    for ( (action,i) <- actions.zipWithIndex ) {
+      println(f"\t\t\t${i+1}\t: ${action.p0}%12s\tx\t${action.p1}%12s\t\t\t${action.count}")
+    }
+    println(s"\n${"=" * 120}")
+
+    // transverse to execute test patterns
     for (action <- actions) {
       if (verbose) {
-        println(s"\n${"="*60}")
-        println(s"Executing Test Action ${actionIndex + 1}/${actions.size}: ${action.getDescription}")
-        println(s"Pattern: ${action.pattern}, Count: ${action.count}")
-        println(s"${"="*60}")
+        println(s"\n${"="*100}\n")
+        println(s"\t\tExecuting Test Action ${actionIndex + 1}/${actions.size}")
+        println(s"\t\tPurpose\t: ${action.getDescription}")
+        println(s"\t\tPattern\t: ${action.p0} x ${action.p1}, Count: ${action.count}")
+        println(s"\n${"="*100}")
       }
 
       for (iteration <- 0 until action.count) {
@@ -155,14 +171,14 @@ trait PlayFieldTestHelper {
           dut,
           length,
           width,
-          action.pattern
+          action.p0
         )
 
         val flowData = backdoorWriteFlowWithPattern(
           dut,
           row,
           width,
-          action.pattern
+          action.p1
         )
 
         // Modelling readout by OR flow.region and playfield.region
@@ -244,10 +260,19 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
             Custom settings begin
       ******************************************/
 
-      // Prepare test data
-      val testCases = Scenarios.pieceCases
-      //val testCases = Scenarios.basic
-      val flowRegionRow = 0
+      val predefReadTestPattern = List(
+        ReadoutScenarios.basic,
+        ReadoutScenarios.playfieldPatternOnly,
+        ReadoutScenarios.flowPatternOnly,
+        ReadoutScenarios.usecase,
+        ReadoutScenarios.random
+      )
+
+      val readTestPatternList = List( 1 ,0 ,0 ,0 ,0 )  /* Pattern group selection */
+        .zip( predefReadTestPattern )
+        .collect{ case (1, pattern) => pattern }
+        .flatten
+
       /*****************************************
        Custom settings end
        ******************************************/
@@ -272,14 +297,18 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
       }
 
       // Body
-      executeTestReadoutActions( dut, scbd,
-        actions=testCases,
-        length = config.rowBlocksNum, width = config.colBlocksNum,
-        row = flowRegionRow,
-        verbose = true
-      )
+      //for ( flowRegionRow <- 0 until config.rowBlocksNum ) {
+      for ( flowRegionRow <- 0 until 2 ) {
+        println(s"[INFO] flow region row at ${flowRegionRow} !!!")
+        executeTestReadoutActions(dut, scbd,
+          actions = readTestPatternList,
+          length = config.rowBlocksNum, width = config.colBlocksNum,
+          row = flowRegionRow,
+          verbose = true
+        )
+        dut.clockDomain.waitSampling(500)
 
-      dut.clockDomain.waitSampling(500)
+      }
 
       println("[DEBUG] doSim is exited !!!")
 
