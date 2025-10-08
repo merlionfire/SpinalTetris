@@ -2,6 +2,7 @@ package utils
 import config._
 import spinal.core._
 import spinal.lib.Delay
+import spinal.lib.soc.pinsec.{Pinsec, PinsecConfig}
 
 object Counter2 {
 
@@ -15,6 +16,10 @@ object Counter2 {
     }
     counter
   }
+
+  import spinal.lib.soc.pinsec
+
+  val a = new Pinsec( PinsecConfig.default )
 
   def apply ( start : UInt, end : UInt , inc : Bool )  ={
 
