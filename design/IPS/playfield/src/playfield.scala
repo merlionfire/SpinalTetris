@@ -6,6 +6,8 @@ import utils._
 import spinal.lib.fsm.{EntryPoint, State, StateFsm, StateMachine}
 import config.TetrominoesConfig._
 
+
+
 case class PlayfieldConfig(
                             rowBlocksNum : Int,
                             colBlocksNum : Int,
@@ -34,12 +36,18 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
     //val blocks_out = master Stream( Block(colBitsWidth, rowBitsWidth ) )
     //val hit_status = slave Flow( hitStatus() )
     val status = master Flow (Bool())
-
+    val move_in = new Bundle {
+      val left = in Bool()
+      val right = in Bool()
+      val rotate = in Bool()
+      val down = in Bool()
+    }
     val read = in Bool()
     val row_val = master Flow (Bits(colBlocksNum bits))
     val playfield_backdoor = if (sim) slave Flow (Playfield_Row_Data(rowBitsWidth, colBlocksNum)) else null
 
-    val flow_backdoor = if (sim)  flow_region_Data(rowBitsWidth, colBlocksNum)  else null
+    val flow_backdoor     = if (sim)  flow_region_Data(rowBitsWidth, colBlocksNum)  else null
+    val checker_backdoor  = if (sim)  flow_region_Data(rowBitsWidth, colBlocksNum)  else null
 
   }
 
@@ -54,7 +62,6 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
   val col_origin_chk = RegInit( U( 0, colBitsWidth bits ) )
 
   val load_piece = False
-
 
 
 
@@ -103,8 +110,21 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
   val checker = new Area {
 
     val row = RegInit(U(0, rowBitsWidth bits))
+    val read_req = False allowOverride()
+    val addr_access_port = Flow( UInt(2 bits ) )
 
     val region = Vec.fill(4)(Bits(colBlocksNum bits)) setAsReg()
+
+    // Async read
+    val readout = region(addr_access_port.payload)
+
+    val dma_region = dma( start = read_req,
+      data_in = readout,
+      word_count =  4,
+      U(0) -> addr_access_port
+    )
+    val read_out_port = dma_region.read_sync()
+
 
     // input control signals
     val right_shift, left_shift, piece_load, restore = False
@@ -144,6 +164,14 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       }
     }
 
+    if ( sim ) {
+      when( io.checker_backdoor.valid ) {
+        region := io.checker_backdoor.data
+        row := io.checker_backdoor.row
+      }
+    }
+
+
   }
 
 
@@ -162,37 +190,44 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
                Interface
      ********************************************************/
     val reset = False
-    val read_req_port = Flow(VecSelector())
-    val read_out_port = Flow(Bits(colBlocksNum bits) )
 
+    val read_row_base = RegInit( U(0, rowBitsWidth bits))
 
+    val read_req_port = Flow(UInt(rowBitsWidth bits) ) .allowOverride()
+    val addr_access_port = Flow( UInt(rowBitsWidth bits ) )
+    val readout =   Reg( Bits( colBlocksNum bits ) )
     /*******************************************************
-     Playfield access address
-     - input  :  read_req_port <flow>
-     - output :  read_out_port <flow>
+     Playfield DMA
+     - Single Access ( read-only with one cycle delay )
+     - command req ( in ) :  read_req_port : valid and word_count
+     - address req ( out ):  base addres = row, address bust = addr_access_port
+     - data in ( in ) :   readout ( region sync-readout )
+     - data out (out ) :  readout_port
      ********************************************************/
 
     read_req_port.valid := False
-    read_req_port.start := U(0)
-    read_req_port.size  := U(0)
+    read_req_port.payload := U(0)
 
-    val row_address = Counter2(
-      read_req_port.valid,
-      read_req_port.start,
-      read_req_port.size
-    )
-
-    val readout = RegInit(B(colBlocksNum bits, default -> true))
-    read_out_port.valid := RegNext(row_address.willIncrement  )
-    read_out_port.payload := readout
+    val dma_region = dma( start = read_req_port,
+                          data_in = readout,
+                          read_row_base -> addr_access_port
+                      )
+    val read_out_port = dma_region.read_sync()
 
 
+    def load_read_req ( valid : Bool, word_count : Int, addr_base : UInt ) = {
+      read_req_port.valid := valid
+      read_req_port.payload := U( word_count - 1 )
+      read_row_base := addr_base
+    }
 
+    def addr_access_eqaul( target : UInt ) : Bool = {
+      addr_access_port.payload === target
+    }
     /*******************************************************
      Whole Playfield
      ********************************************************/
     val region = Vec( Reg( Bits(colBlocksNum bits) )  init(0), size = rowBlocksNum )
-
 
     /*******************************************************
               Address Access Initiate
@@ -201,19 +236,13 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
     val row_sel = Bits(rowBlocksNum bits)
 
-    //val row_req = UInt(rowBitsWidth bits)
-    // Add 3 rows for bottom
-
-
-
-
     val freeze = False.allowOverride()
 
     // *********************************
     //      ROW asynchronous decoder
     // *********************************
     row_sel := B(0)
-    switch(row_address.value) {
+    switch(addr_access_port.payload ) {
       for (i <- 0 until rowBlocksNum) {
         is(U(i)) {
           row_sel(i) := True
@@ -223,7 +252,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
     val readin = Bits(colBlocksNum bits) default (0)
 
-    val address_beyond_limit = row_address.value > ( rowBlocksNum - 1 )
+    val address_beyond_limit = addr_access_port.payload > ( rowBlocksNum - 1 )
 
     when( address_beyond_limit ) {
       readout.setAll()  // all 1s act as bottom wall
@@ -274,14 +303,20 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
     val row = RegInit(U(0, rowBitsWidth bits))
     val read_req = False allowOverride()
-    val read_out_port = Flow(Bits(colBlocksNum bits) )
+    val addr_access_port = Flow( UInt(2 bits ) )
 
     val region = Vec( Reg( Bits(colBlocksNum bits) )  init(0), size = 4 )
 
-    val row_address_inc = RegNextWhen( True, read_req, False )
-    val row_address =  Counter( 4, row_address_inc   )
-    when ( read_req ) { row_address.clear() }
-    row_address_inc.clearWhen( row_address.willOverflow )
+    // Async read
+    val readout = region(addr_access_port.payload)
+
+    val dma_region = dma( start = read_req,
+                          data_in = readout,
+                          word_count =  4,
+                          U(0) -> addr_access_port
+    )
+
+    val read_out_port = dma_region.read_async()
 
     val update = False
 
@@ -296,12 +331,6 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
     }
 
     val touch_bottom = OHToUInt(row_occuppied)
-
-
-    val readout = RegNext( region(row_address) )
-
-    read_out_port.valid := RegNext(row_address.willIncrement  )
-    read_out_port.payload := readout
 
     if ( sim ) {
       when( io.flow_backdoor. valid ) {
@@ -320,17 +349,23 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
   val collision_checker = new Area {
 
-    val enable = False allowOverride()
-    val check_is_running = enable & playfield.read_out_port.valid
-    val src_checker_addr = Counter(4, check_is_running )
-    val src_checker = checker.region(src_checker_addr)
+    //val enable = False allowOverride()
 
-    val src_playfield = playfield.read_out_port.payload
+    val start = False allowOverride()
+    val collision_bits = Reg( Flow(Bool()) )
+    collision_bits.valid.init(False)
+    collision_bits.valid := playfield.read_out_port.valid
+    collision_bits.payload := ( playfield.read_out_port.payload & checker.read_out_port.payload ) .orR
 
-    /*  0 : no-overlap 1: overlap */
-    val check_status = ( src_playfield & src_checker ) .orR
+    val check_status = RegNextWhen( True,
+      collision_bits.valid & collision_bits.payload,
+      False
+    ) clearWhen( start )
 
-    val is_collision = RegNextWhen( True, check_is_running & check_status, False )
+    val check_is_running = playfield.read_out_port.valid & checker.read_out_port.valid
+
+    val is_collision = check_status
+
     val check_is_done = check_is_running.fall(False)
   }
 
@@ -370,17 +405,12 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
     val READOUT : State = new State {
       onEntry{
-        playfield.read_req_port.valid := True
-        playfield.read_req_port.start := U(0)
-        playfield.read_req_port.size  := U( rowBlocksNum )
-        when ( flow.row  === U(0) ) {
-          flow.read_req := True
-        }
+        playfield.load_read_req( valid =  True, word_count = rowBlocksNum, addr_base = U(0) )
       }
 
       whenIsActive {
-        when ( playfield.row_address.valueNext === flow.row ) { flow.read_req := True  }
-        when (playfield.row_address.willOverflow ) {
+        when ( playfield.addr_access_eqaul(flow.row ) ) { flow.read_req := True  }
+        when ( ! playfield.dma_region.is_busy ) {
           goto(IDLE)
         }
       }
@@ -433,14 +463,12 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
     val COLLISION_CHECK : State = new State {
       onEntry {
-
-        playfield.read_req_port.valid := True
-        playfield.read_req_port.start := checker.row
-        playfield.read_req_port.size  := 4
+        playfield.load_read_req( valid =  True, word_count = 4, addr_base = checker.row )
+        checker.read_req := True
+        collision_checker.start := True
       }
 
       whenIsActive{
-        collision_checker.enable :=  True
         when ( collision_checker.check_is_done ) {
           when ( collision_checker.is_collision ) {
             goto(COLLISION)
@@ -451,7 +479,6 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       }
 
     }
-
 
     val COLLISION : State = new State {
       whenIsActive {

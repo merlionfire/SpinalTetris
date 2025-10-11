@@ -17,9 +17,6 @@ object Counter2 {
     counter
   }
 
-  import spinal.lib.soc.pinsec
-
-  val a = new Pinsec( PinsecConfig.default )
 
   def apply ( start : UInt, end : UInt , inc : Bool )  ={
 

@@ -260,18 +260,19 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
             Custom settings begin
       ******************************************/
 
+      /* 1 is for pattern selection */
       val predefReadTestPattern = List(
-        ReadoutScenarios.basic,
-        ReadoutScenarios.playfieldPatternOnly,
-        ReadoutScenarios.flowPatternOnly,
-        ReadoutScenarios.usecase,
-        ReadoutScenarios.random
+        1 -> ReadoutScenarios.basic,
+        1 -> ReadoutScenarios.playfieldPatternOnly,
+        1 -> ReadoutScenarios.flowPatternOnly,
+        1 -> ReadoutScenarios.usecase,
+        1 -> ReadoutScenarios.random
       )
 
-      val readTestPatternList = List( 1 ,0 ,0 ,0 ,0 )  /* Pattern group selection */
-        .zip( predefReadTestPattern )
+      val readTestPatternList = predefReadTestPattern  /* Pattern group selection */
         .collect{ case (1, pattern) => pattern }
         .flatten
+
 
       /*****************************************
        Custom settings end
@@ -298,7 +299,7 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
 
       // Body
       //for ( flowRegionRow <- 0 until config.rowBlocksNum ) {
-      for ( flowRegionRow <- 0 until 2 ) {
+      for ( flowRegionRow <- 0 until 20 ) {
         println(s"[INFO] flow region row at ${flowRegionRow} !!!")
         executeTestReadoutActions(dut, scbd,
           actions = readTestPatternList,
@@ -306,7 +307,7 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
           row = flowRegionRow,
           verbose = true
         )
-        dut.clockDomain.waitSampling(500)
+        dut.clockDomain.waitSampling(100)
 
       }
 
