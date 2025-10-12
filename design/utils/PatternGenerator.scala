@@ -2,6 +2,7 @@ package utils
 
 import org.scalacheck._
 import org.scalacheck.Gen._
+import utils.mis.int2binString
 
 object BitPatternGenerators {
   /**
@@ -46,6 +47,65 @@ object BitPatternGenerators {
     }
   }
 
+  /**
+   * A generator for an integer with no 1 bit overlapping with input ref.
+   * @param m The bit-width of the integer.
+   * @param ref Integer as reference which has no-overlap with created integer.
+   * @return A Gen that produces the integer with the specified pattern.
+   */
+  def noCollisionBits(
+                          m: Int,
+                          ref: Int,
+                        ): Gen[Int] = {
+
+    val ret =  ( ~ ref )  &  (  ( 1 << m ) -  1 )
+    // for debug
+    //println(s"[noCollisionBit] m = $m, ref = ${int2binString(ref)}, ret = ${int2binString(ret)} "  )
+    const(  ret  )
+  }
+
+  /**
+   * Generates an Int which has exactly 'count' bits set that overlap (collide) with the 'ref' value.
+   * The total bit width 'm' is primarily used for context but is less critical here.
+   *
+   * @param m The total bit width (ignored in this specific implementation, but kept for signature)
+   * @param ref The reference value to collide with.
+   * @param count The required number of overlapping (colliding) bits.
+   * @return A Gen[Int] that always produces a value with 'count' bits colliding with 'ref'.
+   */
+  def fixedCollisionOnes(
+                          m: Int,
+                          ref: Int,
+                          count : Int
+                        ): Gen[Int] = {
+    // 1. Validation Checks
+    require(m > 0, s"bitWidth must be positive, got $m")
+    val refBitCount = Integer.bitCount(ref)
+    require(count >= 0, "count must be non-negative")
+    require(count <= refBitCount, s"count($count) must be less than or equal to the number of set bits in ref ($refBitCount)")
+
+    // 2. Identify the Bit Positions that MUST be set (the 'candidates')
+    // Get the indices of all bits that are set in 'ref'.
+    val candidatePositions: Seq[Int] = (0 until m).filter { pos =>
+      (ref & (1 << pos)) != 0
+    }
+
+    // 3. Select the 'count' subset of positions for collision
+    // Use Gen.pick to randomly select exactly 'count' indices from the candidates.
+    val selectedPositionsGen: Gen[Seq[Int]] = Gen.pick(count, candidatePositions)
+
+    // 4. Transform the selected positions into the final Int value
+    selectedPositionsGen.map { positions =>
+      // Combine the selected positions using the OR operator
+      positions.foldLeft(0) { (value, pos) =>
+        value | (1 << pos)
+      }
+    }
+  }
+
+
+
+
   // --- Pattern Selector and Dispatcher ---
 
   sealed trait Pattern
@@ -53,18 +113,24 @@ object BitPatternGenerators {
   case object AllOnes extends Pattern
   case class FixedOnes(count: Int) extends Pattern
   case object Random extends Pattern
+  case object NoCollision extends Pattern
+  case class FixCollisionOnes( count : Int ) extends Pattern
 
   /**
    * Selects a generator based on the specified pattern.
    * @param m The bit-width for the generator.
    * @param pattern The pattern to generate.
+   * @param ref The reference integer for patterns of NoCollision and FixCollisionOnes(count).
    * @return A Gen[Int] that produces integers according to the pattern.
    */
-  def generatePattern(m: Int, pattern: Pattern): Gen[Int] = pattern match {
+  def generatePattern(m: Int, pattern: Pattern, ref : Int = 0 ): Gen[Int] = pattern match {
     case AllZeros           => allZeros(m)
     case AllOnes            => allOnes(m)
     case FixedOnes(count)   => fixedOnes(m, count)
     case Random             => hexWithBits(m)
+    case NoCollision        => noCollisionBits(m,ref)
+    case FixCollisionOnes(count) => fixedCollisionOnes(m, ref, count)
+
   }
 
   /**
@@ -74,9 +140,32 @@ object BitPatternGenerators {
    * @param pattern The pattern to use for generation.
    * @return A Gen that produces a sequence of integers.
    */
-  def generateSequence(n: Int, m: Int, pattern: Pattern): Gen[Seq[Int]] = {
-    Gen.listOfN(n, generatePattern(m, pattern))
+  def generateSequence(n: Int, m: Int, pattern: Pattern, ref : Seq[Int] = null ): Gen[Seq[Int]] = {
+    if (ref == null) {
+     Gen.listOfN(n, generatePattern(m, pattern))
+    } else {
+
+      // 1. Validation Check: Ensure the requested length 'n' matches the reference sequence length.
+      require(n == ref.length, s"Requested sequence length (n=$n) must match reference length (${ref.length})")
+
+      // 2. Map the reference sequence to a sequence of generators.
+      // For each 'refItem' in the 'ref' sequence, create a tailored Gen[Int].
+      val individualGenerators: Seq[Gen[Int]] = ref.map { refItem =>
+        // Pass the specific refItem to the pattern generator
+        generatePattern(m, pattern, refItem)
+      }
+
+      // 3. Combine the sequence of generators into a single Gen[Seq[Int]].
+      // Gen.sequence takes a Seq[Gen[A]] and returns a Gen[Seq[A]].
+      Gen.sequence[Seq[Int], Int](individualGenerators).map(_.toSeq)
+      // .map(_.toSeq) is often necessary for older ScalaCheck versions when used with .asJava
+    }
+
   }
+
+
+
+
 }
 
 import org.scalacheck.Prop.forAll

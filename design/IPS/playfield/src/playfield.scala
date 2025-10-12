@@ -48,6 +48,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
     val flow_backdoor     = if (sim)  flow_region_Data(rowBitsWidth, colBlocksNum)  else null
     val checker_backdoor  = if (sim)  flow_region_Data(rowBitsWidth, colBlocksNum)  else null
+    val start_collision_check  = if (sim)  in Bool()  else null
 
   }
 
@@ -115,8 +116,8 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
     val region = Vec.fill(4)(Bits(colBlocksNum bits)) setAsReg()
 
-    // Async read
-    val readout = region(addr_access_port.payload)
+    // sync read
+    val readout = RegNext( region(addr_access_port.payload) )
 
     val dma_region = dma( start = read_req,
       data_in = readout,
@@ -362,11 +363,9 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       False
     ) clearWhen( start )
 
-    val check_is_running = playfield.read_out_port.valid & checker.read_out_port.valid
-
     val is_collision = check_status
 
-    val check_is_done = check_is_running.fall(False)
+    val check_is_done = collision_bits.valid.fall(False)
   }
 
 
@@ -400,6 +399,12 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       when(piece.valid) {
         // piece is being selected in terms of type and rot
         goto(PIECE_SELECTION)
+      }
+
+      if ( sim ) {
+        when ( io.start_collision_check ) {
+          goto(COLLISION_CHECK)
+        }
       }
     }
 

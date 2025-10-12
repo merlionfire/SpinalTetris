@@ -65,6 +65,23 @@ trait PlayFieldTestHelper {
     for ( i <- content.indices) {  dut.io.flow_backdoor.data(i).randomize()  }
   }
 
+  def backdoorWriteCheckerRegion(dut : playfield, content : Seq[Int], row : Int ) = {
+
+    dut.clockDomain.waitSampling()
+    dut.io.checker_backdoor.valid #= false
+    dut.clockDomain.waitSampling()
+    dut.io.checker_backdoor.valid #= true
+    dut.io.checker_backdoor.row #= row
+    content.zipWithIndex.foreach { case (data, i) =>
+      dut.io.checker_backdoor.data(i) #= data
+      println(s"[INFO] @${simTime()} Backdoor write checker regin[${i}] \t=\t0b${String.format("%10s", Integer.toBinaryString(data)).replace(' ', '0')}")
+    }
+    dut.clockDomain.waitSampling()
+    dut.io.checker_backdoor.valid #= false
+    dut.io.checker_backdoor.row.randomize()
+    for ( i <- content.indices) {  dut.io.checker_backdoor.data(i).randomize()  }
+  }
+
 
   def backdoorWritePlayfieldWithPattern( dut : playfield, length : Int, width : Int,  pattern: BitPatternGenerators.Pattern ) = {
 
@@ -88,6 +105,18 @@ trait PlayFieldTestHelper {
 
   }
 
+  def backdoorWriteCheckerWithPattern( dut : playfield, row : Int, width : Int,  pattern: BitPatternGenerators.Pattern, ref : Seq[Int] ) = {
+
+    // create Seq[Int] having 4 item which is "width" bit-width
+    BitPatternGenerators.generateSequence(n=4, width, pattern, ref).sample match {
+      case Some(seq) =>
+        backdoorWriteCheckerRegion(dut, seq, row)
+        seq
+      case None =>  simFailure("[ERROR] No seq is created !!!") ;  Nil
+    }
+
+  }
+
 
   def readWholePlayfield(dut : playfield ) ={
     println(s"[INFO] @${simTime()} Start to front-door read whole playfield .......")
@@ -95,6 +124,16 @@ trait PlayFieldTestHelper {
     dut.io.read #= true
     dut.clockDomain.waitSampling()
     dut.io.read #= false
+
+  }
+
+
+  def startCollisonCheck(dut : playfield ) ={
+    println(s"[INFO] @${simTime()} initiate collision check .......")
+    dut.clockDomain.waitSampling()
+    dut.io.start_collision_check #= true
+    dut.clockDomain.waitSampling()
+    dut.io.start_collision_check #= false
 
   }
 
@@ -202,6 +241,109 @@ trait PlayFieldTestHelper {
     }
   }
 
+  /**
+   * Execute a sequence of test actions
+   */
+  def executeTestCollisionCheckerActions(
+                                 dut: playfield,
+                                 scbd: PlayFieldScoreboard,
+                                 length : Int,
+                                 width : Int,
+                                 row : Int,
+                                 actions: Seq[TestPatternPair],
+                                 verbose: Boolean
+                               ): Unit = {
+
+    assert(
+      row >= 0 && row <= (length-1 ) ,
+      s"Row options $row is out of the expected range [0, ${length-1}]."
+    )
+
+    /**
+     * Overlays sequence `b` onto sequence `a` using a bitwise OR operation.
+     *
+     * @param a   The base sequence.
+     * @param b   The sequence to overlay.
+     * @param row The starting index in `a` where the operation begins.
+     * @return A new sequence with the result of the OR operation.
+     */
+    def orOverlay(a: Seq[Int], b: Seq[Int], row: Int): Int = {
+
+      val region_overlap = a.slice(row, row+4).padTo(4, Int.MinValue )
+
+      val ret = region_overlap.zip(b).map  { case ( a, b ) =>   ( a & b ).toInt > 0  }
+
+      region_overlap.foreach{ a => println( f"Compared Playield data : 0b${String.format("%10s", Integer.toBinaryString(a)).replace(' ', '0')} " ) }
+      ret.foldLeft(false )(_|_ ) toInt
+
+    }
+
+    var actionIndex = 0
+
+    // Print Test suits Summary
+    println(s"\n${"=" * 120}\n")
+    println(s"\t\t\t\tTest Group Summary\n")
+    println(s"\tChecker Region based on Row : ${row}")
+    println(f"\tTest Pattern :\t Playfield  x\t Flow region\t\tCount")
+    for ( (action,i) <- actions.zipWithIndex ) {
+      println(f"\t\t\t${i+1}\t: ${action.p0}%12s\tx\t${action.p1}%12s\t\t\t${action.count}")
+    }
+    println(s"\n${"=" * 120}")
+
+    // transverse to execute test patterns
+    for (action <- actions) {
+      if (verbose) {
+        println(s"\n${"="*100}\n")
+        println(s"\t\tExecuting Test Action ${actionIndex + 1}/${actions.size}")
+        println(s"\t\tPurpose\t: ${action.getDescription}")
+        println(s"\t\tPattern\t: ${action.p0} x ${action.p1}, Count: ${action.count}")
+        println(s"\n${"="*100}")
+      }
+
+      for (iteration <- 0 until action.count) {
+        if (verbose && action.count > 1) {
+          println(s"\t\t Round ${iteration + 1}/${action.count}")
+        }
+
+        // Generate and write pattern
+        val playfieldData = backdoorWritePlayfieldWithPattern(
+          dut,
+          length,
+          width,
+          action.p0
+        )
+
+        val ref = playfieldData.slice(row, row+4).padTo(4, Int.MinValue )
+        val checkData = backdoorWriteCheckerWithPattern(
+          dut,
+          row,
+          width,
+          action.p1,
+          ref = ref
+        )
+
+        // Modelling readout by OR flow.region and playfield.region
+        val expectedData = orOverlay(playfieldData,checkData, row )
+
+        scbd.addExpected(expectedData)
+
+        // Stimulus DUT with test data
+        startCollisonCheck(dut)
+        dut.clockDomain.waitSampling(60)
+
+        val allMatch = scbd.compare()
+
+        println( scbd.report() )
+
+        if ( ! allMatch) { simFailure( "Scoreboard Reports Error ")}
+        scbd.clear()
+      }
+
+      actionIndex += 1
+    }
+  }
+
+
 }
 
 
@@ -209,7 +351,7 @@ trait PlayFieldTestHelper {
 class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
 
 
-  //var compiler: String = "verilator"
+  //val compiler: String = "verilator"
   val compiler : String = "vcs"
 
   val runFolder: String = PathUtils.getRtlOutputPath(getClass, targetName = "sim").toString
@@ -250,6 +392,7 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
     dut.io.read #= false
     dut.io.piece_in.valid #= false
     dut.io.piece_in.payload.randomize()
+    dut.io.start_collision_check #= false
 
   }
 
@@ -279,7 +422,7 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
        ******************************************/
 
       val scbd = new PlayFieldScoreboard(
-        name = "Scoreboard",
+        name = "Scbd - playfield readout",
         size = rowBlocksNum,
         verbose = true
       )
@@ -319,7 +462,73 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
   }
 
 
+  test("usecase 2 - Check collision checker functionality with playfield region and checker region ") {
+    compiled.doSimUntilVoid(seed = 42) { dut =>
 
+      /*****************************************
+       Custom settings begin
+       ******************************************/
+
+      /* 1 is for pattern selection */
+      val predefReadTestPattern = List(
+        0 -> CollisionCheckScenarios.basic,
+        0 -> CollisionCheckScenarios.playfieldPatternOnly,
+        0 -> CollisionCheckScenarios.CheckerPatternOnly,
+        0 -> CollisionCheckScenarios.noCollison,
+        0 -> CollisionCheckScenarios.fixedCollison(1), // 1 bit are overlaps for affected rows.
+        0 -> CollisionCheckScenarios.fixedCollison(2), // 2 bits are overlaps for affected rows.
+        0 -> CollisionCheckScenarios.usecase,
+        1 -> CollisionCheckScenarios.random
+      )
+
+      /*****************************************
+       Custom settings end
+       ******************************************/
+
+      val readTestPatternList = predefReadTestPattern  /* Pattern group selection */
+        .collect{ case (1, pattern) => pattern }
+        .flatten
+
+      val scbd = new PlayFieldScoreboard(
+        name = "Scbd - Collision Checker",
+        size = 4,
+        verbose = true
+      )
+
+      // Global Clocking settings
+      dut.clockDomain.forkStimulus(10)
+      SimTimeout(1 ms ) // adjust timeout as needed
+      dut.clockDomain.waitSampling(20)
+
+      // Initialize DUT
+      initDUT(dut)
+
+      // Prepare Monitor
+      FlowMonitor(dut.io.status, dut.clockDomain) { payload =>
+        scbd.addActual( payload.toBoolean.toInt, s"@${simTime()}" )
+      }
+
+      // Body
+      //for ( flowRegionRow <- 0 until config.rowBlocksNum ) {
+      for ( checkerRegionRow <- 0 until 1 ) {
+        println(s"[INFO] flow region row at ${checkerRegionRow} !!!")
+        executeTestCollisionCheckerActions(dut, scbd,
+          actions = readTestPatternList,
+          length = config.rowBlocksNum,
+          width = config.colBlocksNum,
+          row = checkerRegionRow,
+          verbose = true
+        )
+        dut.clockDomain.waitSampling(100)
+
+      }
+
+      println("[DEBUG] doSim is exited !!!")
+
+      println("simTime : " + simTime())
+      simSuccess()
+    }
+  }
 }
 
 

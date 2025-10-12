@@ -4,6 +4,10 @@ import spinal.core._
 import spinal.lib.Delay
 import spinal.lib.soc.pinsec.{Pinsec, PinsecConfig}
 
+object mis {
+  def int2binString( a : Int ) = f"0b${String.format("%10s", Integer.toBinaryString(a)).replace(' ', '0')}"
+}
+
 object Counter2 {
 
   def apply( end : UInt, inc: Bool): Counter2 = {

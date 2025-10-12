@@ -184,10 +184,210 @@ object TestPatterns {
 
     )
 
+  }
+
+  object CollisionCheckScenarios {
+
+    // ----------- Test patterns -----------------
+
+    // p0 : pattern for playfield region
+    // p1 : pattern for flow region
+    // count : test counts
+    def basic : Seq[TestPatternPair] = Seq (
+      /* test case : game start scenario */
+      TestPatternPair(
+        p0 = BitPatternGenerators.AllZeros,
+        p1 = BitPatternGenerators.AllZeros,
+        count = 1,
+        "Verify collision check scenario where all zeros of playfield and checker region"
+      ),
+
+      /* test case : corner case for test only */
+      TestPatternPair(
+        BitPatternGenerators.AllOnes,
+        BitPatternGenerators.AllZeros,
+        1,
+        "Verify that playfield is all-occupied and checker region is empty"
+      ),
+
+      /* test case : corner case for test only */
+      TestPatternPair(
+        BitPatternGenerators.AllZeros,
+        BitPatternGenerators.AllOnes,
+        1,
+        "Verify that playfield is empty and checker region is all-occuppied"
+      ),
+
+      /* test case : corner case for test only */
+      TestPatternPair(
+        BitPatternGenerators.AllOnes,
+        BitPatternGenerators.AllOnes,
+        1,
+        "Verify that both of playfield and checker region are all-occuppied"
+      ),
+
+    )
+
+    def playfieldPatternOnly : Seq[TestPatternPair] = Seq (
+
+      TestPatternPair(
+        BitPatternGenerators.FixedOnes(4),
+        BitPatternGenerators.AllZeros,
+        5,
+        "Verify playfield only with flow empty"
+      ),
+
+      TestPatternPair(
+        BitPatternGenerators.FixedOnes(5),
+        BitPatternGenerators.AllZeros,
+        5,
+        "Verify playfield only with flow empty"
+      ),
+
+      TestPatternPair(
+        BitPatternGenerators.FixedOnes(8),
+        BitPatternGenerators.AllZeros,
+        5,
+        "Verify playfield only with flow empty"
+      ),
+
+
+      TestPatternPair(
+        BitPatternGenerators.FixedOnes(9),
+        BitPatternGenerators.AllZeros,
+        5,
+        "Verify playfield only with flow empty"
+      )
+
+    )
+
+
+    def CheckerPatternOnly : Seq[TestPatternPair] = Seq (
+
+      TestPatternPair(
+        BitPatternGenerators.AllZeros,
+        BitPatternGenerators.FixedOnes(1),
+        5,
+        "Verify checker only with playfield empty"
+      ),
+
+      TestPatternPair(
+        BitPatternGenerators.AllZeros,
+        BitPatternGenerators.FixedOnes(2),
+        5,
+        "Verify checker only with playfield empty"
+      ),
+
+      TestPatternPair(
+        BitPatternGenerators.AllZeros,
+        BitPatternGenerators.FixedOnes(3),
+        5,
+        "Verify checker only with playfield empty"
+      ),
+
+      TestPatternPair(
+        BitPatternGenerators.AllZeros,
+        BitPatternGenerators.FixedOnes(4),
+        5,
+        "Verify flow only with playfield empty"
+      ),
+
+    )
+
+    def noCollison : Seq[TestPatternPair] = Seq (
+
+      TestPatternPair(
+        BitPatternGenerators.FixedOnes(9),
+        BitPatternGenerators.NoCollision,
+        5,
+        "Verify no collision scenario"
+      ),
+
+      TestPatternPair(
+        BitPatternGenerators.FixedOnes(8),
+        BitPatternGenerators.NoCollision,
+        5,
+        "Verify no collision scenario"
+      ),
+
+      TestPatternPair(
+        BitPatternGenerators.FixedOnes(7),
+        BitPatternGenerators.NoCollision,
+        5,
+        "Verify no collision scenario"
+      ),
+
+      TestPatternPair(
+        BitPatternGenerators.FixedOnes(4),
+        BitPatternGenerators.NoCollision,
+        5,
+        "Verify no collision scenario"
+      ),
+
+      TestPatternPair(
+        BitPatternGenerators.FixedOnes(1),
+        BitPatternGenerators.NoCollision,
+        5,
+        "Verify no collision scenario"
+      )
+
+    )
+
+    def fixedCollison( count : Int )  : Seq[TestPatternPair] = Seq (
+
+      TestPatternPair(
+        BitPatternGenerators.FixedOnes(9),
+        BitPatternGenerators.FixCollisionOnes(count),
+        5,
+        "Verify no collision scenario"
+      ),
+
+      TestPatternPair(
+        BitPatternGenerators.FixedOnes(8),
+        BitPatternGenerators.FixCollisionOnes(count),
+        5,
+        "Verify no collision scenario"
+      ),
+
+    )
+
+
+
+    def usecase : Seq[TestPatternPair] = Seq (
+
+      TestPatternPair(
+        BitPatternGenerators.FixedOnes(1),
+        BitPatternGenerators.FixedOnes(1),
+        5,
+        "Verify normal case where playfield and flow region is occupied by some blocks"
+      ),
+
+      TestPatternPair(
+        BitPatternGenerators.FixedOnes(4),
+        BitPatternGenerators.FixedOnes(2),
+        5,
+        "Verify normal case where playfield and flow region is occupied by some blocks"
+      ),
+
+    )
+
+    def random : Seq[TestPatternPair] = Seq (
+
+      TestPatternPair(
+        BitPatternGenerators.Random,
+        BitPatternGenerators.Random,
+        20,
+        "Verify random cases for both playfield and flow region"
+      ),
+
+    )
+
 
 
 
   }
+
+
   /**
    * Predefined test scenarios
    */
