@@ -192,7 +192,8 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
      ********************************************************/
     val reset = False
 
-    val read_row_base = RegInit( U(0, rowBitsWidth bits))
+    val read_row_base = U(0, rowBitsWidth bits) allowOverride()
+
 
     val read_req_port = Flow(UInt(rowBitsWidth bits) ) .allowOverride()
     val addr_access_port = Flow( UInt(rowBitsWidth bits ) )

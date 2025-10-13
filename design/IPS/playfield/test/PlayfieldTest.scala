@@ -269,7 +269,7 @@ trait PlayFieldTestHelper {
      */
     def orOverlay(a: Seq[Int], b: Seq[Int], row: Int): Int = {
 
-      val region_overlap = a.slice(row, row+4).padTo(4, Int.MinValue )
+      val region_overlap = a.slice(row, row+4).padTo(4, Int.MaxValue & (  ( 1 << colBlocksNum ) - 1 )  )
 
       val ret = region_overlap.zip(b).map  { case ( a, b ) =>   ( a & b ).toInt > 0  }
 
@@ -313,7 +313,7 @@ trait PlayFieldTestHelper {
           action.p0
         )
 
-        val ref = playfieldData.slice(row, row+4).padTo(4, Int.MinValue )
+        val ref = playfieldData.slice(row, row+4).padTo(4, Int.MaxValue & (  ( 1 << colBlocksNum ) - 1 ) )
         val checkData = backdoorWriteCheckerWithPattern(
           dut,
           row,
@@ -474,10 +474,10 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
         0 -> CollisionCheckScenarios.basic,
         0 -> CollisionCheckScenarios.playfieldPatternOnly,
         0 -> CollisionCheckScenarios.CheckerPatternOnly,
-        0 -> CollisionCheckScenarios.noCollison,
-        0 -> CollisionCheckScenarios.fixedCollison(1), // 1 bit are overlaps for affected rows.
-        0 -> CollisionCheckScenarios.fixedCollison(2), // 2 bits are overlaps for affected rows.
-        0 -> CollisionCheckScenarios.usecase,
+        1 -> CollisionCheckScenarios.noCollison,
+        1 -> CollisionCheckScenarios.fixedCollison(1), // 1 bit are overlaps for affected rows.
+        1 -> CollisionCheckScenarios.fixedCollison(2), // 2 bits are overlaps for affected rows.
+        1 -> CollisionCheckScenarios.usecase,
         1 -> CollisionCheckScenarios.random
       )
 
@@ -510,8 +510,8 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
 
       // Body
       //for ( flowRegionRow <- 0 until config.rowBlocksNum ) {
-      for ( checkerRegionRow <- 0 until 1 ) {
-        println(s"[INFO] flow region row at ${checkerRegionRow} !!!")
+      for ( checkerRegionRow <- 0 until 20 ) {
+        println(s"[INFO] checker region row at ${checkerRegionRow} !!!")
         executeTestCollisionCheckerActions(dut, scbd,
           actions = readTestPatternList,
           length = config.rowBlocksNum,
