@@ -47,6 +47,26 @@ object TestPatterns {
     }
   }
 
+  case class TestPiecePatternPair(
+                              p0: BitPatternGenerators.Pattern,
+                              p1: PiecePatternGenerators.Pattern,
+                              count: Int,
+                              description: String = ""
+                            ) {
+    def getDescription: String = {
+      if (description.nonEmpty) description
+      else  Seq( (p0, "p0"), (p1, "p1" ) ).map { a =>  s"${a._2} : " +
+        ( a._1  match {
+          case BitPatternGenerators.AllZeros => "All Zeros"
+          case BitPatternGenerators.AllOnes => "All Ones"
+          case BitPatternGenerators.FixedOnes(n) => s"Fixed $n Ones"
+          case BitPatternGenerators.Random => "Random"
+        }
+          )
+      }.mkString
+    }
+  }
+
   object ReadoutScenarios {
 
     // ----------- Test patterns -----------------
@@ -386,6 +406,42 @@ object TestPatterns {
 
 
   }
+
+  object PlaceScenarios {
+    // ----------- Test patterns -----------------
+
+    // p0 : pattern for playfield region
+    // p1 : pattern for piece region
+    // count : test counts
+    import PiecePatternGenerators._
+
+
+    def basic(playfieldPattern : BitPatternGenerators.Pattern  ) : Seq[TestPiecePatternPair] = {
+      // 1. Create a list of the constructor functions.
+      // In Scala, case class companion objects are functions.
+      val constructors: List[Int => Pattern] = List(I, J, L, O, S, T, Z)
+
+      // 2. Use a for-comprehension to generate all combinations.
+      val patternList: List[Pattern] = for {
+        constructor <- constructors // For each constructor in the list...
+        //rotation <- 0 to 3          // ...and for each rotation from 0 to 3...
+        rotation <- 0 to 0          // ...and for each rotation from 0 to 3...
+      } yield constructor(rotation)   // ...create a new Pattern instance.
+
+      patternList.map { pattern => TestPiecePatternPair(
+          p0 = playfieldPattern,
+          p1 = pattern,
+          count = 1,
+          "Verify place new Piece at beginning of game where playfield is empty"
+        )
+
+      }
+
+    }
+
+
+  }
+
 
 
   /**

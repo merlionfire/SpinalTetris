@@ -58,7 +58,7 @@ object TetrisImageCreator {
   def createPlayfieldImage(
                             colNum: Int,
                             rowNum: Int,
-                            blockSize: Int = 30,
+                            sizeInPixel: Int = 30,
                             origin: (Int, Int) ,
 
                           ) : BufferedImage = {

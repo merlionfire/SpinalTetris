@@ -93,7 +93,7 @@ class LogicTopTest extends AnyFunSuite {
 
 
     // Temp to reduce size for more blocks in single image
-    //val blockSize = 30
+    //val sizeInPixel = 30
     val blockSize = 20
 
     val padding = 2
@@ -213,7 +213,7 @@ class LogicTopTest extends AnyFunSuite {
             }
 
             val width =  ( tOpArray.map(_.length).max  + 1 ) * blockSize * colNum + 500
-            //val width = obs_array.map(_._2.length).max  * blockSize * colNum
+            //val width = obs_array.map(_._2.length).max  * sizeInPixel * colNum
 
             val height = ( 2 +  tOpArray.size ) * blockSize * rowNum
 
@@ -232,9 +232,9 @@ class LogicTopTest extends AnyFunSuite {
                 g.fillRect(0, 0, img.getWidth, img.getHeight)
 
 
-                //drawPlayField(g, obs_left_mem, x_origin + colNum * (blockSize + 4), y_origin)
+                //drawPlayField(g, obs_left_mem, x_origin + colNum * (sizeInPixel + 4), y_origin)
 
-                //var x_pos = x_origin + 2 * colNum * (blockSize + 4)
+                //var x_pos = x_origin + 2 * colNum * (sizeInPixel + 4)
                 var x_pos = x_origin
                 val x_step = (colNum + 3) * blockSize
 

@@ -1,5 +1,6 @@
 package IPS.playfield
 import IPS.play_field.PlayFieldConfig
+import config.TYPE
 import spinal.core._
 import spinal.lib._
 import utils._
@@ -32,7 +33,8 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
   import config._
 
   val io = new Bundle {
-    val piece_in = slave Flow (Piece(colBitsWidth, rowBitsWidth))
+    //val piece_in = slave Flow (Piece(colBitsWidth, rowBitsWidth))
+    val piece_in = slave Flow TYPE()
     //val blocks_out = master Stream( Block(colBitsWidth, rowBitsWidth ) )
     //val hit_status = slave Flow( hitStatus() )
     val status = master Flow (Bool())
@@ -59,8 +61,6 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
 
   val cur_top_row = RegInit( U( 0, rowBitsWidth bits ) )
-  val row_origin_chk = RegInit( U( 0, rowBitsWidth bits ) )
-  val col_origin_chk = RegInit( U( 0, colBitsWidth bits ) )
 
   val load_piece = False
 
@@ -76,26 +76,92 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
   //  - Region is displayed in next-T window in right-bottom of screen
   //-----------------------------------------------------------------------
 
-  lazy val selector = new Area {
+//  lazy val selector = new Area {
+//
+//    val region = Vec.fill(4)(Bits(4 bit)) setAsReg()
+//
+//    switch(piece.`type`) {
+//      for ((pieceType, rotations) <- binaryTypeOffsetTable) {
+//        is(pieceType) {
+//          switch(piece.rot) {
+//            for ((rotation, positions) <- rotations) {
+//              is(rotation) {
+//                for (j <- 0 until 4) {
+//                  region(j) := positions(j)
+//                }
+//              }
+//            }
+//          }
+//        }
+//      }
+//    }
+//  }
 
-    val region = Vec.fill(4)(Bits(4 bit)) setAsReg()
+  val piece_buffer = new Area {
 
-    switch(piece.`type`) {
-      for ((pieceType, rotations) <- binaryTypeOffsetTable) {
-        is(pieceType) {
-          switch(piece.rot) {
-            for ((rotation, positions) <- rotations) {
-              is(rotation) {
-                for (j <- 0 until 4) {
-                  region(j) := positions(j)
-                }
-              }
-            }
-          }
+    val rot_cur = RegInit(U(0, 2 bit))
+    val rot_checked = RegInit(U(0, 2 bit))
+
+    case class PieceRegion(colBlocksNum: Int) extends Bundle {
+      // There are 2 extra points on both left and right, which represent wall
+      val region_extra = Vec.fill(4)( Bits( colBlocksNum + 4   bits ) ) setAsReg()
+
+
+      val region = Vec.fill(4)( Bits( colBlocksNum  bits ) )
+
+//      val region = Vec( region_extra(0)(2, colBlocksNum bit),
+
+
+//      for ( j <- 0 until 4 ) {
+//        region(j) := region_extra(j)(2, colBlocksNum bit)
+//      }
+
+
+
+
+      var left_overflow = False
+      var right_overflow = False
+      for ( j <- 0 until 4 ) {
+         left_overflow = left_overflow | region_extra(j)( colBlocksNum+2, 2 bit  ).orR
+         right_overflow = right_overflow | region_extra(j)( 1, 2 bit  ).orR
+      }
+
+      def load( content : List[Int] ) = {
+        for ( j <- 0 until 4 ) {
+          region_extra(j) := content(j) << ( (colBlocksNum / 2 ) )
         }
       }
+
+      def steup_logic () = {
+        for ( j <- 0 until 4 ) {
+          region(j) := region_extra(j)(2, colBlocksNum bit)
+        }
+
+      }
+
     }
+
+    val pieces = Vec(PieceRegion(colBlocksNum), 4)
+    for ( j <- 0 until 4 )  pieces(j).steup_logic()
+
+
+    when (piece.valid ) {
+      switch(piece.payload) {
+          for ((pieceType, rotations) <- binaryTypeOffsetTable) {
+            is(pieceType) {
+              for ((rotation, positions) <- rotations) {
+                pieces(rotation).load(positions)
+              }
+            }
+
+          }
+      }
+
+    }
+
   }
+
+
 
   //-----------------------------------------------------------------------
   //        checker Area
@@ -128,7 +194,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
 
     // input control signals
-    val right_shift, left_shift, piece_load, restore = False
+    val right_shift, left_shift, restore = False
 
     right_shift setAsReg()
     left_shift setAsReg()
@@ -144,9 +210,10 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
     def setup_logic(source : Vec[Bits] ): Unit = {
 
+      val  start_pos = colBlocksNum / 2 -2
       for (i <- 0 to 3) {
-        when(piece_load) {
-          region(i) := Cat( selector.region(i), B(0, (colBlocksNum - 4 ) bits))
+        when(load_piece) {
+          region(i) := piece_buffer.pieces(piece_buffer.rot_cur).region(i)
         }
 
         when(right_shift) {
@@ -364,9 +431,11 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       False
     ) clearWhen( start )
 
-    val is_collision = check_status
-
     val check_is_done = collision_bits.valid.fall(False)
+
+    val is_collision = Flow( Bool() )
+    is_collision.valid := collision_bits.valid.fall(False)
+    is_collision.payload := check_status
   }
 
 
@@ -399,7 +468,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
       when(piece.valid) {
         // piece is being selected in terms of type and rot
-        goto(PIECE_SELECTION)
+        goto(LOAD_TO_CHECKER)
       }
 
       if ( sim ) {
@@ -422,50 +491,16 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       }
     }
 
-    val PIECE_SELECTION: State = new State  {
+    val LOAD_TO_CHECKER: State = new State  {
 
-      // Piecee is stored in selector.region within this state
+      // Piecee in piece_buffer is copied to checker.region
       whenIsActive {
-        row_origin_chk := 0
-        col_origin_chk := 3
         load_piece := True
-        //playfield.row_address.load( cur_top_row )
-        goto(LOAD_TO_CHECKER)
+        goto(COLLISION_CHECK)
       }
     }
 
 
-    val LOAD_TO_CHECKER: State = new State {
-
-      // Piece has been stored into checker/region
-      // row_origin_chk and col_origin_chk has been updated
-      whenIsActive {
-        //if col_index is 0 , it is not needed to shift since piece is loaded at col 0
-        when ( col_origin_chk === 0 ) {
-          goto(COLLISION_CHECK )
-        } otherwise {
-
-          // Counter and Right_shift flag will be set at next cycle
-          checker.right_shift := True
-          checker.load_shift_cnt(col_origin_chk)
-          goto(SHIFT_CHECKER_REGION)
-        }
-      }
-    }
-
-    val SHIFT_CHECKER_REGION : State = new State {
-
-      // Right shift shift_counter times
-      // - For place, right shift 3 times to the middle of region
-      // - ? For rot, shift to origin position
-      // - ? For input
-      whenIsActive {
-
-        when(checker.shift_counter.willOverflow ) {
-          goto(COLLISION_CHECK)
-        }
-      }
-    }
 
     val COLLISION_CHECK : State = new State {
       onEntry {
@@ -475,8 +510,8 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       }
 
       whenIsActive{
-        when ( collision_checker.check_is_done ) {
-          when ( collision_checker.is_collision ) {
+        when ( collision_checker.is_collision.valid ) {
+          when ( collision_checker.is_collision.payload ) {
             goto(COLLISION)
           } otherwise {
             goto(PASS)

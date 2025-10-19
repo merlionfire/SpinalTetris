@@ -1,7 +1,7 @@
 package utils
 
 import java.awt.image.BufferedImage
-import java.awt.{Graphics2D, Color, Font, RenderingHints}
+import java.awt.{BasicStroke, Color, Font, Graphics2D, RenderingHints}
 import java.io.File
 import javax.imageio.ImageIO
 import scala.collection.mutable
@@ -174,18 +174,140 @@ object ImageGenerator {
   /**
    * A playfield renderer
    */
-  case class PlayfieldPanel(
-                             x: Int,
-                             y: Int,
-                             blockSize: Int,
-                             playfield: Any, // Your playfield type
-                             renderer: (Graphics2D, Any, Int, Int, Int) => Unit
-                           ) extends GridItem {
+//  case class PlayfieldPanel(
+//                             x: Int,
+//                             y: Int,
+//                             sizeInPixel: Int,
+//                             playfield: Any, // Your playfield type
+//                             renderer: (Graphics2D, Any, Int, Int, Int) => Unit
+//                           ) extends GridItem {
+//
+//    override def draw(g: Graphics2D): Unit = {
+//      renderer(g, playfield, x, y, sizeInPixel)
+//    }
+//  }
 
-    override def draw(g: Graphics2D): Unit = {
-      renderer(g, playfield, x, y, blockSize)
+    case class PlaceTetromino(
+                               x_start: Int,
+                               y_start: Int,
+                               sizeInPixel: Int,
+                               width : Int,
+                               allBlocks : Seq[Int],
+                               blockColor : Color  = new Color(255, 102, 88)
+                             ) extends GridItem {
+
+      val borderWidth = 1
+      val padding = 1
+
+      override def draw(g: Graphics2D): Unit = {
+
+
+
+        val height = allBlocks.length
+
+        val x_end = x_start + sizeInPixel * width
+        val y_end = y_start + sizeInPixel * height
+
+        // public BasicStroke(
+        //   float width,
+        //   int cap,
+        //   int join,
+        //   float miterlimit,
+        //   float[] dash,
+        //   float dash_phase
+        // )
+
+        // 1. width:       (1f) The stroke width in pixels.
+        // 2. cap:         (CAP_BUTT) The style for line endings.
+        //                 - CAP_BUTT:  Ends lines with no cap (flat).
+        //                 - CAP_ROUND: Adds a round end.
+        //                 - CAP_SQUARE: Adds a square end.
+        // 3. join:        (JOIN_ROUND) The style for joining two line segments.
+        //                 - JOIN_ROUND: Rounds the corner.
+        //                 - JOIN_BEVEL: Bevels (flattens) the corner.
+        //                 - JOIN_MITER: Extends the corner to a sharp point.
+        // 4. miterlimit:  (10.0f) For JOIN_MITER, this limits how far the sharp
+        //                 point can extend. Ignored for other join types.
+        // 5. dash:        (Array[Float](10.0f, 5.0f)) The dashing pattern.
+        //                 Alternates "draw" and "skip".
+        //                 This means "draw 10 pixels, skip 5 pixels".
+        // 6. dash_phase:  (0.0f) An offset (in pixels) of where to start the
+        //                 dashing pattern. 0.0f starts at the beginning.
+
+        val bs = new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND, 10.0f, Array[Float](10.0f, 5.0f), 0.0f)
+
+        g.setColor(java.awt.Color.GRAY)
+        g.setStroke(bs)
+
+        // Draw lines
+        for ( x <- x_start to x_end by sizeInPixel) {
+          g.drawLine(x, y_start, x, y_end )
+        }
+
+        for ( y <- y_start to y_end by sizeInPixel) {
+          g.drawLine(x_start, y, x_end, y)
+        }
+
+        // Draw wall
+
+        // 1. Define the coordinate ranges first.
+        val x_side_wall_range = List(-1, width).map(cx => x_start + cx * sizeInPixel)
+        val y_side_wall_range = y_start until (y_start + height * sizeInPixel) by sizeInPixel
+
+        // 2. Use 'for...yield' to create the side walls immutably.
+        val side_walls = for {
+          x <- x_side_wall_range
+          y <- y_side_wall_range
+        } yield (x, y)
+
+        // 3. Define the coordinates for the bottom wall.
+        val y_bottom = y_start + ( height ) * sizeInPixel
+        val x_bottom_range = x_start until ( x_start + width * sizeInPixel) by sizeInPixel
+
+        // 4. Use 'for...yield' to create the bottom wall.
+        val bottom_wall = for (x <- x_bottom_range) yield (x, y_bottom)
+
+        // 5. Combine the immutable lists. This is your final 'walls'.
+        val walls = side_walls ++ bottom_wall
+
+
+
+        // 1. Solid Color Interior with Black Border
+        g.setColor(java.awt.Color.BLACK)
+        g.setStroke(new BasicStroke(borderWidth))
+
+        for ((x, y) <- walls) {
+          g.drawRect(x, y, sizeInPixel, sizeInPixel) // Draw the border
+        }
+
+        g.setColor(new Color(153, 102, 0))
+        g.setStroke(new BasicStroke(borderWidth))
+
+        for ((x, y) <- walls) {
+          g.drawRect(x+1, y+1, sizeInPixel-2, sizeInPixel-2) // Draw the border
+        }
+
+        g.setStroke(new BasicStroke(borderWidth))
+        g.setColor( blockColor )
+        for ( (rowValue, rowIndex) <- allBlocks.zipWithIndex ) {
+
+          val y = y_start + rowIndex * sizeInPixel
+
+          for (col <- 0 until  width) {
+
+            // 'x' is also an immutable 'val' calculated from the col index
+            val x = x_start + col * sizeInPixel
+
+            val bit = (rowValue >> col) & 1
+            if ( bit == 1) {
+              g.fillRect(x + padding  , y + padding, sizeInPixel - 2 * padding + 1 , sizeInPixel - 2 * padding + 1)
+
+            }
+          }
+        }
+
+      }
     }
-  }
 
   /**
    * Text label

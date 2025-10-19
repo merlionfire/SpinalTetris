@@ -1,7 +1,11 @@
 package utils
 
+import config.TYPE.newElement
+import config._
+import config.TetrominoesConfig._
 import org.scalacheck._
 import org.scalacheck.Gen._
+import spinal.core.{SpinalEnumElement, SpinalEnumEncoding}
 import utils.mis.int2binString
 
 object BitPatternGenerators {
@@ -116,6 +120,8 @@ object BitPatternGenerators {
   case object NoCollision extends Pattern
   case class FixCollisionOnes( count : Int ) extends Pattern
 
+
+
   /**
    * Selects a generator based on the specified pattern.
    * @param m The bit-width for the generator.
@@ -164,6 +170,55 @@ object BitPatternGenerators {
   }
 
 
+
+
+}
+
+
+
+object PiecePatternGenerators {
+
+  sealed trait Pattern
+  case class I(rot: Int) extends Pattern
+  case class J(rot: Int) extends Pattern
+  case class L(rot: Int) extends Pattern
+  case class O(rot: Int) extends Pattern
+  case class S(rot: Int) extends Pattern
+  case class T(rot: Int) extends Pattern
+  case class Z(rot: Int) extends Pattern
+  case object PieceRandom extends Pattern
+
+  // Returns (TYPE, rotation) tuple
+  def generatePiecePattern(pattern: Pattern): Gen[(SpinalEnumElement[TYPE.type], Int)] = pattern match {
+    case I(rot) => const((TYPE.I, rot))
+    case J(rot) => const((TYPE.J, rot))
+    case L(rot) => const((TYPE.L, rot))
+    case O(rot) => const((TYPE.O, rot))
+    case S(rot) => const((TYPE.S, rot))
+    case T(rot) => const((TYPE.T, rot))
+    case Z(rot) => const((TYPE.Z, rot))
+    case PieceRandom =>
+      for {
+//        typeElement <- oneOf(TYPE.elements)
+        typeElement <- frequency(
+          10 -> TYPE.I,
+          15 -> TYPE.J,
+          15 -> TYPE.L,
+          5  -> TYPE.O,  // Less common
+          12 -> TYPE.S,
+          15 -> TYPE.T,
+          12 -> TYPE.Z
+        )
+        rotationMap = binaryTypeOffsetTable(typeElement)
+        rotation <- oneOf(rotationMap.keys.toSeq)
+      } yield (typeElement, rotation)
+  }
+
+  // Helper to get binary data from tuple
+  def getBinaryData(typeAndRot: (SpinalEnumElement[TYPE.type], Int)): Seq[Int] = {
+    val (pieceType, rotation) = typeAndRot
+    binaryTypeOffsetTable(pieceType)(rotation)
+  }
 
 
 }

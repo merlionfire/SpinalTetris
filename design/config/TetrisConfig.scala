@@ -1,6 +1,8 @@
 import spinal.core.log2Up
 import spinal.core._
 
+import scala.collection.immutable.ListMap
+
 package object config {
   // Temp to rduce for speed-up sim
   val rowNum : Int = 23   // include bottom wall
@@ -43,44 +45,44 @@ package object config {
   }
 
   object TetrominoesConfig {
-    val typeOffsetTable = Map(
-      TYPE.I -> Map(
+    val typeOffsetTable = ListMap(
+      TYPE.I -> ListMap(
         0 -> List((0, 1), (1, 1), (2, 1), (3, 1)),
         1 -> List((2, 0), (2, 1), (2, 2), (2, 3)),
         2 -> List((0, 2), (1, 2), (2, 2), (3, 2)),
         3 -> List((1, 0), (1, 1), (1, 2), (1, 3))
       ),
-      TYPE.J -> Map(
+      TYPE.J -> ListMap(
         0 -> List((0,0) , (0,1) , (1,1) , (2,1)),
         1 -> List((2,0) , (1,0) , (1,1) , (1,2)),
         2 -> List((2,2) , (2,1) , (1,1) , (0,1)),
         3 -> List((0,2) , (1,2) , (1,1) , (1,0))
       ),
-      TYPE.L -> Map(
+      TYPE.L -> ListMap(
         0 -> List((0,1) , (1,1) , (2,0) , (2,1)),
         1 -> List((1,0) , (1,1) , (2,2) , (1,2)),
         2 -> List((2,1) , (1,1) , (0,2) , (0,1)),
         3 -> List((1,2) , (1,1) , (0,0) , (1,0))
       ),
-      TYPE.O -> Map(
+      TYPE.O -> ListMap(
         0 -> List((1,0) , (1,1) , (2,0) , (2,1)),
         1 -> List((1,0) , (1,1) , (2,0) , (2,1)),
         2 -> List((1,0) , (1,1) , (2,0) , (2,1)),
         3 -> List((1,0) , (1,1) , (2,0) , (2,1))
       ),
-      TYPE.S -> Map(
+      TYPE.S -> ListMap(
         0 -> List((0,1) , (1,0) , (1,1) , (2,0)),
         1 -> List((1,0) , (2,1) , (1,1) , (2,2)),
         2 -> List((2,1) , (1,2) , (1,1) , (0,2)),
         3 -> List((1,2) , (0,1) , (1,1) , (0,0))
       ),
-      TYPE.T -> Map(
+      TYPE.T -> ListMap(
         0 -> List((0,1) , (1,0) , (1,1) , (2,1)),
         1 -> List((1,0) , (2,1) , (1,1) , (1,2)),
         2 -> List((2,1) , (1,2) , (1,1) , (0,1)),
         3 -> List((1,2) , (0,1) , (1,1) , (1,0))
       ),
-      TYPE.Z -> Map(
+      TYPE.Z -> ListMap(
         0 -> List((0,0) , (1,0) , (1,1) , (2,1)),
         1 -> List((2,0) , (2,1) , (1,1) , (1,2)),
         2 -> List((2,2) , (1,2) , (1,1) , (0,1)),
@@ -115,8 +117,16 @@ object TetrisConfigMain extends  App {
   import config.TetrominoesConfig._
   for (  (tetrominoType, rotationMap) <-  binaryTypeOffsetTable ) {
     for ( ( rot, value ) <- rotationMap ) {
+      // 1. Map over the List[Int]
+      val binaryStrings = value.map { intValue =>
+        // 2. Convert each Int to a binary string
+        val binaryString = Integer.toBinaryString(intValue)
+
+        // 3. (Recommended) Pad each one for uniform alignment
+        String.format("0b%4s", binaryString).replace(' ', '0')
+      }
       println {
-        s"${tetrominoType.name} [${rot}] = ${value.toString()}"
+        s"${tetrominoType.name} [${rot}] = ${binaryStrings.toString()}"
       }
     }
   }

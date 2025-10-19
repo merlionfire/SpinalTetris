@@ -112,7 +112,6 @@ class SequenceScoreboard[T](
 
 class PlayFieldScoreboard(
                              name: String = "PlayFieldScoreboard",
-                             size : Int = 10,
                              verbose: Boolean = true
                            ) extends SequenceScoreboard[Int](name, verbose) {
 
