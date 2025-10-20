@@ -1,8 +1,5 @@
 package IPS.playfield
 
-
-
-import IPS.collision_checker.blockSim
 import config.TetrominoesConfig.binaryTypeOffsetTable
 import spinal.core._
 import spinal.core.sim.{SimCompiled, _}
@@ -11,7 +8,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import spinal.lib.sim.FlowMonitor
 import utils.PathUtils
 import utils.BitPatternGenerators
-import utils.ImageGenerator.{GridItem, PlaceTetromino}
+import utils.ImageGenerator.{GridItem, PlaceTetromino, TextLabel}
 import utils.TestPatterns._
 import utils._
 
@@ -450,16 +447,15 @@ trait PlayFieldTestHelper {
         println(s"\n${"=" * 100}")
       }
 
-      var x_start = 50
-      var y_start = 50
+      var x_start = 100
+      var y_start = 100
+
+      var pieceIsDraw = false
 
       for (iteration <- 0 until action.count) {
         if (verbose && action.count > 1) {
           println(s"\t\t Round ${iteration + 1}/${action.count}")
         }
-
-        var pieceIsDraw = false
-
         // Generate Place piece
         val (pieceType, rot  ) = PiecePatternGenerators.generatePiecePattern(action.p1).sample match {
           case Some ( (pieceType, rot  ) ) =>  (pieceType, rot  )
@@ -486,11 +482,24 @@ trait PlayFieldTestHelper {
         scbd.addExpected(expectedData)
 
         if ( ! pieceIsDraw ) {
-          playfieldDrawTasks.enqueue(
-            PlaceTetromino(x_start = x_start, y_start = y_start, sizeInPixel = blocSize, width = colBlocksNum, allBlocks = placePieceData)
+          playfieldDrawTasks.enqueue (
+            PlaceTetromino(
+              x_start = x_start, y_start = y_start,
+              sizeInPixel = blocSize,
+              width = colBlocksNum,
+              allBlocks = placePieceData
+            ),
+            TextLabel(
+              x = x_start - 50 ,
+              y = y_start + 50,
+              text = pieceType.toString(),
+              color = Color.BLACK
+            )
           )
+          pieceIsDraw = true
           y_start += y_step
         }
+
         playfieldDrawTasks.enqueue(
           PlaceTetromino(
             x_start =  x_start, y_start =  y_start,
@@ -498,6 +507,12 @@ trait PlayFieldTestHelper {
             width = colBlocksNum,
             allBlocks = playfieldData.map(reverseLow10Bits).take(4),
             blockColor = new Color(100,120, 120 )
+          ),
+          TextLabel(
+            x = x_start - 50 ,
+            y = y_start + 50,
+            text = s"$iteration",
+            color = Color.BLACK
           )
         )
 
@@ -510,14 +525,14 @@ trait PlayFieldTestHelper {
         println(scbd.report())
 
         if (!allMatch) {
-          ImageGenerator.fromGridLayout(totalWidth = 300,  totalHeight = 8 * y_step , playfieldDrawTasks )
+          ImageGenerator.fromGridLayout(totalWidth = 400,  totalHeight = (action.count + 3 ) * ( y_step + 1 ) , playfieldDrawTasks )
             .buildAndSave( PathUtils.getRtlOutputPath(getClass, targetName = "sim").toString + s"/PlaceImg_${action.p0}x${action.p1}.png" )
           simFailure("Scoreboard Reports Error ")
         }
         scbd.clear()
       }
 
-      ImageGenerator.fromGridLayout(totalWidth = 300,  totalHeight = 8 * y_step , playfieldDrawTasks )
+      ImageGenerator.fromGridLayout(totalWidth = 400,  totalHeight = (action.count + 3 ) * ( y_step + 1 )  , playfieldDrawTasks )
         .buildAndSave( PathUtils.getRtlOutputPath(getClass, targetName = "sim").toString + s"/PlaceImg_${action.p0}x${action.p1}.png" )
 
       playfieldDrawTasks.clear()
@@ -560,7 +575,6 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
     rowBitsWidth = rowBitsWidth,
     colBitsWidth = colBitsWidth
   )
-
 
   lazy val compiled : SimCompiled[playfield]  = runSimConfig(runFolder, compiler)
     .compile {
@@ -717,11 +731,10 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
       val predefPlaceTestPattern = List(
         0 -> PlaceScenarios.basic( BitPatternGenerators.AllZeros),
         0 -> PlaceScenarios.basic( BitPatternGenerators.AllOnes),
-        0 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(1)),
-        0 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(2)),
-        1 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(3)),
-        1 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(4)),
-
+        1 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(1),  count = 100 ),
+        1 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(2),  count = 50 ),
+        1 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(3),  count = 50 ),
+        1 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(4),  count = 50 ),
       )
 
       val PlaceTestPatternList = predefPlaceTestPattern  /* Pattern group selection */
@@ -756,9 +769,6 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
         row = checkerRegionRow,
         verbose = true
       )
-
-
-
 
       println("[DEBUG] doSim is exited !!!")
       println("simTime : " + simTime())

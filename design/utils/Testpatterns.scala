@@ -416,7 +416,7 @@ object TestPatterns {
     import PiecePatternGenerators._
 
 
-    def basic(playfieldPattern : BitPatternGenerators.Pattern  ) : Seq[TestPiecePatternPair] = {
+    def basic(playfieldPattern : BitPatternGenerators.Pattern, count : Int = 1  ) : Seq[TestPiecePatternPair] = {
       // 1. Create a list of the constructor functions.
       // In Scala, case class companion objects are functions.
       val constructors: List[Int => Pattern] = List(I, J, L, O, S, T, Z)
@@ -431,7 +431,7 @@ object TestPatterns {
       patternList.map { pattern => TestPiecePatternPair(
           p0 = playfieldPattern,
           p1 = pattern,
-          count = 1,
+          count = count,
           "Verify place new Piece at beginning of game where playfield is empty"
         )
 
