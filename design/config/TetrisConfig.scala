@@ -32,6 +32,14 @@ package object config {
     def getFieldOrig :(Int, Int) = ( x_orig + wall_width, y_orig)
 
   }
+  object ACTION extends SpinalEnum {
+    val NO  = newElement("NO")
+    val LEFT  = newElement("LEFT")
+    val RIGHT = newElement("RIGHT")
+    val DOWN  = newElement("DOWN")
+    val ROTATE = newElement("ROTATE")
+    val PLACE = newElement("PLACE")
+  }
 
   object TYPE extends SpinalEnum {
     val I = newElement("I")

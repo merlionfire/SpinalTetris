@@ -6,6 +6,7 @@ import config.TetrominoesConfig._
 import org.scalacheck._
 import org.scalacheck.Gen._
 import spinal.core.{SpinalEnumElement, SpinalEnumEncoding}
+import utils.PiecePatternGenerators.Pattern
 import utils.mis.int2binString
 
 object BitPatternGenerators {
@@ -119,7 +120,7 @@ object BitPatternGenerators {
   case object Random extends Pattern
   case object NoCollision extends Pattern
   case class FixCollisionOnes( count : Int ) extends Pattern
-
+  case object Hold extends Pattern
 
 
   /**
@@ -222,6 +223,99 @@ object PiecePatternGenerators {
 
 
 }
+
+//object MotionPatternGenerators {
+//
+//  sealed trait Pattern
+//  case object Left extends Pattern
+//  case object Right extends Pattern
+//  case object Rotate extends Pattern
+//  case object Down extends Pattern
+//  case object Drop extends Pattern
+//  case object Random extends Pattern
+//
+//  // Default weights for Random pattern
+//  private val defaultWeights: Map[Pattern, Int] = Map(
+//    Left -> 10,
+//    Right -> 10,
+//    Rotate -> 10,
+//    Down -> 10,
+//    Drop -> 1
+//  )
+//
+//  def generatePattern(
+//     pattern: Pattern,
+//     customWeights: Option[Map[Pattern, Int]] = None
+//  ): Gen[Pattern] = pattern match {
+//    case Left => const(Left)
+//    case Right => const(Right)
+//    case Rotate => const(Rotate)
+//    case Down => const(Down)
+//    case Drop =>  const( Drop )
+//    case Random =>
+//      // Use custom weights if provided, otherwise fall back to default
+//      val weights = customWeights.getOrElse(defaultWeights)
+//      // Convert Map to frequency format (Seq of (weight, pattern))
+//      val weightPair = weights.toSeq.map { case (p, w) => (w, const(p)) }
+//      frequency[Pattern]( weightPair : _* )
+//  }
+//}
+
+object MotionPatternGenerators {
+
+  sealed trait Pattern
+  case class Left(step : Int) extends Pattern
+  case class Right(step : Int) extends Pattern
+  case class Rotate(step : Int) extends Pattern
+  case class Down(step : Int) extends Pattern
+  case object Drop  extends Pattern
+  case object Random extends Pattern
+
+  def generatePatternByType(
+                             patternType: String,
+                             stepRange: (Int, Int) = (1, 10),
+                             customWeights: Option[Map[String, Int]] = None
+                           ): Gen[Pattern] = patternType.toLowerCase match {
+    case "left" =>
+      Gen.choose(stepRange._1, stepRange._2).map(Left(_))
+
+    case "right" =>
+      Gen.choose(stepRange._1, stepRange._2).map(Right(_))
+
+    case "rotate" =>
+      Gen.choose(1, 4).map(Rotate(_))
+
+    case "down" =>
+      Gen.choose(stepRange._1, stepRange._2).map(Down(_))
+
+    case "drop" =>
+      Gen.const(Drop)
+
+    case "random" =>
+      val defaultTypeWeights = Map(
+        "left" -> 10,
+        "right" -> 10,
+        "rotate" -> 10,
+        "down" -> 10,
+        "drop" -> 1
+      )
+
+      val weights = customWeights.getOrElse(defaultTypeWeights)
+
+      val weightPairs = weights.toSeq.map { case (pType, weight) =>
+        (weight, generatePatternByType(pType, stepRange, None))
+      }
+
+      Gen.frequency(weightPairs: _*)
+
+    case _ =>
+      throw new IllegalArgumentException(s"Unknown pattern type: $patternType")
+  }
+
+
+
+}
+
 
 import org.scalacheck.Prop.forAll
 import org.scalacheck.Properties

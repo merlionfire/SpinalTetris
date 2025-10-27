@@ -27,6 +27,18 @@ import scala.swing.event._
 trait PlayFieldTestHelper {
 
 
+  def initDUT( dut : playfield ) = {
+    println(s"[INFO] @${simTime()} initDut is called .......")
+    dut.clockDomain.waitSampling()
+    dut.io.playfield_backdoor.valid #= false
+    dut.io.fsm_reset #= false
+    dut.io.read #= false
+    dut.io.piece_in.valid #= false
+    dut.io.piece_in.payload.randomize()
+    dut.io.start_collision_check #= false
+
+  }
+
   def backdoorWritePlayfieldRow(dut: playfield, row: Int, data: Int) = {
     println(s"[INFO] @${simTime()} Backdoor write playfield row[${row}] \t=\t0b${String.format("%10s", Integer.toBinaryString(data)).replace(' ', '0')}")
     dut.clockDomain.waitSampling()
@@ -119,10 +131,6 @@ trait PlayFieldTestHelper {
 
   }
 
-
-
-
-
   def readWholePlayfield(dut: playfield) = {
     println(s"[INFO] @${simTime()} Start to front-door read whole playfield .......")
     dut.clockDomain.waitSampling()
@@ -152,6 +160,12 @@ trait PlayFieldTestHelper {
   }
 
 
+  def forceFsmToIdle (dut : playfield ) = {
+    dut.io.fsm_reset #= true
+    dut.clockDomain.waitSampling(1)
+    dut.io.fsm_reset #= false
+  }
+
 
   /**
    * Execute a sequence of test actions
@@ -179,7 +193,7 @@ trait PlayFieldTestHelper {
      * @param row The starting index in `a` where the operation begins.
      * @return A new sequence with the result of the OR operation.
      */
-    def orOverlay(a: Seq[Int], b: Seq[Int], row: Int): Seq[Int] = {
+    def model(a: Seq[Int], b: Seq[Int], row: Int): Seq[Int] = {
       a.zipWithIndex.map { case (aValue, index) =>
         // Check if the current index is within the overlay range
         if (index >= row && index < row + b.length) {
@@ -237,7 +251,7 @@ trait PlayFieldTestHelper {
         )
 
         // Modelling readout by OR flow.region and playfield.region
-        val expectedData = orOverlay(playfieldData, flowData, row)
+        val expectedData = model(playfieldData, flowData, row)
 
         expectedData.foreach {
           scbd.addExpected
@@ -287,7 +301,7 @@ trait PlayFieldTestHelper {
      * @param row The starting index in `a` where the operation begins.
      * @return A new sequence with the result of the OR operation.
      */
-    def orOverlay(a: Seq[Int], b: Seq[Int], row: Int): Int = {
+    def model(a: Seq[Int], b: Seq[Int], row: Int): Int = {
 
       val region_overlap = a.slice(row, row + 4).padTo(4, Int.MaxValue & ((1 << colBlocksNum) - 1))
 
@@ -343,13 +357,15 @@ trait PlayFieldTestHelper {
         )
 
         // Modelling readout by OR flow.region and playfield.region
-        val expectedData = orOverlay(playfieldData, checkData, row)
+        val expectedData = model(playfieldData, checkData, row)
 
         scbd.addExpected(expectedData)
 
         // Stimulus DUT with test data
         startCollisonCheck(dut)
         dut.clockDomain.waitSampling(60)
+
+        forceFsmToIdle(dut)
 
         val allMatch = scbd.compare()
 
@@ -394,7 +410,7 @@ trait PlayFieldTestHelper {
      * @param row The starting index in `a` where the operation begins.
      * @return A new sequence with the result of the OR operation.
      */
-    def orOverlay(a: Seq[Int], b: Seq[Int], row: Int): Int = {
+    def model(a: Seq[Int], b: Seq[Int], row: Int): Int = {
 
 
 
@@ -478,7 +494,7 @@ trait PlayFieldTestHelper {
         placePieceData.zipWithIndex.foreach { case (data, i) =>
           println(s"[INFO] place row[$i] \t=\t0b${String.format("%10s", Integer.toBinaryString(data)).replace(' ', '0')} ")
         }
-        val expectedData = orOverlay(playfieldData, placePieceData, row)
+        val expectedData = model(playfieldData, placePieceData, row)
         scbd.addExpected(expectedData)
 
         if ( ! pieceIsDraw ) {
@@ -519,6 +535,8 @@ trait PlayFieldTestHelper {
         y_start += y_step
 
         dut.clockDomain.waitSampling(10)
+        forceFsmToIdle(dut )
+
 
         val allMatch = scbd.compare()
 
@@ -544,7 +562,184 @@ trait PlayFieldTestHelper {
 
   }
 
+  def executeTestMotionActions(
+                               dut: playfield,
+                               scbd: PlayFieldScoreboard,
+                               length: Int,
+                               width: Int,
+                               actions: Seq[TestMotionPatternGroup],
+                               verbose: Boolean
+                             ): Unit = {
+
+    val playfieldDrawTasks =  mutable.Queue[GridItem] ()
+
+    /**
+     * Overlays sequence `b` onto sequence `a` using a bitwise OR operation.
+     *
+     * @param a   The base sequence.
+     * @param b   The sequence to overlay.
+     * @param row The starting index in `a` where the operation begins.
+     * @return A new sequence with the result of the OR operation.
+     */
+    def model(a: Seq[Int], b: Seq[Int], row: Int): Int = {
+
+
+
+      val region_overlap = a.slice(row, row + 4).padTo(4, Int.MaxValue & ((1 << colBlocksNum) - 1))
+
+      val ret = region_overlap.zip(b).map { case (a, b) => (a & b).toInt > 0 }
+
+      region_overlap.foreach { a => println(f"Compared Playield data : 0b${String.format("%10s", Integer.toBinaryString(a)).replace(' ', '0')} ") }
+      ret.foldLeft(false)(_ | _) toInt
+
+    }
+
+    def reverseLow10Bits(value: Int): Int = {
+      var result = 0
+      var temp = value & 0x3FF  // Mask to get only lower 10 bits
+
+      for (i <- 0 until 10) {
+        result = (result << 1) | (temp & 1)
+        temp >>= 1
+      }
+
+      result
+    }
+
+    /**
+     * Splits a sequence of test motion pattern groups into rounds based on their pattern types.
+     *
+     * This method organizes motion patterns into separate rounds, where each round begins with
+     * a non-Hold pattern (typically AllZeros or other initialization patterns, it acts as game start scenario) and continues
+     * with subsequent Hold patterns that belong to the same round. Each non-Hold pattern starts
+     * a new round ( new game ) , while Hold patterns are appended to the most recent round.
+     *
+     * The splitting logic:
+     * - Any non-Hold pattern starts a new round containing that single element
+     * - Hold patterns are appended to the current (last) round
+     * - The first element must be a non-Hold pattern; otherwise an exception is thrown
+     *
+     * @param allActions the complete sequence of motion pattern groups to be split into rounds.
+     *                   Must start with a non-Hold pattern type.
+     * @return a list of rounds, where each round is a list of TestMotionPatternGroup elements.
+     *         Each round starts with a non-Hold pattern followed by zero or more Hold patterns.
+     * @throws IllegalStateException if the first element is a Hold pattern, or if a Hold pattern
+     *                               is encountered when no prior round exists
+     */
+    def splitMotionsByRound ( allActions : Seq[TestMotionPatternGroup] ) : List[List[TestMotionPatternGroup]] = {
+      allActions.foldLeft( List.empty[List[TestMotionPatternGroup]]) {
+        case ( acc, elem @ TestMotionPatternGroup(playfieldPattern , _,_,_ ) )
+          if playfieldPattern != BitPatternGenerators.Hold => acc :+ List(elem )
+        case ( acc :+ last , elem @ TestMotionPatternGroup(BitPatternGenerators.Hold , _,_,_) ) =>  acc :+ (last :+ elem )
+        case (Nil, elem) =>
+          throw new IllegalStateException(
+            s"Unexpected first element: expected not BitPatternGenerators.HOLD, but got ${elem.p0}"
+          )
+        case (_, elem) =>
+          throw new IllegalStateException(
+            s"Unexpected pattern type: ${elem.p0}. Expected  BitPatternGenerators pattern."
+          )
+      }
+    }
+
+    val actionsByRound  = splitMotionsByRound( actions )
+
+    // Print Test suits Summary
+    println(s"\n${"=" * 120}\n")
+    println(s"\t\t\t\tTest Group Summary\n")
+    println(f"\t\t\tPlayfield\tx\tPiece\t:\tMotions")
+    for ((action, i) <- actionsByRound.zipWithIndex) {
+      print(f"\t${i + 1}:")
+      for ( pattern <- actions ) {
+        println(f"\t\t${pattern.p0}%10s\tx\t${pattern.p1}%5s\t:\t${pattern.getMotionsDescription}")
+      }
+    }
+    println(s"\n${"=" * 120}")
+
+
+    // Main Body
+    for (
+      ( round,  roundIndex  )  <- actionsByRound.zipWithIndex  ;  /* One round means one game round */
+      ( action, actionIndex )  <- round.zipWithIndex    /* Each round contains all piece operation called action from placing to be locked */
+    ) {
+      if (verbose) {
+        println(s"\n${"=" * 100}\n")
+        println(s"\t\tExecuting Test Round  ${roundIndex + 1}/${actionsByRound.size}")
+        println(s"\t\tExecuting Test action ${actionIndex + 1}/${round.size}")
+        println(s"\t\tPurpose\t: ${action.description}")
+        println(s"\t\tPattern\t: ${action.p0} : ${action.p1} ${action.getMotionsDescription} ")
+        println(s"\n${"=" * 100}")
+      }
+
+      // Step 1 - Preload playfield in terms of pattern
+      if ( action.p0 != BitPatternGenerators.Hold  ) {
+        // Generate and write pattern
+        val playfieldData = backdoorWritePlayfieldWithPattern(
+          dut,
+          length,
+          width,
+          action.p0
+        )
+      }
+
+      // Step 2 : Generate and Place piece
+      val (pieceType, rot  ) = PiecePatternGenerators.generatePiecePattern(action.p1).sample match {
+        case Some ( (pieceType, rot  ) ) =>  (pieceType, rot  )
+        case None => simFailure("[ERROR] No Piece is created !!!");
+      }
+      issuePlacePiece(dut,  pieceType )
+
+
+      // Step 3 : Traver all motions pattern
+      val motions = action.p2.flatMap {
+        case MotionPatternGenerators.Left(step)   =>  List.fill(step)("LF")
+        case MotionPatternGenerators.Right(step)  =>  List.fill(step)("RG")
+        case MotionPatternGenerators.Rotate(step) =>  List.fill(step)("RT")
+        case MotionPatternGenerators.Down(step)   =>  List.fill(step)("DN")
+        case MotionPatternGenerators.Drop         =>  List.fill(20)("DN")
+      }
+
+      def issueMotion( motion : String ): Boolean = {
+        dut.clockDomain.waitSamplingWhere(dut.io.motion_is_allowed.toBoolean)
+        println(s"[INFO] @${simTime()} Issue [${motion}] to playfield via interface")
+
+        motion match {
+          case "LF" => dut.io.move_in.left   #= true
+          case "RG" => dut.io.move_in.right  #= true
+          case "RT" => dut.io.move_in.rotate #= true
+          case "DN" => dut.io.move_in.down   #= true
+        }
+        dut.clockDomain.waitSampling()
+        dut.io.move_in.left   #= false
+        dut.io.move_in.right  #= false
+        dut.io.move_in.rotate #= false
+        dut.io.move_in.down   #= false
+
+        dut.clockDomain.waitSamplingWhere(dut.io.status.valid.toBoolean)
+        dut.io.status.payload.toBoolean
+      }
+
+      // Traver all motion actions of current Piece until "Down" action failed.
+      motions.forall { motion =>
+        val status = issueMotion(motion)   /* 1 : collision, 0 : OK */
+        readWholePlayfield(dut)
+        if ( status && motion == "DN ") {
+          false
+        } else {
+          true
+        }
+      }
+
+      println(s"[INFO] @${simTime()} Down action fails due to touch bottom or below Block. Finish current Piece by locking it")
+
+
+    }
+
+  } // executeTestMotionActions end
+
 }
+
+
 
 
 class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
@@ -582,18 +777,8 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
       c
     }
 
-  def initDUT( dut : playfield ) = {
-    println(s"[INFO] @${simTime()} initDut is called .......")
-    dut.clockDomain.waitSampling()
-    dut.io.playfield_backdoor.valid #= false
-    dut.io.read #= false
-    dut.io.piece_in.valid #= false
-    dut.io.piece_in.payload.randomize()
-    dut.io.start_collision_check #= false
 
-  }
-
-  test("usecase 1 - random fill all pixel and flow region ") {
+  test("usecase 1 - random fill all pixel and flow region via backdoor") {
     compiled.doSimUntilVoid(seed = 42) { dut =>
 
       /*****************************************
@@ -602,11 +787,11 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
 
       /* 1 is for pattern selection */
       val predefReadTestPattern = List(
-        1 -> ReadoutScenarios.basic,
+        0 -> ReadoutScenarios.basic,
         0 -> ReadoutScenarios.playfieldPatternOnly,
         0 -> ReadoutScenarios.flowPatternOnly,
-        0 -> ReadoutScenarios.usecase,
-        0 -> ReadoutScenarios.random
+        1 -> ReadoutScenarios.usecase,
+        1 -> ReadoutScenarios.random
       )
 
       val readTestPatternList = predefReadTestPattern  /* Pattern group selection */
@@ -658,7 +843,7 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
   }
 
 
-  test("usecase 2 - Check collision checker functionality with playfield region and checker region ") {
+  test("usecase 2 - Check collision checker functionality with playfield region and checker region via backdoor") {
     compiled.doSimUntilVoid(seed = 42) { dut =>
 
       /*****************************************
@@ -725,16 +910,16 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
     }
   }
 
-  test("usecase 3 - Check place pieces ") {
+  test("usecase 3 - Check place pieces via interface ( front-door ) ") {
     compiled.doSimUntilVoid(seed = 42) { dut =>
 
       val predefPlaceTestPattern = List(
         0 -> PlaceScenarios.basic( BitPatternGenerators.AllZeros),
         0 -> PlaceScenarios.basic( BitPatternGenerators.AllOnes),
-        1 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(1),  count = 100 ),
+        0 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(1),  count = 100 ),
         1 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(2),  count = 50 ),
-        1 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(3),  count = 50 ),
-        1 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(4),  count = 50 ),
+        0 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(3),  count = 50 ),
+        0 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(4),  count = 50 ),
       )
 
       val PlaceTestPatternList = predefPlaceTestPattern  /* Pattern group selection */
@@ -775,6 +960,65 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
       simSuccess()
 
     }
+  }
+
+
+  test("usecase 4 - Check Place -> Collision Check -> left/right/down -> bottom  via interface ") {
+    compiled.doSimUntilVoid(seed = 42) { dut =>
+
+
+        val predefMotionsTestPattern = List(
+          1 -> MotionScenarios.uc1( PiecePatternGenerators.I(0) ) ,
+          1 -> MotionScenarios.uc1( PiecePatternGenerators.J(0), playfieldHold = true  ) ,
+          0 -> MotionScenarios.uc1( PiecePatternGenerators.L(0), playfieldHold = true ) ,
+          0 -> MotionScenarios.uc1( PiecePatternGenerators.O(0), playfieldHold = true ) ,
+          0 -> MotionScenarios.uc1( PiecePatternGenerators.S(0) ) ,
+          0 -> MotionScenarios.uc1( PiecePatternGenerators.T(0) ) ,
+          0 -> MotionScenarios.uc1( PiecePatternGenerators.Z(0) )
+        )
+
+
+      val PlaceTestPatternList = predefMotionsTestPattern  /* Pattern group selection */
+        .collect{ case (1, pattern) => pattern }
+
+      /*****************************************
+       Custom settings end
+       ******************************************/
+
+      val scbd = new PlayFieldScoreboard(
+        name = "Scbd - playfield readout",
+        verbose = true
+      )
+
+      // Global Clocking settings
+      dut.clockDomain.forkStimulus(10)
+      SimTimeout(1 ms ) // adjust timeout as needed
+      dut.clockDomain.waitSampling(20)
+
+      initDUT(dut)
+
+      // Prepare Monitor
+      FlowMonitor(dut.io.row_val, dut.clockDomain) { payload =>
+        scbd.addActual( payload.toInt, s"@${simTime()}" )
+      }
+
+      executeTestMotionActions(dut, scbd,
+        actions = PlaceTestPatternList,
+        length = config.rowBlocksNum,
+        width = config.colBlocksNum,
+        verbose = true
+      )
+
+
+      dut.clockDomain.waitSampling(100)
+      println("[DEBUG] doSim is exited !!!")
+      println("simTime : " + simTime())
+      simSuccess()
+
+
+    }
+
+
   }
 }
 

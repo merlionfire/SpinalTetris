@@ -1,11 +1,12 @@
 package IPS.playfield
 import IPS.play_field.PlayFieldConfig
-import config.TYPE
+import config.{ACTION, TYPE}
 import spinal.core._
 import spinal.lib._
 import utils._
 import spinal.lib.fsm.{EntryPoint, State, StateFsm, StateMachine}
 import config.TetrominoesConfig._
+import spinal.core.TimingEndpointType.CLOCK_EN
 
 
 
@@ -29,6 +30,9 @@ case  class flow_region_Data  (rowBitsWidth : Int, colBlocksNum : Int ) extends 
   val data = in  Vec( Bits( colBlocksNum bit ), size = 4 )
 }
 
+
+
+
 class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Component {
   import config._
 
@@ -44,13 +48,15 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       val rotate = in Bool()
       val down = in Bool()
     }
+    val lock = in Bool()
     val read = in Bool()
     val row_val = master Flow (Bits(colBlocksNum bits))
     val playfield_backdoor = if (sim) slave Flow (Playfield_Row_Data(rowBitsWidth, colBlocksNum)) else null
-
+    val motion_is_allowed = out Bool()
     val flow_backdoor     = if (sim)  flow_region_Data(rowBitsWidth, colBlocksNum)  else null
     val checker_backdoor  = if (sim)  flow_region_Data(rowBitsWidth, colBlocksNum)  else null
     val start_collision_check  = if (sim)  in Bool()  else null
+    val fsm_reset = if (sim)  in Bool()  else null
 
   }
 
@@ -63,6 +69,8 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
   val cur_top_row = RegInit( U( 0, rowBitsWidth bits ) )
 
   val load_piece = False
+
+  val action = RegInit(ACTION.NO)
 
 
 
@@ -100,7 +108,10 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
   val piece_buffer = new Area {
 
     val rot_cur = RegInit(U(0, 2 bit))
-    val rot_checked = RegInit(U(0, 2 bit))
+    val rot_backup = RegInit(U(0, 2 bit))
+
+    val left_shift_all = False allowOverride()
+    val right_shift_all = False allowOverride()
 
     case class PieceRegion(colBlocksNum: Int) extends Bundle {
       // There are 2 extra points on both left and right, which represent wall
@@ -109,22 +120,14 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
       val region = Vec.fill(4)( Bits( colBlocksNum  bits ) )
 
-//      val region = Vec( region_extra(0)(2, colBlocksNum bit),
-
-
-//      for ( j <- 0 until 4 ) {
-//        region(j) := region_extra(j)(2, colBlocksNum bit)
-//      }
-
-
-
-
       var left_overflow = False
       var right_overflow = False
       for ( j <- 0 until 4 ) {
          left_overflow = left_overflow | region_extra(j)( colBlocksNum+2, 2 bit  ).orR
          right_overflow = right_overflow | region_extra(j)( 1, 2 bit  ).orR
       }
+
+      val overflow = left_overflow | right_overflow
 
       def load( content : List[Int] ) = {
         for ( j <- 0 until 4 ) {
@@ -138,6 +141,19 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
         }
 
       }
+
+      def shift_left() = {
+        for ( j <- 0 until 4 ) {
+          region_extra(j) := region_extra(j) |<< 1
+        }
+      }
+
+      def shift_right() = {
+        for ( j <- 0 until 4 ) {
+          region_extra(j) := region_extra(j) |>> 1
+        }
+      }
+
 
     }
 
@@ -159,6 +175,18 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
     }
 
+    when ( left_shift_all  ) {
+      pieces.foreach( _.shift_left() )
+    }
+
+    when ( right_shift_all  ) {
+      pieces.foreach( _.shift_right() )
+    }
+
+    def restore_rot() = {
+      rot_cur := rot_backup
+    }
+
   }
 
 
@@ -177,6 +205,8 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
   val checker = new Area {
 
     val row = RegInit(U(0, rowBitsWidth bits))
+    val row_backup = RegInit(U(0, rowBitsWidth bits))
+
     val read_req = False allowOverride()
     val addr_access_port = Flow( UInt(2 bits ) )
 
@@ -194,19 +224,28 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
 
     // input control signals
-    val right_shift, left_shift, restore = False
+    val restore = False
+    val right_shift = False allowOverride()
+    val left_shift = False allowOverride()
 
-    right_shift setAsReg()
-    left_shift setAsReg()
+
+    val overflowIfLeft  = region(0).msb || region(1).msb || region(2).msb | region(3).msb
+    val overflowIfRight = region(0).lsb || region(1).lsb || region(2).lsb | region(3).lsb
 
 
-    val shift_cnt = RegInit ( U(0, colBitsWidth bits )  )
-    val shift_counter = Counter2( shift_cnt , right_shift | left_shift )
+    val overflowIfDown =   ( row === ( rowBlocksNum - 1 ) )  |
+                           ( ( row === ( rowBlocksNum - 2 ) ) && region(1).orR ) |
+                           ( ( row === ( rowBlocksNum - 3 ) ) && region(2).orR ) |
+                           ( ( row === ( rowBlocksNum - 4 ) ) && region(3).orR )
 
-    def load_shift_cnt ( n : UInt ) = {
-      shift_cnt := n - 1 ;
-      shift_counter.clear()
-    }
+
+//    val shift_cnt = RegInit ( U(0, colBitsWidth bits )  )
+//    val shift_counter = Counter2( shift_cnt , right_shift | left_shift )
+//
+//    def load_shift_cnt ( n : UInt ) = {
+//      shift_cnt := n - 1 ;
+//      shift_counter.clear()
+//    }
 
     def setup_logic(source : Vec[Bits] ): Unit = {
 
@@ -232,10 +271,16 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       }
     }
 
+
+    def store_row () : Unit = {
+      row := row_backup
+    }
+
     if ( sim ) {
       when( io.checker_backdoor.valid ) {
         region := io.checker_backdoor.data
         row := io.checker_backdoor.row
+        row_backup := io.checker_backdoor.row
       }
     }
 
@@ -258,13 +303,20 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
                Interface
      ********************************************************/
     val reset = False
+    val freeze = False.allowOverride()
 
-    val read_row_base = U(0, rowBitsWidth bits) allowOverride()
+
+    val access_row_base = U(0, rowBitsWidth bits) allowOverride()
 
 
     val read_req_port = Flow(UInt(rowBitsWidth bits) ) .allowOverride()
+    val write_req_port = Flow(UInt(rowBitsWidth bits) ) .allowOverride()
+
     val addr_access_port = Flow( UInt(rowBitsWidth bits ) )
+    val lock_addr_access_port = Flow( UInt(2 bits ) )
     val readout =   Reg( Bits( colBlocksNum bits ) )
+
+
     /*******************************************************
      Playfield DMA
      - Single Access ( read-only with one cycle delay )
@@ -277,18 +329,34 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
     read_req_port.valid := False
     read_req_port.payload := U(0)
 
-    val dma_region = dma( start = read_req_port,
+
+    write_req_port.valid := False
+    write_req_port.payload := U(0)
+
+    val dma_region = dma( start = freeze ? write_req_port |  read_req_port,
                           data_in = readout,
-                          read_row_base -> addr_access_port
+                          access_row_base -> addr_access_port,
+                          U(0,  2 bits )  -> lock_addr_access_port
                       )
+
+
     val read_out_port = dma_region.read_sync()
+    val write_in = Bits( colBlocksNum bits )
 
 
     def load_read_req ( valid : Bool, word_count : Int, addr_base : UInt ) = {
       read_req_port.valid := valid
       read_req_port.payload := U( word_count - 1 )
-      read_row_base := addr_base
+      access_row_base := addr_base
     }
+
+    def load_write_req ( valid : Bool, word_count : Int, addr_base : UInt ) = {
+      write_req_port.valid := valid
+      write_req_port.payload := U( word_count - 1 )
+      access_row_base := addr_base
+    }
+
+
 
     def addr_access_eqaul( target : UInt ) : Bool = {
       addr_access_port.payload === target
@@ -305,7 +373,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
     val row_sel = Bits(rowBlocksNum bits)
 
-    val freeze = False.allowOverride()
+
 
     // *********************************
     //      ROW asynchronous decoder
@@ -319,7 +387,6 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       }
     }
 
-    val readin = Bits(colBlocksNum bits) default (0)
 
     val address_beyond_limit = addr_access_port.payload > ( rowBlocksNum - 1 )
 
@@ -336,8 +403,8 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
         //*****************************************************
         //              Write
         //*****************************************************
-        when(row_sel(i) & freeze) {
-          region(i) := readin
+        when(row_sel(i) & freeze ) {
+          region(i) := write_in
         }
       }
     }
@@ -374,6 +441,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
     val read_req = False allowOverride()
     val addr_access_port = Flow( UInt(2 bits ) )
 
+
     val region = Vec( Reg( Bits(colBlocksNum bits) )  init(0), size = 4 )
 
     // Async read
@@ -409,7 +477,6 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
     }
   }
 
-
   //-----------------------------------------------------------------------
   //        collision_checker
   // ------------------------------------
@@ -439,10 +506,43 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
   }
 
 
-  io.row_val.valid := playfield.read_out_port.valid
+
+  //-----------------------------------------------------------------------
+  //        locker
+  // ------------------------------------
+  //  -
+  //-----------------------------------------------------------------------
+
+  val output_en = False allowOverride()
+  val lock_en = False allowOverride()
+  val row_merged = playfield.read_out_port.payload | flow.read_out_port.payload
+
+  val locker = new Area {
+
+    val addr_access_port = Flow( UInt(2 bits ) )
+
+    val region = Mem( Bits(colBlocksNum bits) , 4)
+
+    region.addAttribute("ram_style", "distributed")
+
+    region.write(
+      enable = flow.addr_access_port.valid && lock_en,
+      address = flow.addr_access_port.payload,
+      data = row_merged
+    )
+
+    playfield.write_in := region.readSync(
+      enable  = playfield.lock_addr_access_port.valid,
+      address = playfield.lock_addr_access_port.payload
+    )
+
+  }
+
+
+  io.row_val.valid := playfield.read_out_port.valid && output_en
   io.row_val.payload := playfield.read_out_port.payload
   when ( playfield.read_out_port.valid & flow.read_out_port.valid ) {
-    io.row_val.payload := playfield.read_out_port.payload | flow.read_out_port.payload
+    io.row_val.payload := row_merged
   }
 
   //-----------------------------------------------------------------------
@@ -468,11 +568,12 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
       when(piece.valid) {
         // piece is being selected in terms of type and rot
+        action := ACTION.PLACE
         goto(LOAD_TO_CHECKER)
       }
 
       if ( sim ) {
-        when ( io.start_collision_check ) {
+        when (  io.start_collision_check ) {
           goto(COLLISION_CHECK)
         }
       }
@@ -484,6 +585,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       }
 
       whenIsActive {
+        output_en := True
         when ( playfield.addr_access_eqaul(flow.row ) ) { flow.read_req := True  }
         when ( ! playfield.dma_region.is_busy ) {
           goto(IDLE)
@@ -495,6 +597,8 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
       // Piecee in piece_buffer is copied to checker.region
       whenIsActive {
+        checker.row := 0
+        checker.row_backup := 0
         load_piece := True
         goto(COLLISION_CHECK)
       }
@@ -512,7 +616,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       whenIsActive{
         when ( collision_checker.is_collision.valid ) {
           when ( collision_checker.is_collision.payload ) {
-            goto(COLLISION)
+            goto(REPORT_COLLISION)
           } otherwise {
             goto(PASS)
           }
@@ -521,28 +625,172 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
     }
 
-    val COLLISION : State = new State {
+    val REPORT_COLLISION : State = new State {
       whenIsActive {
         io.status.valid := True
         io.status.payload := True
-        goto(IDLE)
+        when ( action === ACTION.PLACE) {
+          goto(IDLE)   // game over
+        } .otherwise {
+
+          when ( action === ACTION.ROTATE ) {
+            piece_buffer.restore_rot()
+          }
+          goto(END_OF_COLLISION)
+
+        }
       }
     }
 
-    val PASS : State = new State {
+    val END_OF_COLLISION : State = new State {
       whenIsActive {
-        io.status.valid := True
-        io.status.payload := False
-        flow.update := True
-        goto(IDLE)
+
+        when ( action === ACTION.LEFT || action === ACTION.RIGHT) {
+          load_piece := True  // restore origin piece
+        }
+
+        when ( action === ACTION.DOWN ) {
+          checker.restore()
+        }
+
+        when ( action === ACTION.ROTATE ) {
+          load_piece := True  // restore origin piece
+        }
+
+        action := ACTION.NO 
+
+        goto(WAIT_CONTROL)
+
       }
 
+    }
+
+    val PASS : State = new State {
+
+      onEntry {
+        io.status.valid := True
+        io.status.payload := False
+      }
+      whenIsActive {
+        when( action === ACTION.PLACE ) {
+          flow.update := True
+        }
+
+        when ( action === ACTION.LEFT ) {
+          flow.update := True
+          piece_buffer.left_shift_all := True
+        }
+
+        when ( action === ACTION.RIGHT ) {
+          flow.update := True
+          piece_buffer.right_shift_all := True
+        }
+
+        when ( action === ACTION.DOWN ) {
+          checker.row_backup := checker.row
+        }
+
+        when ( action === ACTION.ROTATE  ) {
+          flow.update := True
+          piece_buffer.rot_backup := piece_buffer.rot_cur
+        }
+
+
+
+        goto(WAIT_CONTROL)
+      }
+
+    }
+
+
+    val WAIT_CONTROL = new State {
+
+      whenIsActive {
+
+        if ( sim )  {
+          when ( io.fsm_reset ) {
+            goto(IDLE)
+          }
+
+        }
+        when ( io.move_in.left ) {
+          when(checker.overflowIfLeft) {
+            goto(REPORT_COLLISION)
+          } otherwise {
+            action := ACTION.LEFT
+            checker.left_shift := True
+            goto(PRE_CHECK)
+          }
+        }
+
+        when ( io.move_in.right ) {
+          when(checker.overflowIfRight) {
+            goto(REPORT_COLLISION)
+          } otherwise {
+            action := ACTION.RIGHT
+            checker.right_shift := True
+            goto(PRE_CHECK)
+          }
+        }
+
+        when ( io.move_in.down ) {
+          when ( checker.overflowIfDown ) {
+            goto(REPORT_COLLISION)
+          } otherwise {
+            checker.row := checker.row + 1
+            action := ACTION.DOWN
+            goto(PRE_CHECK)
+          }
+        }
+
+        when ( io.move_in.rotate ) {
+          piece_buffer.rot_cur  := piece_buffer.rot_cur + 1
+          goto(ROTATION)
+        }
+
+        when ( io.lock ) {
+          goto(LOCK)
+        }
+
+      }
+    }
+
+    val ROTATION = new State {
+      whenIsActive {
+        when ( piece_buffer.pieces(piece_buffer.rot_cur).overflow ) {
+          goto(REPORT_COLLISION)
+        } otherwise {
+          load_piece := True
+          goto(PRE_CHECK)
+        }
+      }
+
+    }
+
+    val PRE_CHECK = new State {
+      whenIsActive {
+        goto(COLLISION_CHECK)
+      }
+    }
+
+    val LOCK = new State {
+      onEntry{
+        playfield.load_read_req( valid =  True, word_count = 4, addr_base = flow.row )
+      }
+
+      whenIsActive {
+        lock_en := True
+
+
+      }
     }
 
 
   }
 
   checker.setup_logic(flow.region)
+
+  io.motion_is_allowed := main_fsm.isActive(main_fsm.WAIT_CONTROL)
 }
 
 object playfieldMain{

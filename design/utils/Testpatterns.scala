@@ -67,6 +67,24 @@ object TestPatterns {
     }
   }
 
+
+
+  case class TestMotionPatternGroup(
+      p0: BitPatternGenerators.Pattern,
+      p1: PiecePatternGenerators.Pattern,
+      p2: Seq[MotionPatternGenerators.Pattern],
+      description: String = ""
+  ) {
+    def getMotionsDescription: String = p2.map {
+      case MotionPatternGenerators.Left(step) => s"← ${step}"
+      case MotionPatternGenerators.Right(step) => s"→ ${step}"
+      case MotionPatternGenerators.Rotate(step) => s"↓ ${step}"
+      case MotionPatternGenerators.Down(step) => s"↺ ${step}"
+      case MotionPatternGenerators.Drop => s"↓↓↓"
+      case MotionPatternGenerators.Random => s"Randomized motions"
+    }.mkString(", ")
+  }
+
   object ReadoutScenarios {
 
     // ----------- Test patterns -----------------
@@ -432,17 +450,63 @@ object TestPatterns {
           p0 = playfieldPattern,
           p1 = pattern,
           count = count,
-          "Verify place new Piece at beginning of game where playfield is empty"
+          "Verify place several new Pieces at beginning of game where playfield with specific-pattern"
         )
 
       }
 
     }
 
+    def single( piecePattern : Pattern , playfieldPattern : BitPatternGenerators.Pattern, count : Int = 1  ) : Seq[TestPiecePatternPair] = {
+      Seq (
+        TestPiecePatternPair(
+          p0 = playfieldPattern,
+          p1 = piecePattern,
+          count = count,
+          "Verify place new Piece at beginning of game where playfield with specific-pattern"
+        )
+      )
+    }
+
+
 
   }
 
+  object MotionScenarios {
 
+    import MotionPatternGenerators._
+
+    def generatePattern(p: String, step: Int = 0): Pattern = {
+
+      p match {
+        case "left" => Left(step)
+        case "right" => Right(step)
+        case "rotate" => Rotate(step)
+        case "down" => Down(step)
+        case "drop" => Drop
+        case "Random" => Random
+      }
+    }
+
+    def uc1( piecePattern : PiecePatternGenerators.Pattern, playfieldHold : Boolean = false )  : TestMotionPatternGroup = {
+      TestMotionPatternGroup(
+        p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.AllZeros,
+        p1 = piecePattern,
+        p2 = List(
+          Left(3),
+          Right(6),
+          Rotate(2),
+          Left(3),
+          Down(2),
+          Rotate(3),
+          Drop
+        ),
+        description = "Usecase 1"
+      )
+
+    }
+
+  }
 
   /**
    * Predefined test scenarios
@@ -478,4 +542,5 @@ object TestPatterns {
     // Custom builder
     def custom(actions: TestPatternSingle*): Seq[TestPatternSingle] = actions.toSeq
   }
-}
+
+} // TestPatterns end
