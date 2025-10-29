@@ -33,7 +33,7 @@ case  class flow_region_Data  (rowBitsWidth : Int, colBlocksNum : Int ) extends 
 
 
 
-class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Component {
+class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends Component {
   import config._
 
   val io = new Bundle {
@@ -57,6 +57,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
     val checker_backdoor  = if (sim)  flow_region_Data(rowBitsWidth, colBlocksNum)  else null
     val start_collision_check  = if (sim)  in Bool()  else null
     val fsm_reset = if (sim)  in Bool()  else null
+    val fsm_contrl = if (sim)  in Bool()  else null
 
   }
 
@@ -124,7 +125,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       var right_overflow = False
       for ( j <- 0 until 4 ) {
          left_overflow = left_overflow | region_extra(j)( colBlocksNum+2, 2 bit  ).orR
-         right_overflow = right_overflow | region_extra(j)( 1, 2 bit  ).orR
+         right_overflow = right_overflow | region_extra(j)( 0, 2 bit  ).orR
       }
 
       val overflow = left_overflow | right_overflow
@@ -514,10 +515,12 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
   //-----------------------------------------------------------------------
 
   val output_en = False allowOverride()
-  val lock_en = False allowOverride()
+
   val row_merged = playfield.read_out_port.payload | flow.read_out_port.payload
 
   val locker = new Area {
+
+    val freeze = False allowOverride()
 
     val addr_access_port = Flow( UInt(2 bits ) )
 
@@ -525,9 +528,13 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
     region.addAttribute("ram_style", "distributed")
 
+    val region_access_port = playfield.lock_addr_access_port.m2sPipe
+
+    val end_of_access  = playfield.lock_addr_access_port.valid.fall(False)
+
     region.write(
-      enable = flow.addr_access_port.valid && lock_en,
-      address = flow.addr_access_port.payload,
+      enable = region_access_port.valid && freeze,
+      address = region_access_port.payload,
       data = row_merged
     )
 
@@ -562,8 +569,11 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
     val IDLE = makeInstantEntry()
     IDLE.whenIsActive {
 
-      when(io.read) {
-        goto(READOUT)
+      if ( sim ) {
+        when ( io.fsm_contrl ) {
+          goto(WAIT_CONTROL )
+        }
+
       }
 
       when(piece.valid) {
@@ -588,7 +598,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
         output_en := True
         when ( playfield.addr_access_eqaul(flow.row ) ) { flow.read_req := True  }
         when ( ! playfield.dma_region.is_busy ) {
-          goto(IDLE)
+          goto(WAIT_CONTROL)
         }
       }
     }
@@ -687,6 +697,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
         }
 
         when ( action === ACTION.DOWN ) {
+          flow.update := True
           checker.row_backup := checker.row
         }
 
@@ -705,6 +716,9 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
 
     val WAIT_CONTROL = new State {
 
+
+
+
       whenIsActive {
 
         if ( sim )  {
@@ -713,6 +727,11 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
           }
 
         }
+
+        when(io.read) {
+          goto(READOUT)
+        }
+
         when ( io.move_in.left ) {
           when(checker.overflowIfLeft) {
             goto(REPORT_COLLISION)
@@ -749,7 +768,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
         }
 
         when ( io.lock ) {
-          goto(LOCK)
+          goto(LOCKER_WRITE)
         }
 
       }
@@ -761,6 +780,7 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
           goto(REPORT_COLLISION)
         } otherwise {
           load_piece := True
+          action := ACTION.ROTATE
           goto(PRE_CHECK)
         }
       }
@@ -773,15 +793,30 @@ class playfield(config : PlayfieldConfig, sim : Boolean = false )  extends Compo
       }
     }
 
-    val LOCK = new State {
+    val LOCKER_WRITE = new State {
       onEntry{
         playfield.load_read_req( valid =  True, word_count = 4, addr_base = flow.row )
       }
 
       whenIsActive {
-        lock_en := True
+        locker.freeze := True
+        when ( locker.end_of_access ) {
+          goto( LOCKER_READ )
+        }
+      }
+    }
 
 
+    val LOCKER_READ = new State {
+      onEntry{
+        playfield.load_write_req( valid =  True, word_count = 4, addr_base = flow.row )
+      }
+
+      whenIsActive {
+        playfield.freeze := True
+        when ( locker.end_of_access ) {
+          goto(IDLE)
+        }
       }
     }
 

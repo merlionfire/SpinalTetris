@@ -132,8 +132,8 @@ trait PlayFieldTestHelper {
   }
 
   def readWholePlayfield(dut: playfield) = {
+    dut.clockDomain.waitSamplingWhere(dut.io.motion_is_allowed.toBoolean)
     println(s"[INFO] @${simTime()} Start to front-door read whole playfield .......")
-    dut.clockDomain.waitSampling()
     dut.io.read #= true
     dut.clockDomain.waitSampling()
     dut.io.read #= false
@@ -219,6 +219,13 @@ trait PlayFieldTestHelper {
       println(f"\t\t\t${i + 1}\t: ${action.p0}%12s\tx\t${action.p1}%12s\t\t\t${action.count}")
     }
     println(s"\n${"=" * 120}")
+
+
+    dut.clockDomain.waitSampling()
+    dut.io.fsm_contrl #= true
+    dut.clockDomain.waitSampling()
+    dut.io.fsm_contrl #= false
+
 
     // transverse to execute test patterns
     for (action <- actions) {
@@ -486,11 +493,11 @@ trait PlayFieldTestHelper {
           action.p0
         )
 
-        val ref = playfieldData.slice(row, row + 4).padTo(4, Int.MaxValue & ((1 << colBlocksNum) - 1))
+        val ref = playfieldData.slice(row, row + 4).padTo(4, Int.MaxValue & ((1 << dut.config.colBlocksNum) - 1))
 
         issuePlacePiece(dut,  pieceType )
         dut.clockDomain.waitSamplingWhere(dut.io.status.valid.toBoolean) // Wait collision result
-        val placePieceData = binaryTypeOffsetTable(pieceType)(0) map ( _ << ( (colBlocksNum / 2 )  - 2 ) )
+        val placePieceData = binaryTypeOffsetTable(pieceType)(0) map ( _ << ( (dut.config.colBlocksNum / 2 )  - 2 ) )
         placePieceData.zipWithIndex.foreach { case (data, i) =>
           println(s"[INFO] place row[$i] \t=\t0b${String.format("%10s", Integer.toBinaryString(data)).replace(' ', '0')} ")
         }
@@ -502,7 +509,7 @@ trait PlayFieldTestHelper {
             PlaceTetromino(
               x_start = x_start, y_start = y_start,
               sizeInPixel = blocSize,
-              width = colBlocksNum,
+              width = dut.config.colBlocksNum,
               allBlocks = placePieceData
             ),
             TextLabel(
@@ -520,7 +527,7 @@ trait PlayFieldTestHelper {
           PlaceTetromino(
             x_start =  x_start, y_start =  y_start,
             sizeInPixel = blocSize,
-            width = colBlocksNum,
+            width = dut.config.colBlocksNum,
             allBlocks = playfieldData.map(reverseLow10Bits).take(4),
             blockColor = new Color(100,120, 120 )
           ),
@@ -544,14 +551,14 @@ trait PlayFieldTestHelper {
 
         if (!allMatch) {
           ImageGenerator.fromGridLayout(totalWidth = 400,  totalHeight = (action.count + 3 ) * ( y_step + 1 ) , playfieldDrawTasks )
-            .buildAndSave( PathUtils.getRtlOutputPath(getClass, targetName = "sim").toString + s"/PlaceImg_${action.p0}x${action.p1}.png" )
+            .buildAndSave( PathUtils.getRtlOutputPath(getClass, targetName = "sim/img").toString + s"/PlaceImg_${actionIndex}_${action.p0}x${action.p1}.png" )
           simFailure("Scoreboard Reports Error ")
         }
         scbd.clear()
       }
 
       ImageGenerator.fromGridLayout(totalWidth = 400,  totalHeight = (action.count + 3 ) * ( y_step + 1 )  , playfieldDrawTasks )
-        .buildAndSave( PathUtils.getRtlOutputPath(getClass, targetName = "sim").toString + s"/PlaceImg_${action.p0}x${action.p1}.png" )
+        .buildAndSave( PathUtils.getRtlOutputPath(getClass, targetName = "sim/img").toString + s"/PlaceImg_${actionIndex}_${action.p0}x${action.p1}.png" )
 
       playfieldDrawTasks.clear()
 
@@ -573,6 +580,8 @@ trait PlayFieldTestHelper {
 
     val playfieldDrawTasks =  mutable.Queue[GridItem] ()
 
+    val motionsQueue = mutable.Queue[String]()
+
     /**
      * Overlays sequence `b` onto sequence `a` using a bitwise OR operation.
      *
@@ -581,6 +590,7 @@ trait PlayFieldTestHelper {
      * @param row The starting index in `a` where the operation begins.
      * @return A new sequence with the result of the OR operation.
      */
+
     def model(a: Seq[Int], b: Seq[Int], row: Int): Int = {
 
 
@@ -688,7 +698,8 @@ trait PlayFieldTestHelper {
         case None => simFailure("[ERROR] No Piece is created !!!");
       }
       issuePlacePiece(dut,  pieceType )
-
+      motionsQueue.enqueue("PL")
+      readWholePlayfield(dut)
 
       // Step 3 : Traver all motions pattern
       val motions = action.p2.flatMap {
@@ -722,6 +733,7 @@ trait PlayFieldTestHelper {
       // Traver all motion actions of current Piece until "Down" action failed.
       motions.forall { motion =>
         val status = issueMotion(motion)   /* 1 : collision, 0 : OK */
+        motionsQueue.enqueue(motion)
         readWholePlayfield(dut)
         if ( status && motion == "DN ") {
           false
@@ -732,6 +744,55 @@ trait PlayFieldTestHelper {
 
       println(s"[INFO] @${simTime()} Down action fails due to touch bottom or below Block. Finish current Piece by locking it")
 
+      dut.clockDomain.waitSamplingWhere(dut.io.motion_is_allowed.toBoolean)
+      var x_start = 100
+      var y_start = 100
+      // transverse to execute test patterns
+
+      val blocSize = 20
+
+      val y_step  = ( dut.config.rowBlocksNum + 2  ) * blocSize
+      val x_step  = ( dut.config.colBlocksNum + 4  ) * blocSize
+
+      val x_count = 5
+      val y_count = 8
+
+      val originPoint =  { for {
+          y <- 0 until y_count
+          x <- 0 until x_count
+        } yield (x_start + x * x_step, y_start + y * y_step) } .toList
+
+
+
+      for ( (frame, i )  <- scbd.actualData.grouped(dut.config.rowBlocksNum ).zipWithIndex ) {
+
+        playfieldDrawTasks.enqueue(
+          PlaceTetromino(
+            x_start = originPoint(i)._1,
+            y_start = originPoint(i)._2,
+            sizeInPixel = blocSize,
+            width = dut.config.colBlocksNum,
+            allBlocks = frame.map(reverseLow10Bits),
+            blockColor = new Color(100, 120, 120)
+          ),
+          TextLabel(
+            x = originPoint(i)._1 - 50,
+            y = originPoint(i)._2 + 50,
+            text = motionsQueue.dequeue(),
+            color = Color.BLACK
+          )
+        )
+
+        y_start += y_step
+      }
+
+      ImageGenerator.fromGridLayout(
+          totalWidth  = originPoint.map(_._1).max + x_step ,
+          totalHeight = originPoint.map(_._2).max + y_step ,
+          gridData    = playfieldDrawTasks
+        ).buildAndSave(
+            PathUtils.getRtlOutputPath(getClass, targetName = "sim/img").toString + s"/Motions_${actionIndex}_${action.p0}x${action.p1}.png"
+        )
 
     }
 
@@ -841,7 +902,6 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
       simSuccess()
     }
   }
-
 
   test("usecase 2 - Check collision checker functionality with playfield region and checker region via backdoor") {
     compiled.doSimUntilVoid(seed = 42) { dut =>
@@ -962,10 +1022,8 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
     }
   }
 
-
   test("usecase 4 - Check Place -> Collision Check -> left/right/down -> bottom  via interface ") {
     compiled.doSimUntilVoid(seed = 42) { dut =>
-
 
         val predefMotionsTestPattern = List(
           1 -> MotionScenarios.uc1( PiecePatternGenerators.I(0) ) ,
