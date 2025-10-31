@@ -506,6 +506,99 @@ object TestPatterns {
 
     }
 
+    def uc2( piecePattern : PiecePatternGenerators.Pattern, playfieldHold : Boolean = false )  : TestMotionPatternGroup = {
+      TestMotionPatternGroup(
+        p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.AllZeros,
+        p1 = piecePattern,
+        p2 = List(
+          Down(2),
+          Rotate(3),
+          Right(6),
+          Left(3),
+          Rotate(1),
+          Right(6),
+          Rotate(2),
+          Down(2),
+          Left(3),
+          Drop
+        ),
+        description = "Usecase 2"
+      )
+
+    }
+
+    def uc3( piecePattern : PiecePatternGenerators.Pattern, playfieldHold : Boolean = false )  : TestMotionPatternGroup = {
+      TestMotionPatternGroup(
+        p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.AllZeros,
+        p1 = piecePattern,
+        p2 = List(
+          Rotate(1),
+          Down(2),
+          Left(6),
+          Down(3),
+          Rotate(4),
+          Right(2),
+          Rotate(2),
+          Down(2),
+          Drop
+        ),
+        description = "Usecase 3"
+      )
+
+    }
+
+    def uc4( piecePattern : PiecePatternGenerators.Pattern, playfieldHold : Boolean = false )  : TestMotionPatternGroup = {
+      TestMotionPatternGroup(
+        p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.AllZeros,
+        p1 = piecePattern,
+        p2 = List(
+          Rotate(5),
+          Left(2),
+          Rotate(1),
+          Down(3),
+          Left(1),
+          Rotate(2),
+          Right(1),
+          Rotate(3),
+          Down(2),
+          Rotate(4),
+          Drop
+        ),
+        description = "Usecase 4"
+      )
+
+    }
+
+    def uc5( piecePattern : PiecePatternGenerators.Pattern, playfieldHold : Boolean = false )  : TestMotionPatternGroup = {
+      TestMotionPatternGroup(
+        p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.AllZeros,
+        p1 = piecePattern,
+        p2 = List(
+          Drop
+        ),
+        description = "Usecase 5"
+      )
+
+    }
+
+    def uc6( piecePattern : PiecePatternGenerators.Pattern, playfieldHold : Boolean = false )  : TestMotionPatternGroup = {
+      TestMotionPatternGroup(
+        p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.AllZeros,
+        p1 = piecePattern,
+        p2 = List(
+          Left(5),
+          Rotate(3),
+          Right(8),
+          Rotate(3),
+          Left(4),
+          Drop
+        ),
+        description = "Usecase 6"
+      )
+
+    }
+
+
   }
 
   /**

@@ -33,6 +33,12 @@ trait PlayFieldTestHelper {
     dut.io.playfield_backdoor.valid #= false
     dut.io.fsm_reset #= false
     dut.io.read #= false
+    dut.io.move_in.down #= false
+    dut.io.move_in.left #= false
+    dut.io.move_in.right #= false
+    dut.io.move_in.rotate #= false
+    dut.io.lock #= false
+
     dut.io.piece_in.valid #= false
     dut.io.piece_in.payload.randomize()
     dut.io.start_collision_check #= false
@@ -151,12 +157,19 @@ trait PlayFieldTestHelper {
   }
 
   def issuePlacePiece(dut : playfield, pieceType :  SpinalEnumElement[config.TYPE.type]  ) = {
-    dut.clockDomain.waitSampling(1)
+    dut.clockDomain.waitSamplingWhere( dut.io.fsm_is_idle.toBoolean )
     dut.io.piece_in.valid #= true
     dut.io.piece_in.payload #= pieceType
     dut.clockDomain.waitSampling()
     dut.io.piece_in.valid #= false
     dut.io.piece_in.payload.randomize()
+  }
+
+  def lockPiece(dut : playfield) = {
+    dut.clockDomain.waitSamplingWhere(dut.io.motion_is_allowed.toBoolean)
+    dut.io.lock #= true
+    dut.clockDomain.waitSampling()
+    dut.io.lock #= false
   }
 
 
@@ -720,12 +733,14 @@ trait PlayFieldTestHelper {
           case "RT" => dut.io.move_in.rotate #= true
           case "DN" => dut.io.move_in.down   #= true
         }
-        dut.clockDomain.waitSampling()
-        dut.io.move_in.left   #= false
-        dut.io.move_in.right  #= false
-        dut.io.move_in.rotate #= false
-        dut.io.move_in.down   #= false
 
+        fork {
+          dut.clockDomain.waitSampling()
+          dut.io.move_in.left   #= false
+          dut.io.move_in.right  #= false
+          dut.io.move_in.rotate #= false
+          dut.io.move_in.down   #= false
+        }
         dut.clockDomain.waitSamplingWhere(dut.io.status.valid.toBoolean)
         dut.io.status.payload.toBoolean
       }
@@ -735,7 +750,7 @@ trait PlayFieldTestHelper {
         val status = issueMotion(motion)   /* 1 : collision, 0 : OK */
         motionsQueue.enqueue(motion)
         readWholePlayfield(dut)
-        if ( status && motion == "DN ") {
+        if ( status && ( motion == "DN" ) ) {
           false
         } else {
           true
@@ -744,8 +759,9 @@ trait PlayFieldTestHelper {
 
       println(s"[INFO] @${simTime()} Down action fails due to touch bottom or below Block. Finish current Piece by locking it")
 
-      dut.clockDomain.waitSamplingWhere(dut.io.motion_is_allowed.toBoolean)
-      var x_start = 100
+      lockPiece(dut)
+
+      val x_start = 100
       var y_start = 100
       // transverse to execute test patterns
 
@@ -793,6 +809,10 @@ trait PlayFieldTestHelper {
         ).buildAndSave(
             PathUtils.getRtlOutputPath(getClass, targetName = "sim/img").toString + s"/Motions_${actionIndex}_${action.p0}x${action.p1}.png"
         )
+
+      playfieldDrawTasks.clear()
+      motionsQueue.clear()
+      scbd.clear()
 
     }
 
@@ -1028,11 +1048,11 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
         val predefMotionsTestPattern = List(
           1 -> MotionScenarios.uc1( PiecePatternGenerators.I(0) ) ,
           1 -> MotionScenarios.uc1( PiecePatternGenerators.J(0), playfieldHold = true  ) ,
-          0 -> MotionScenarios.uc1( PiecePatternGenerators.L(0), playfieldHold = true ) ,
-          0 -> MotionScenarios.uc1( PiecePatternGenerators.O(0), playfieldHold = true ) ,
-          0 -> MotionScenarios.uc1( PiecePatternGenerators.S(0) ) ,
-          0 -> MotionScenarios.uc1( PiecePatternGenerators.T(0) ) ,
-          0 -> MotionScenarios.uc1( PiecePatternGenerators.Z(0) )
+          1 -> MotionScenarios.uc2( PiecePatternGenerators.L(0), playfieldHold = true ) ,
+          1 -> MotionScenarios.uc3( PiecePatternGenerators.O(0), playfieldHold = true ) ,
+          1 -> MotionScenarios.uc4( PiecePatternGenerators.S(0), playfieldHold = true ) ,
+          1 -> MotionScenarios.uc5( PiecePatternGenerators.T(0), playfieldHold = true ) ,
+          1 -> MotionScenarios.uc6( PiecePatternGenerators.Z(0), playfieldHold = true )
         )
 
 
@@ -1050,7 +1070,7 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
 
       // Global Clocking settings
       dut.clockDomain.forkStimulus(10)
-      SimTimeout(1 ms ) // adjust timeout as needed
+      SimTimeout(10 us ) // adjust timeout as needed
       dut.clockDomain.waitSampling(20)
 
       initDUT(dut)

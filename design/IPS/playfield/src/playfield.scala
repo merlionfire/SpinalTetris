@@ -53,6 +53,7 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     val row_val = master Flow (Bits(colBlocksNum bits))
     val playfield_backdoor = if (sim) slave Flow (Playfield_Row_Data(rowBitsWidth, colBlocksNum)) else null
     val motion_is_allowed = out Bool()
+    val fsm_is_idle = out Bool()
     val flow_backdoor     = if (sim)  flow_region_Data(rowBitsWidth, colBlocksNum)  else null
     val checker_backdoor  = if (sim)  flow_region_Data(rowBitsWidth, colBlocksNum)  else null
     val start_collision_check  = if (sim)  in Bool()  else null
@@ -404,8 +405,10 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
         //*****************************************************
         //              Write
         //*****************************************************
-        when(row_sel(i) & freeze ) {
-          region(i) := write_in
+        when ( freeze && addr_access_port.valid ) {
+          when(row_sel(i) ) {
+            region(i) := write_in
+          }
         }
       }
     }
@@ -538,8 +541,8 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
       data = row_merged
     )
 
-    playfield.write_in := region.readSync(
-      enable  = playfield.lock_addr_access_port.valid,
+    playfield.write_in := region.readAsync(
+      //enable  = playfield.lock_addr_access_port.valid,
       address = playfield.lock_addr_access_port.payload
     )
 
@@ -607,8 +610,6 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
 
       // Piecee in piece_buffer is copied to checker.region
       whenIsActive {
-        checker.row := 0
-        checker.row_backup := 0
         load_piece := True
         goto(COLLISION_CHECK)
       }
@@ -800,6 +801,7 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
 
       whenIsActive {
         locker.freeze := True
+        flow.read_req := locker.freeze.rise(False)
         when ( locker.end_of_access ) {
           goto( LOCKER_READ )
         }
@@ -810,13 +812,25 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     val LOCKER_READ = new State {
       onEntry{
         playfield.load_write_req( valid =  True, word_count = 4, addr_base = flow.row )
+        playfield.freeze := True
       }
 
       whenIsActive {
         playfield.freeze := True
         when ( locker.end_of_access ) {
-          goto(IDLE)
+          goto(CLEAR_REGION)
         }
+      }
+    }
+
+    val CLEAR_REGION = new State {
+
+      whenIsActive {
+        flow.region.clearAll()
+        flow.row  := 0
+        checker.row := 0
+        checker.row_backup := 0
+        goto(IDLE)
       }
     }
 
@@ -826,6 +840,7 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
   checker.setup_logic(flow.region)
 
   io.motion_is_allowed := main_fsm.isActive(main_fsm.WAIT_CONTROL)
+  io.fsm_is_idle       := main_fsm.isActive(main_fsm.IDLE )
 }
 
 object playfieldMain{
