@@ -121,7 +121,8 @@ object BitPatternGenerators {
   case object NoCollision extends Pattern
   case class FixCollisionOnes( count : Int ) extends Pattern
   case object Hold extends Pattern
-
+  case object Custom extends Pattern  // New pattern
+  //case class Composite(segments: Seq[(Int, Pattern)]) extends Pattern
 
   /**
    * Selects a generator based on the specified pattern.
@@ -137,7 +138,8 @@ object BitPatternGenerators {
     case Random             => hexWithBits(m)
     case NoCollision        => noCollisionBits(m,ref)
     case FixCollisionOnes(count) => fixedCollisionOnes(m, ref, count)
-
+    case Custom             => Gen.const(ref)
+    //case class Composite(segments: Seq[(Int, Pattern)])
   }
 
   /**
@@ -148,8 +150,14 @@ object BitPatternGenerators {
    * @return A Gen that produces a sequence of integers.
    */
   def generateSequence(n: Int, m: Int, pattern: Pattern, ref : Seq[Int] = null ): Gen[Seq[Int]] = {
+
+    // Custom pattern validation
+    if (pattern == Custom) {
+      require(ref != null, "Custom pattern requires a non-null reference sequence")
+    }
+
     if (ref == null) {
-     Gen.listOfN(n, generatePattern(m, pattern))
+      Gen.listOfN(n, generatePattern(m, pattern))
     } else {
 
       // 1. Validation Check: Ensure the requested length 'n' matches the reference sequence length.

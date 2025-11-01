@@ -12,6 +12,7 @@ import utils.ImageGenerator.{GridItem, PlaceTetromino, TextLabel}
 import utils.TestPatterns._
 import utils._
 
+import scala.util.control.Breaks._
 import scala.collection.mutable
 import scala.util.Random
 import scala.collection.mutable.ArrayBuffer
@@ -103,9 +104,9 @@ trait PlayFieldTestHelper {
   }
 
 
-  def backdoorWritePlayfieldWithPattern(dut: playfield, length: Int, width: Int, pattern: BitPatternGenerators.Pattern) = {
+  def backdoorWritePlayfieldWithPattern(dut: playfield, length: Int, width: Int, pattern: BitPatternGenerators.Pattern, ref : Seq[Int] = null ) = {
 
-    BitPatternGenerators.generateSequence(length, width, pattern).sample match {
+    BitPatternGenerators.generateSequence(length, width, pattern, ref ).sample match {
       case Some(seq) =>
         backdoorWriteWholePlayfield(dut, seq)
         seq
@@ -681,138 +682,182 @@ trait PlayFieldTestHelper {
 
 
     // Main Body
-    for (
-      ( round,  roundIndex  )  <- actionsByRound.zipWithIndex  ;  /* One round means one game round */
-      ( action, actionIndex )  <- round.zipWithIndex    /* Each round contains all piece operation called action from placing to be locked */
-    ) {
-      if (verbose) {
-        println(s"\n${"=" * 100}\n")
-        println(s"\t\tExecuting Test Round  ${roundIndex + 1}/${actionsByRound.size}")
-        println(s"\t\tExecuting Test action ${actionIndex + 1}/${round.size}")
-        println(s"\t\tPurpose\t: ${action.description}")
-        println(s"\t\tPattern\t: ${action.p0} : ${action.p1} ${action.getMotionsDescription} ")
-        println(s"\n${"=" * 100}")
-      }
+    for ( ( round,  roundIndex  )  <- actionsByRound.zipWithIndex  ) { /* One round means one game round */
 
-      // Step 1 - Preload playfield in terms of pattern
-      if ( action.p0 != BitPatternGenerators.Hold  ) {
-        // Generate and write pattern
-        val playfieldData = backdoorWritePlayfieldWithPattern(
-          dut,
-          length,
-          width,
-          action.p0
-        )
-      }
-
-      // Step 2 : Generate and Place piece
-      val (pieceType, rot  ) = PiecePatternGenerators.generatePiecePattern(action.p1).sample match {
-        case Some ( (pieceType, rot  ) ) =>  (pieceType, rot  )
-        case None => simFailure("[ERROR] No Piece is created !!!");
-      }
-      issuePlacePiece(dut,  pieceType )
-      motionsQueue.enqueue("PL")
-      readWholePlayfield(dut)
-
-      // Step 3 : Traver all motions pattern
-      val motions = action.p2.flatMap {
-        case MotionPatternGenerators.Left(step)   =>  List.fill(step)("LF")
-        case MotionPatternGenerators.Right(step)  =>  List.fill(step)("RG")
-        case MotionPatternGenerators.Rotate(step) =>  List.fill(step)("RT")
-        case MotionPatternGenerators.Down(step)   =>  List.fill(step)("DN")
-        case MotionPatternGenerators.Drop         =>  List.fill(20)("DN")
-      }
-
-      def issueMotion( motion : String ): Boolean = {
-        dut.clockDomain.waitSamplingWhere(dut.io.motion_is_allowed.toBoolean)
-        println(s"[INFO] @${simTime()} Issue [${motion}] to playfield via interface")
-
-        motion match {
-          case "LF" => dut.io.move_in.left   #= true
-          case "RG" => dut.io.move_in.right  #= true
-          case "RT" => dut.io.move_in.rotate #= true
-          case "DN" => dut.io.move_in.down   #= true
-        }
-
-        fork {
-          dut.clockDomain.waitSampling()
-          dut.io.move_in.left   #= false
-          dut.io.move_in.right  #= false
-          dut.io.move_in.rotate #= false
-          dut.io.move_in.down   #= false
-        }
-        dut.clockDomain.waitSamplingWhere(dut.io.status.valid.toBoolean)
-        dut.io.status.payload.toBoolean
-      }
-
-      // Traver all motion actions of current Piece until "Down" action failed.
-      motions.forall { motion =>
-        val status = issueMotion(motion)   /* 1 : collision, 0 : OK */
-        motionsQueue.enqueue(motion)
-        readWholePlayfield(dut)
-        if ( status && ( motion == "DN" ) ) {
-          false
-        } else {
-          true
-        }
-      }
-
-      println(s"[INFO] @${simTime()} Down action fails due to touch bottom or below Block. Finish current Piece by locking it")
-
-      lockPiece(dut)
-
-      val x_start = 100
-      var y_start = 100
-      // transverse to execute test patterns
-
-      val blocSize = 20
-
-      val y_step  = ( dut.config.rowBlocksNum + 2  ) * blocSize
-      val x_step  = ( dut.config.colBlocksNum + 4  ) * blocSize
-
-      val x_count = 5
-      val y_count = 8
-
-      val originPoint =  { for {
-          y <- 0 until y_count
-          x <- 0 until x_count
-        } yield (x_start + x * x_step, y_start + y * y_step) } .toList
+      var exitInfo : String = "PASS"
+      val playfieldPattern = round.head.p0
+      breakable {
+        for ((action, actionIndex) <- round.zipWithIndex) {
 
 
+          /* Each round contains all piece operation called action from placing to be locked */
+          if (verbose) {
+            println(s"\n${"=" * 100}\n")
+            println(s"\t\tExecuting Test Round  ${roundIndex + 1}/${actionsByRound.size}")
+            println(s"\t\tExecuting Test action ${actionIndex + 1}/${round.size}")
+            println(s"\t\tPurpose\t: ${action.description}")
+            //println(s"\t\tPattern\t: ${action.p0} : ${action.p1} ${action.getMotionsDescription} ")
+            println(s"\t\tPattern\t: ${playfieldPattern} : ${action.p1} ${action.getMotionsDescription} ")
+            println(s"\n${"=" * 100}")
+          }
 
-      for ( (frame, i )  <- scbd.actualData.grouped(dut.config.rowBlocksNum ).zipWithIndex ) {
+          // Step 1 - Preload playfield in terms of pattern
+          if (action.p0 != BitPatternGenerators.Hold) {
 
-        playfieldDrawTasks.enqueue(
-          PlaceTetromino(
-            x_start = originPoint(i)._1,
-            y_start = originPoint(i)._2,
-            sizeInPixel = blocSize,
-            width = dut.config.colBlocksNum,
-            allBlocks = frame.map(reverseLow10Bits),
-            blockColor = new Color(100, 120, 120)
-          ),
-          TextLabel(
-            x = originPoint(i)._1 - 50,
-            y = originPoint(i)._2 + 50,
-            text = motionsQueue.dequeue(),
-            color = Color.BLACK
+            val preloadPlayfield : Seq[Int] = {
+              import scala.util.Random
+
+              val zeros = Seq.fill(6)(0) // First 6 items: all zeros
+
+              val random8Ones = Seq.fill(14) {
+                // Generate all positions from 0 to 9, shuffle, take first 8, set those bits
+                val positions = Random.shuffle(0 to 9).take(9)
+                positions.foldLeft(0) { (acc, pos) => acc | (1 << pos) }
+              }
+              zeros ++ random8Ones
+            }
+
+            // Generate and write pattern
+            val playfieldData = backdoorWritePlayfieldWithPattern(
+              dut,
+              length,
+              width,
+              action.p0,
+              ref = if ( action.p0 == BitPatternGenerators.Custom ) preloadPlayfield else null
+            )
+          }
+
+          // Step 2 : Generate and Place piece
+          val (pieceType, rot) = PiecePatternGenerators.generatePiecePattern(action.p1).sample match {
+            case Some((pieceType, rot)) => (pieceType, rot)
+            case None => simFailure("[ERROR] No Piece is created !!!");
+          }
+          issuePlacePiece(dut, pieceType)
+
+          // check if game over
+          dut.clockDomain.waitSamplingWhere(dut.io.status.valid.toBoolean)
+          if ( dut.io.status.payload.toBoolean ) {
+            exitInfo = "FAIL"
+            break
+          }
+
+          motionsQueue.enqueue("PL")
+          readWholePlayfield(dut)
+
+          // Step 3 : Traver all motions pattern
+          val motions = action.p2.flatMap {
+            case MotionPatternGenerators.Left(step) => List.fill(step)("LF")
+            case MotionPatternGenerators.Right(step) => List.fill(step)("RG")
+            case MotionPatternGenerators.Rotate(step) => List.fill(step)("RT")
+            case MotionPatternGenerators.Down(step) => List.fill(step)("DN")
+            case MotionPatternGenerators.Drop => List.fill(20)("DN")
+          }
+
+          def issueMotion(motion: String): Boolean = {
+            dut.clockDomain.waitSamplingWhere(dut.io.motion_is_allowed.toBoolean)
+            println(s"[INFO] @${simTime()} Issue [${motion}] to playfield via interface")
+
+            motion match {
+              case "LF" => dut.io.move_in.left #= true
+              case "RG" => dut.io.move_in.right #= true
+              case "RT" => dut.io.move_in.rotate #= true
+              case "DN" => dut.io.move_in.down #= true
+            }
+
+            fork {
+              dut.clockDomain.waitSampling()
+              dut.io.move_in.left #= false
+              dut.io.move_in.right #= false
+              dut.io.move_in.rotate #= false
+              dut.io.move_in.down #= false
+            }
+            dut.clockDomain.waitSamplingWhere(dut.io.status.valid.toBoolean)
+            dut.io.status.payload.toBoolean
+          }
+
+          // Traver all motion actions of current Piece until "Down" action failed.
+          motions.forall { motion =>
+            val status = issueMotion(motion) /* 1 : collision, 0 : OK */
+            motionsQueue.enqueue(motion)
+            readWholePlayfield(dut)
+            if (status && (motion == "DN")) {
+              false
+            } else {
+              true
+            }
+          }
+
+          println(s"[INFO] @${simTime()} Down action fails due to touch bottom or below Block. Finish current Piece by locking it")
+
+          lockPiece(dut)
+
+          val x_start = 100
+          var y_start = 100
+          // transverse to execute test patterns
+
+          val blocSize = 20
+
+          val y_step = (dut.config.rowBlocksNum + 2) * blocSize
+          val x_step = (dut.config.colBlocksNum + 4) * blocSize
+
+          val x_count = 5
+          val y_count = 8
+
+          val originPoint = {
+            for {
+              y <- 0 until y_count
+              x <- 0 until x_count
+            } yield (x_start + x * x_step, y_start + y * y_step)
+          }.toList
+
+
+          for ((frame, i) <- scbd.actualData.grouped(dut.config.rowBlocksNum).zipWithIndex) {
+
+            playfieldDrawTasks.enqueue(
+              PlaceTetromino(
+                x_start = originPoint(i)._1,
+                y_start = originPoint(i)._2,
+                sizeInPixel = blocSize,
+                width = dut.config.colBlocksNum,
+                allBlocks = frame.map(reverseLow10Bits),
+                blockColor = new Color(100, 120, 120)
+              ),
+              TextLabel(
+                x = originPoint(i)._1 - 50,
+                y = originPoint(i)._2 + 50,
+                text = motionsQueue.dequeue(),
+                color = Color.BLACK
+              )
+            )
+
+            y_start += y_step
+          }
+
+          ImageGenerator.fromGridLayout(
+            totalWidth = originPoint.map(_._1).max + x_step,
+            totalHeight = originPoint.map(_._2).max + y_step,
+            gridData = playfieldDrawTasks
+          ).buildAndSave(
+            PathUtils.getRtlOutputPath(getClass, targetName = s"sim/img/Motions_${roundIndex}").toString + s"/Action_${actionIndex}_${action.p0}_${action.p1}.png"
           )
-        )
 
-        y_start += y_step
+          playfieldDrawTasks.clear()
+          motionsQueue.clear()
+          scbd.clear()
+
+        }
+
+        exitInfo
+      }  // end of breakable
+
+
+      if ( exitInfo == "PASS ") {
+        println(s"[INFO] @${simTime()} all motions have been executed. The game exits here ")
       }
 
-      ImageGenerator.fromGridLayout(
-          totalWidth  = originPoint.map(_._1).max + x_step ,
-          totalHeight = originPoint.map(_._2).max + y_step ,
-          gridData    = playfieldDrawTasks
-        ).buildAndSave(
-            PathUtils.getRtlOutputPath(getClass, targetName = "sim/img").toString + s"/Motions_${actionIndex}_${action.p0}x${action.p1}.png"
-        )
-
-      playfieldDrawTasks.clear()
-      motionsQueue.clear()
-      scbd.clear()
+      if ( exitInfo == "FAIL ") {
+        println(s"[INFO] @${simTime()} Placing a new piece failed. Game is over here ")
+      }
 
     }
 
@@ -1046,13 +1091,21 @@ class PlayFieldTest extends AnyFunSuite with PlayFieldTestHelper {
     compiled.doSimUntilVoid(seed = 42) { dut =>
 
         val predefMotionsTestPattern = List(
-          1 -> MotionScenarios.uc1( PiecePatternGenerators.I(0) ) ,
+          1 -> MotionScenarios.uc1( PiecePatternGenerators.I(0) ) ,  /* New Game */
           1 -> MotionScenarios.uc1( PiecePatternGenerators.J(0), playfieldHold = true  ) ,
           1 -> MotionScenarios.uc2( PiecePatternGenerators.L(0), playfieldHold = true ) ,
           1 -> MotionScenarios.uc3( PiecePatternGenerators.O(0), playfieldHold = true ) ,
           1 -> MotionScenarios.uc4( PiecePatternGenerators.S(0), playfieldHold = true ) ,
           1 -> MotionScenarios.uc5( PiecePatternGenerators.T(0), playfieldHold = true ) ,
-          1 -> MotionScenarios.uc6( PiecePatternGenerators.Z(0), playfieldHold = true )
+          1 -> MotionScenarios.uc6( PiecePatternGenerators.Z(0), playfieldHold = true ) ,
+          1 -> MotionScenarios.uc5( PiecePatternGenerators.L(0), playfieldHold = true ) ,
+          1 -> MotionScenarios.uc5( PiecePatternGenerators.T(0), playfieldHold = true ) ,
+          1 -> MotionScenarios.uc5( PiecePatternGenerators.J(0), playfieldHold = true ) ,
+          1 -> MotionScenarios.uc5( PiecePatternGenerators.S(0), playfieldHold = true ) ,
+          1 -> MotionScenarios.ucs1( PiecePatternGenerators.I(0) ) ,
+          1 -> MotionScenarios.ucs2( PiecePatternGenerators.J(0), playfieldHold = true  ),
+          1 -> MotionScenarios.ucs3( PiecePatternGenerators.L(0), playfieldHold = true  ),
+          1 -> MotionScenarios.ucs3( PiecePatternGenerators.O(0), playfieldHold = true  )
         )
 
 
