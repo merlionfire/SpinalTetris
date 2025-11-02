@@ -1,5 +1,6 @@
 package IPS.playfield
 
+import IPS.playfield.executors._
 import config.TetrominoesConfig.binaryTypeOffsetTable
 import spinal.core._
 import spinal.core.sim.{SimCompiled, _}
@@ -28,7 +29,10 @@ import scala.swing.event._
 class PlayFieldTest extends AnyFunSuite
   with PlayfieldTestBase
   with PlayfieldBackdoorAPI
-  with PlayfieldTestExecutors {
+  with ReadoutTestExecutor
+  with CollisionTestExecutor
+  with PlaceTestExecutor
+  with MotionTestExecutor {
 
   //val compiler: String = "verilator"
   val compiler : String = "vcs"
