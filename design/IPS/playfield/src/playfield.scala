@@ -306,7 +306,7 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
      ********************************************************/
     val reset = False
     val freeze = False.allowOverride()
-
+    val clear  = False.allowOverride()
 
     val access_row_base = U(0, rowBitsWidth bits) allowOverride()
 
@@ -416,6 +416,38 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     when(reset) {
       region.clearAll()
     }
+
+
+    // Row clean
+
+    val ones = RegInit( U(0, rowBlocksNum bits) )
+    for (i <- 0 until rowBlocksNum ) {
+      ones(i) := region(i).orR
+    }
+
+    val count = RegNext( CountOne(ones), init= U(0) )
+
+
+    val is_zero = count === 0
+
+
+    val lowestOne = ones & ( ~ (ones - 1) )
+
+//    val mask = U( rowBlocksNum bit, default -> True )
+//    val rows_to_clear = ~( lowestOne - 1) & mask
+    val rows_to_clear = ~( lowestOne - 1)
+
+    for ( i <- 0 until  ( rowBlocksNum - 1 )   ) {
+      when( clear &&  rows_to_clear(i) ) {
+        region(i) := region(i+1)
+      }
+    }
+
+    when ( clear ) {   // Top row is empty
+      region(rowBlocksNum - 1 ) := 0
+    }
+
+
 
 
     // Backdoor access for simulation only
