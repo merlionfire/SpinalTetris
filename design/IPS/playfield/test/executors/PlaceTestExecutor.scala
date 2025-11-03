@@ -1,5 +1,6 @@
 package IPS.playfield.executors
 
+import IPS.playfield.visualizers.PlacementVisualizer
 import IPS.playfield.{PlayfieldBackdoorAPI, PlayfieldTestBase, playfield}
 import config.TetrominoesConfig.binaryTypeOffsetTable
 import spinal.core._
@@ -53,20 +54,12 @@ trait PlaceTestExecutor {
 
     }
 
-    def reverseLow10Bits(value: Int): Int = {
-      var result = 0
-      var temp = value & 0x3FF  // Mask to get only lower 10 bits
-
-      for (i <- 0 until 10) {
-        result = (result << 1) | (temp & 1)
-        temp >>= 1
-      }
-
-      result
-    }
-
-
     printPlacementTestSummary(actions, row)
+
+    val visualizer = new PlacementVisualizer(
+      xStart = 100, yStart =  100,
+      width = dut.config.colBlocksNum,  getClass
+    )
 
 
     var actionIndex = 0
@@ -86,10 +79,7 @@ trait PlaceTestExecutor {
         println(s"\n${"=" * 100}")
       }
 
-      var x_start = 100
-      var y_start = 100
-
-      var pieceIsDraw = false
+      visualizer.resetForNextAction()
 
       for (iteration <- 0 until action.count) {
         if (verbose && action.count > 1) {
@@ -120,42 +110,9 @@ trait PlaceTestExecutor {
         val expectedData = model(playfieldData, placePieceData, row)
         scbd.addExpected(expectedData)
 
-        if ( ! pieceIsDraw ) {
-          playfieldDrawTasks.enqueue (
-            PlaceTetromino(
-              x_start = x_start, y_start = y_start,
-              sizeInPixel = blocSize,
-              width = dut.config.colBlocksNum,
-              allBlocks = placePieceData
-            ),
-            TextLabel(
-              x = x_start - 50 ,
-              y = y_start + 50,
-              text = pieceType.toString(),
-              color = Color.BLACK
-            )
-          )
-          pieceIsDraw = true
-          y_start += y_step
-        }
-
-        playfieldDrawTasks.enqueue(
-          PlaceTetromino(
-            x_start =  x_start, y_start =  y_start,
-            sizeInPixel = blocSize,
-            width = dut.config.colBlocksNum,
-            allBlocks = playfieldData.map(reverseLow10Bits).take(4),
-            blockColor = new Color(100,120, 120 )
-          ),
-          TextLabel(
-            x = x_start - 50 ,
-            y = y_start + 50,
-            text = s"$iteration",
-            color = Color.BLACK
-          )
-        )
-
-        y_start += y_step
+        // Record visualization data
+        visualizer.recordPiecePlacement(pieceType.toString, placePieceData)
+        visualizer.recordPlayfieldState(playfieldData, iteration.toString)
 
         dut.clockDomain.waitSampling(10)
         forceFsmToIdle(dut )
@@ -166,22 +123,28 @@ trait PlaceTestExecutor {
         println(scbd.report())
 
         if (!allMatch) {
-          ImageGenerator.fromGridLayout(totalWidth = 400,  totalHeight = (action.count + 3 ) * ( y_step + 1 ) , playfieldDrawTasks )
-            .buildAndSave( PathUtils.getRtlOutputPath(getClass, targetName = "sim/img").toString + s"/PlaceImg_${actionIndex}_${action.p0}x${action.p1}.png" )
+          visualizer.saveToFile(
+            actionIndex,
+            action.p0.toString,
+            action.p1.toString,
+            action.count
+          )
           simFailure("Scoreboard Reports Error ")
         }
         scbd.clear()
       }
 
-      ImageGenerator.fromGridLayout(totalWidth = 400,  totalHeight = (action.count + 3 ) * ( y_step + 1 )  , playfieldDrawTasks )
-        .buildAndSave( PathUtils.getRtlOutputPath(getClass, targetName = "sim/img").toString + s"/PlaceImg_${actionIndex}_${action.p0}x${action.p1}.png" )
+      visualizer.saveToFile(
+        actionIndex,
+        action.p0.toString,
+        action.p1.toString,
+        action.count
+      )
 
       playfieldDrawTasks.clear()
 
       actionIndex += 1
     }
-
-
 
   }
 

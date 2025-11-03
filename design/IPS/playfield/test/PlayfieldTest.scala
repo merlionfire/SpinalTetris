@@ -67,6 +67,46 @@ class PlayFieldTest extends AnyFunSuite
       c
     }
 
+  /** Helper method for common DUT setup and initialization logic. */
+  private def commonSetup(dut: playfield): Unit = {
+    // Global Clocking settings
+    dut.clockDomain.forkStimulus(10)
+    SimTimeout(10 us ) // adjust timeout as needed
+    dut.clockDomain.waitSampling(20)
+    initDUT(dut)
+  }
+
+  private def runSimTest( testPattern :   List[(Int, TestMotionPatternGroup)]  ): Unit = {
+    compiled.doSimUntilVoid(seed = 42) { dut =>
+
+      val scbd = new PlayFieldScoreboard(
+        name = "Scbd - playfield readout",
+        verbose = true
+      )
+
+      commonSetup(dut)
+
+      val PlaceTestPatternList = testPattern  /* Pattern group selection */
+        .collect{ case (1, pattern) => pattern }
+
+      FlowMonitor(dut.io.row_val, dut.clockDomain) { payload =>
+        scbd.addActual( payload.toInt, s"@${simTime()}" )
+      }
+
+      executeTestMotionActions(dut, scbd,
+        actions = PlaceTestPatternList,
+        length = config.rowBlocksNum,
+        width = config.colBlocksNum,
+        verbose = true
+      )
+
+      dut.clockDomain.waitSampling(100)
+      println("[DEBUG] doSim is exited !!!")
+      println("simTime : " + simTime())
+      simSuccess()
+    }
+  }
+
 
   test("usecase 1 - random fill all pixel and flow region via backdoor") {
     compiled.doSimUntilVoid(seed = 42) { dut =>
@@ -252,69 +292,41 @@ class PlayFieldTest extends AnyFunSuite
   }
 
   test("usecase 4 - Check Place -> Collision Check -> left/right/down -> bottom  via interface and Game over") {
-    compiled.doSimUntilVoid(seed = 42) { dut =>
 
-        val predefMotionsTestPattern = List(
-          1 -> MotionScenarios.uc1( PiecePatternGenerators.I(0) ) ,  /* New Game */
-          1 -> MotionScenarios.uc1( PiecePatternGenerators.J(0), playfieldHold = true  ) ,
-          1 -> MotionScenarios.uc2( PiecePatternGenerators.L(0), playfieldHold = true ) ,
-          1 -> MotionScenarios.uc3( PiecePatternGenerators.O(0), playfieldHold = true ) ,
-          1 -> MotionScenarios.uc4( PiecePatternGenerators.S(0), playfieldHold = true ) ,
-          1 -> MotionScenarios.uc5( PiecePatternGenerators.T(0), playfieldHold = true ) ,
-          1 -> MotionScenarios.uc6( PiecePatternGenerators.Z(0), playfieldHold = true ) ,
-          1 -> MotionScenarios.uc5( PiecePatternGenerators.L(0), playfieldHold = true ) ,
-          1 -> MotionScenarios.uc5( PiecePatternGenerators.T(0), playfieldHold = true ) ,
-          1 -> MotionScenarios.uc5( PiecePatternGenerators.J(0), playfieldHold = true ) ,
-          1 -> MotionScenarios.uc5( PiecePatternGenerators.S(0), playfieldHold = true ) ,
-          1 -> MotionScenarios.ucs1( PiecePatternGenerators.I(0) ) ,
-          1 -> MotionScenarios.ucs2( PiecePatternGenerators.J(0), playfieldHold = true  ),
-          1 -> MotionScenarios.ucs3( PiecePatternGenerators.L(0), playfieldHold = true  ),
-          1 -> MotionScenarios.ucs3( PiecePatternGenerators.O(0), playfieldHold = true  )
-        )
-
-
-      val PlaceTestPatternList = predefMotionsTestPattern  /* Pattern group selection */
-        .collect{ case (1, pattern) => pattern }
-
-      /*****************************************
-       Custom settings end
-       ******************************************/
-
-      val scbd = new PlayFieldScoreboard(
-        name = "Scbd - playfield readout",
-        verbose = true
+      val predefMotionsTestPattern = List(
+        1 -> MotionScenarios.uc1( PiecePatternGenerators.I(0) ) ,  /* New Game */
+        1 -> MotionScenarios.uc1( PiecePatternGenerators.J(0), playfieldHold = true  ) ,
+        1 -> MotionScenarios.uc2( PiecePatternGenerators.L(0), playfieldHold = true ) ,
+        1 -> MotionScenarios.uc3( PiecePatternGenerators.O(0), playfieldHold = true ) ,
+        1 -> MotionScenarios.uc4( PiecePatternGenerators.S(0), playfieldHold = true ) ,
+        1 -> MotionScenarios.uc5( PiecePatternGenerators.T(0), playfieldHold = true ) ,
+        1 -> MotionScenarios.uc6( PiecePatternGenerators.Z(0), playfieldHold = true ) ,
+        1 -> MotionScenarios.uc5( PiecePatternGenerators.L(0), playfieldHold = true ) ,
+        1 -> MotionScenarios.uc5( PiecePatternGenerators.T(0), playfieldHold = true ) ,
+        1 -> MotionScenarios.uc5( PiecePatternGenerators.J(0), playfieldHold = true ) ,
+        1 -> MotionScenarios.uc5( PiecePatternGenerators.S(0), playfieldHold = true ) ,
+        1 -> MotionScenarios.ucs1( PiecePatternGenerators.I(0) ) ,
+        1 -> MotionScenarios.ucs2( PiecePatternGenerators.J(0), playfieldHold = true  ),
+        1 -> MotionScenarios.ucs3( PiecePatternGenerators.L(0), playfieldHold = true  ),
+        1 -> MotionScenarios.ucs3( PiecePatternGenerators.O(0), playfieldHold = true  )
       )
 
-      // Global Clocking settings
-      dut.clockDomain.forkStimulus(10)
-      SimTimeout(10 us ) // adjust timeout as needed
-      dut.clockDomain.waitSampling(20)
-
-      initDUT(dut)
-
-      // Prepare Monitor
-      FlowMonitor(dut.io.row_val, dut.clockDomain) { payload =>
-        scbd.addActual( payload.toInt, s"@${simTime()}" )
-      }
-
-      executeTestMotionActions(dut, scbd,
-        actions = PlaceTestPatternList,
-        length = config.rowBlocksNum,
-        width = config.colBlocksNum,
-        verbose = true
-      )
-
-
-      dut.clockDomain.waitSampling(100)
-      println("[DEBUG] doSim is exited !!!")
-      println("simTime : " + simTime())
-      simSuccess()
-
-
-    }
-
+      runSimTest(predefMotionsTestPattern)
 
   }
+
+  test("usecase 5 - Test rows clean ") {
+
+    val predefMotionsTestPattern = List(
+      1 -> MotionScenarios.ucs4( PiecePatternGenerators.I(0) ) ,  /* New Game */
+      1 -> MotionScenarios.ucs4( PiecePatternGenerators.J(0), playfieldHold = true  )
+    )
+
+    runSimTest(predefMotionsTestPattern)
+
+  }
+
+
 }
 
 

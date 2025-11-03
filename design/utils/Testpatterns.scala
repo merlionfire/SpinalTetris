@@ -600,7 +600,7 @@ object TestPatterns {
 
     def ucs1( piecePattern : PiecePatternGenerators.Pattern, playfieldHold : Boolean = false )  : TestMotionPatternGroup = {
       TestMotionPatternGroup(
-        p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.Custom,
+        p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.Custom(1),
         p1 = piecePattern,
         p2 = List(
           Left(3),
@@ -617,7 +617,7 @@ object TestPatterns {
 
     def ucs2( piecePattern : PiecePatternGenerators.Pattern, playfieldHold : Boolean = false )  : TestMotionPatternGroup = {
       TestMotionPatternGroup(
-        p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.Custom,
+        p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.Custom(1),
         p1 = piecePattern,
         p2 = List(
             Left(5),
@@ -634,7 +634,7 @@ object TestPatterns {
 
     def ucs3( piecePattern : PiecePatternGenerators.Pattern, playfieldHold : Boolean = false )  : TestMotionPatternGroup = {
       TestMotionPatternGroup(
-        p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.Custom,
+        p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.Custom(1),
         p1 = piecePattern,
         p2 = List(
            Drop
@@ -645,6 +645,18 @@ object TestPatterns {
     }
 
 
+    def ucs4( piecePattern : PiecePatternGenerators.Pattern, playfieldHold : Boolean = false )  : TestMotionPatternGroup = {
+      TestMotionPatternGroup(
+        p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.Custom(2),
+        p1 = piecePattern,
+        p2 = List(
+          Rotate(1),
+          Drop
+        ),
+        description = "Custom Playfield test 3"
+      )
+
+    }
 
   }
 

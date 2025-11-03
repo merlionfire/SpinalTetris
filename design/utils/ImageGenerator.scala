@@ -201,7 +201,7 @@ object ImageGenerator {
 
       override def draw(g: Graphics2D): Unit = {
 
-
+//        println(s"[DEBUG]x_start=${x_start}, y_start=${y_start}, width=${width}, allBlocks = ${allBlocks.toString()}")
 
         val height = allBlocks.length
 

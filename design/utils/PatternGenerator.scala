@@ -8,6 +8,7 @@ import org.scalacheck.Gen._
 import spinal.core.{SpinalEnumElement, SpinalEnumEncoding}
 import utils.PiecePatternGenerators.Pattern
 import utils.mis.int2binString
+import scala.util.Random
 
 object BitPatternGenerators {
   /**
@@ -108,6 +109,39 @@ object BitPatternGenerators {
     }
   }
 
+  def custom(n: Int, m: Int, pattern: Int): Seq[Int] = pattern match {
+
+    case 1 =>
+      val numOfTopEmptyRow = 6
+      val numOfHole = 1
+      val zeros = Seq.fill(numOfTopEmptyRow)(0)
+      val random8Ones = Seq.fill(n-numOfTopEmptyRow) {
+        val positions = scala.util.Random.shuffle( (0 until m).toList ).take(m-numOfHole)  // Can change for other pattern
+        positions.foldLeft(0) { (acc, pos) => acc | (1 << pos) }
+      }
+      zeros ++ random8Ones
+
+    case 2 =>
+      val random8Ones = Seq(
+        0x3EF, // Row 6: 1111101111
+        0x3FB, // Row 7: 1111111011
+        0x357, // Row 8: 1101110111
+        0x3FD, // Row 9: 1111111101
+        0x2F7, // Row 10: 1011110111
+        0x3DF, // Row 11: 1111011111
+        0x3BF, // Row 12: 1110111111
+        0x3ED, // Row 13: 1111101101
+        0x3FF, // Row 14: 1111111111
+        0x37F, // Row 15: 1101111111
+        0x3DF, // Row 16: 1111011111
+        0x3FF, // Row 17: 1111111111
+        0x3D7, // Row 18: 1111110111
+        0x3FF  // Row 19 (bottom)
+      )
+      val zeros = Seq.fill(n-random8Ones.size)(0)
+      zeros ++ random8Ones
+  }
+
 
 
 
@@ -121,7 +155,7 @@ object BitPatternGenerators {
   case object NoCollision extends Pattern
   case class FixCollisionOnes( count : Int ) extends Pattern
   case object Hold extends Pattern
-  case object Custom extends Pattern  // New pattern
+  case class Custom( pattern : Int ) extends Pattern  // New pattern
   //case class Composite(segments: Seq[(Int, Pattern)]) extends Pattern
 
   /**
@@ -138,8 +172,10 @@ object BitPatternGenerators {
     case Random             => hexWithBits(m)
     case NoCollision        => noCollisionBits(m,ref)
     case FixCollisionOnes(count) => fixedCollisionOnes(m, ref, count)
-    case Custom             => Gen.const(ref)
-    //case class Composite(segments: Seq[(Int, Pattern)])
+//    case Custom             => Gen.const(ref)
+    //case Custom(pattern)             => Gen.const( custom(m, pattern ))
+
+
   }
 
   /**
@@ -149,19 +185,42 @@ object BitPatternGenerators {
    * @param pattern The pattern to use for generation.
    * @return A Gen that produces a sequence of integers.
    */
-  def generateSequence(n: Int, m: Int, pattern: Pattern, ref : Seq[Int] = null ): Gen[Seq[Int]] = {
+//  def generateSequence(n: Int, m: Int, pattern: Pattern, ref : Seq[Int] = null ): Gen[Seq[Int]] = {
+//
+//    // Custom pattern validation
+//    if (pattern == Custom) {
+//      require(ref != null, "Custom pattern requires a non-null reference sequence")
+//    }
+//
+//    if (ref == null) {
+//      Gen.listOfN(n, generatePattern(m, pattern))
+//    } else {
+//
+//      // 1. Validation Check: Ensure the requested length 'n' matches the reference sequence length.
+//      require(n == ref.length, s"Requested sequence length (n=$n) must match reference length (${ref.length})")
+//
+//      // 2. Map the reference sequence to a sequence of generators.
+//      // For each 'refItem' in the 'ref' sequence, create a tailored Gen[Int].
+//      val individualGenerators: Seq[Gen[Int]] = ref.map { refItem =>
+//        // Pass the specific refItem to the pattern generator
+//        generatePattern(m, pattern, refItem)
+//      }
+//
+//      // 3. Combine the sequence of generators into a single Gen[Seq[Int]].
+//      // Gen.sequence takes a Seq[Gen[A]] and returns a Gen[Seq[A]].
+//      Gen.sequence[Seq[Int], Int](individualGenerators).map(_.toSeq)
+//      // .map(_.toSeq) is often necessary for older ScalaCheck versions when used with .asJava
+//    }
+//
+//  }
 
-    // Custom pattern validation
-    if (pattern == Custom) {
-      require(ref != null, "Custom pattern requires a non-null reference sequence")
-    }
 
-    if (ref == null) {
-      Gen.listOfN(n, generatePattern(m, pattern))
-    } else {
-
-      // 1. Validation Check: Ensure the requested length 'n' matches the reference sequence length.
-      require(n == ref.length, s"Requested sequence length (n=$n) must match reference length (${ref.length})")
+  def generateSequence(n: Int, m: Int, pattern: Pattern, ref : Seq[Int] = null ): Gen[Seq[Int]] = pattern match {
+    case Custom(pt) =>  Gen.const( custom(n, m, pt ) )
+    case pt if ( ref == null ) => Gen.listOfN(n, generatePattern(m, pt))
+    case pt =>
+        // 1. Validation Check: Ensure the requested length 'n' matches the reference sequence length.
+        require(n == ref.length, s"Requested sequence length (n=$n) must match reference length (${ref.length})")
 
       // 2. Map the reference sequence to a sequence of generators.
       // For each 'refItem' in the 'ref' sequence, create a tailored Gen[Int].
@@ -174,12 +233,8 @@ object BitPatternGenerators {
       // Gen.sequence takes a Seq[Gen[A]] and returns a Gen[Seq[A]].
       Gen.sequence[Seq[Int], Int](individualGenerators).map(_.toSeq)
       // .map(_.toSeq) is often necessary for older ScalaCheck versions when used with .asJava
-    }
 
   }
-
-
-
 
 }
 
