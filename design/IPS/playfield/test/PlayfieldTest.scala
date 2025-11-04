@@ -315,16 +315,39 @@ class PlayFieldTest extends AnyFunSuite
 
   }
 
-  test("usecase 5 - Test rows clean ") {
+  test("usecase 5 - Test single row clean ") {
 
     val predefMotionsTestPattern = List(
       1 -> MotionScenarios.ucs4( PiecePatternGenerators.I(0) ) ,  /* New Game */
-      1 -> MotionScenarios.ucs4( PiecePatternGenerators.J(0), playfieldHold = true  )
+      1 -> MotionScenarios.ucs5( PiecePatternGenerators.J(0), playfieldHold = true  ),
+      1 -> MotionScenarios.ucs6( PiecePatternGenerators.L(0), playfieldHold = true  ),
+      1 -> MotionScenarios.ucs7( PiecePatternGenerators.O(0), playfieldHold = true  ),
+      1 -> MotionScenarios.ucs8( PiecePatternGenerators.S(0), playfieldHold = true  ),
+      1 -> MotionScenarios.ucs9( PiecePatternGenerators.T(0), playfieldHold = true  ),
+      1 -> MotionScenarios.ucs10( PiecePatternGenerators.J(0), playfieldHold = true  ),
+      1 -> MotionScenarios.ucs10( PiecePatternGenerators.S(0), playfieldHold = true  )
     )
 
     runSimTest(predefMotionsTestPattern)
 
   }
+
+  test("usecase 6 - Test 2 rows clean ") {
+
+    val predefMotionsTestPattern = List(
+      1 -> MotionScenarios.ucs20( PiecePatternGenerators.O(0), left_step=5 ) ,  /* New Game */
+      1 -> MotionScenarios.ucs20( PiecePatternGenerators.O(0), left_step=2, playfieldHold = true  ),
+      1 -> MotionScenarios.ucs20( PiecePatternGenerators.O(0), left_step=0, playfieldHold = true  ),
+      1 -> MotionScenarios.ucs20( PiecePatternGenerators.O(0), left_step= -2, playfieldHold = true  ),
+      1 -> MotionScenarios.ucs20( PiecePatternGenerators.O(0), left_step= -4, playfieldHold = true  ),
+      1 -> MotionScenarios.ucs20( PiecePatternGenerators.O(0), left_step= 0, playfieldHold = true  ),
+    )
+
+    runSimTest(predefMotionsTestPattern)
+
+  }
+
+
 
 
 }
