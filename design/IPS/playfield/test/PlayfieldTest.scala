@@ -347,8 +347,30 @@ class PlayFieldTest extends AnyFunSuite
 
   }
 
+  test("usecase 7 - Test 3 rows clean ") {
+
+    val predefMotionsTestPattern = List(
+      1 -> MotionScenarios.ucs31( PiecePatternGenerators.I(0)  ),
+      1 -> MotionScenarios.ucs32( PiecePatternGenerators.I(0), playfieldHold = true  ),
+      1 -> MotionScenarios.ucs32( PiecePatternGenerators.I(0), playfieldHold = true  ),
+    )
+
+    runSimTest(predefMotionsTestPattern)
+
+  }
 
 
+  test("usecase 8 - Test 4 rows clean ") {
+
+    val predefMotionsTestPattern = List(
+      1 -> MotionScenarios.ucs41( PiecePatternGenerators.I(0)  ),
+      1 -> MotionScenarios.ucs42( PiecePatternGenerators.I(0), playfieldHold = true  ),
+      1 -> MotionScenarios.ucs42( PiecePatternGenerators.I(0), playfieldHold = true  ),
+    )
+
+    runSimTest(predefMotionsTestPattern)
+
+  }
 
 }
 

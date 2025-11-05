@@ -857,6 +857,9 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     val CLEAR_REGION = new State {
 
       whenIsActive {
+        piece_buffer.rot_cur := 0
+        piece_buffer.rot_backup := 0
+
         flow.region.clearAll()
         flow.row := 0
         checker.row := 0

@@ -140,6 +140,46 @@ object BitPatternGenerators {
       )
       val zeros = Seq.fill(n-random8Ones.size)(0)
       zeros ++ random8Ones
+
+    case 3 =>
+      val random8Ones = Seq(
+
+        0x3CF, // Row 7: 1111001111
+        0x3CF, // Row 8: 1111001111
+        0x3CF, // Row 9: 1111001111
+        0x3DF, // Row 10: 1111011111
+        0x1FF, // Row 11: 0111111111
+        0x3BF, // Row 12: 1110111111
+        0x3ED, // Row 13: 1111101101
+        0x3F7, // Row 14: 1111111111
+        0x37F, // Row 15: 1101111111
+        0x3DF, // Row 16: 1111011111
+        0x3BF, // Row 17: 1111111111
+        0x3D7, // Row 18: 1111110111
+        0x3EF  // Row 19 (bottom)
+      )
+      val zeros = Seq.fill(n-random8Ones.size)(0)
+      zeros ++ random8Ones
+
+    case 4 =>
+      val random8Ones = Seq(
+
+        0x3CF, // Row 7: 1111001111
+        0x3CF, // Row 8: 1111001111
+        0x3CF, // Row 9: 1111001111
+        0x3CF, // Row 10: 1111001111
+        0x1FF, // Row 11: 0111111111
+        0x3BF, // Row 12: 1110111111
+        0x3ED, // Row 13: 1111101101
+        0x3F7, // Row 14: 1111111111
+        0x37F, // Row 15: 1101111111
+        0x3DF, // Row 16: 1111011111
+        0x3BF, // Row 17: 1111111111
+        0x3D7, // Row 18: 1111110111
+        0x3EF  // Row 19 (bottom)
+      )
+      val zeros = Seq.fill(n-random8Ones.size)(0)
+      zeros ++ random8Ones
   }
 
 
