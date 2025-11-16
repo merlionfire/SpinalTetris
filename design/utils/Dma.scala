@@ -293,6 +293,9 @@ class dma ( start : Bool, data_in : Bits, word_count : UInt, address_reqs : Seq[
 
 }
 
+
+
+
 class dmaWrapper ( g1 : DmaGeneric, g2 : DmaGeneric) extends Component {
   val start = RegInit(False)
   val srcAddrBase = U(0, 2 bit  )
@@ -306,6 +309,7 @@ class dmaWrapper ( g1 : DmaGeneric, g2 : DmaGeneric) extends Component {
   val dma_sync = dma ( start, data_in, U(3,2 bits ),
      srcAddrBase -> src_req,
      dstAddrBase -> dst_req )
+
 
 }
 

@@ -118,8 +118,8 @@ class PlayFieldTest extends AnyFunSuite
       /* 1 is for pattern selection */
       val predefReadTestPattern = List(
         0 -> ReadoutScenarios.basic,
-        0 -> ReadoutScenarios.playfieldPatternOnly,
-        0 -> ReadoutScenarios.flowPatternOnly,
+        1 -> ReadoutScenarios.playfieldPatternOnly,
+        1 -> ReadoutScenarios.flowPatternOnly,
         1 -> ReadoutScenarios.usecase,
         1 -> ReadoutScenarios.random
       )
@@ -153,7 +153,11 @@ class PlayFieldTest extends AnyFunSuite
 
       // Body
       //for ( flowRegionRow <- 0 until config.rowBlocksNum ) {
-      for ( flowRegionRow <- 0 until 20 ) {
+      val rowLow = ( 0 to 8)
+      val rowMed = ( 9 to 15)
+      val rowHigh = ( 16 to 19 )
+
+      for ( flowRegionRow <- rowLow ++ rowHigh ) {
         println(s"[INFO] flow region row at ${flowRegionRow} !!!")
         executeTestReadoutActions(dut, scbd,
           actions = readTestPatternList,
@@ -181,9 +185,9 @@ class PlayFieldTest extends AnyFunSuite
 
       /* 1 is for pattern selection */
       val predefReadTestPattern = List(
-        0 -> CollisionCheckScenarios.basic,
-        0 -> CollisionCheckScenarios.playfieldPatternOnly,
-        0 -> CollisionCheckScenarios.CheckerPatternOnly,
+        1 -> CollisionCheckScenarios.basic,
+        1 -> CollisionCheckScenarios.playfieldPatternOnly,
+        1 -> CollisionCheckScenarios.CheckerPatternOnly,
         1 -> CollisionCheckScenarios.noCollison,
         1 -> CollisionCheckScenarios.fixedCollison(1), // 1 bit are overlaps for affected rows.
         1 -> CollisionCheckScenarios.fixedCollison(2), // 2 bits are overlaps for affected rows.
@@ -219,7 +223,11 @@ class PlayFieldTest extends AnyFunSuite
 
       // Body
       //for ( flowRegionRow <- 0 until config.rowBlocksNum ) {
-      for ( checkerRegionRow <- 16 until 20 ) {
+      val rowLow = ( 0 to 8)
+      val rowMed = ( 9 to 15)
+      val rowHigh = ( 16 to 19 )
+
+      for ( checkerRegionRow <- rowLow ++ rowHigh ) {
         println(s"[INFO] checker region row at ${checkerRegionRow} !!!")
         executeTestCollisionCheckerActions(dut, scbd,
           actions = readTestPatternList,
@@ -239,7 +247,7 @@ class PlayFieldTest extends AnyFunSuite
     }
   }
 
-  test("usecase 3 - Check place pieces via interface ( front-door ) ") {
+  test("usecase 3 - Check place pieces via interface ( front-door ) . Images are created . ") {
     compiled.doSimUntilVoid(seed = 42) { dut =>
 
       val predefPlaceTestPattern = List(

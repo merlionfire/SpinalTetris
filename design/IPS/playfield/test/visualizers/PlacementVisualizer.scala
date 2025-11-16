@@ -64,7 +64,7 @@ class PlacementVisualizer(
         y_start = currentYPosition,
         sizeInPixel = blockSize,
         width = width,
-        allBlocks = playfieldData.map(reverseLow10Bits).take(4),
+        allBlocks = playfieldData.map(reverseLow10Bits).take(4), // only fetch top 4 rows for display
         blockColor = new Color(100, 120, 120)
       ),
       TextLabel(
