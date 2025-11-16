@@ -1,12 +1,10 @@
 package IPS.playfield
-import IPS.play_field.PlayFieldConfig
 import config.{ACTION, TYPE}
 import spinal.core._
 import spinal.lib._
 import utils._
 import spinal.lib.fsm.{EntryPoint, State, StateFsm, StateMachine}
 import config.TetrominoesConfig._
-import spinal.core.TimingEndpointType.CLOCK_EN
 
 import utils.UniDmaConfig._
 
@@ -31,17 +29,12 @@ case  class flow_region_Data  (rowBitsWidth : Int, colBlocksNum : Int ) extends 
 }
 
 
-
-
 class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends Component {
 
   import config._
 
   val io = new Bundle {
-    //val piece_in = slave Flow (Piece(colBitsWidth, rowBitsWidth))
     val piece_in = slave Flow TYPE()
-    //val blocks_out = master Stream( Block(colBitsWidth, rowBitsWidth ) )
-    //val hit_status = slave Flow( hitStatus() )
     val status = master Flow (Bool())
     val move_in = new Bundle {
       val left = in Bool()
@@ -68,44 +61,10 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
   // Capture with 1 cycle
   val piece = io.piece_in.m2sPipe(holdPayload = true)
 
-
-  val cur_top_row = RegInit(U(0, rowBitsWidth bits))
-
   val load_piece = False
 
   val action = RegInit(ACTION.NO)
 
-
-  val is_collision = RegInit(False)
-
-  //-----------------------------------------------------------------------
-  //       selector
-  // ------------------------------------
-  //  - find the T-piece 4x4 data in terms of type and rotation
-  //  - Store it to 4x4 Vec called region
-  //  - Region is displayed in next-T window in right-bottom of screen
-  //-----------------------------------------------------------------------
-
-  //  lazy val selector = new Area {
-  //
-  //    val region = Vec.fill(4)(Bits(4 bit)) setAsReg()
-  //
-  //    switch(piece.`type`) {
-  //      for ((pieceType, rotations) <- binaryTypeOffsetTable) {
-  //        is(pieceType) {
-  //          switch(piece.rot) {
-  //            for ((rotation, positions) <- rotations) {
-  //              is(rotation) {
-  //                for (j <- 0 until 4) {
-  //                  region(j) := positions(j)
-  //                }
-  //              }
-  //            }
-  //          }
-  //        }
-  //      }
-  //    }
-  //  }
 
   val piece_buffer = new Area {
 
@@ -162,7 +121,6 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     val pieces = Vec(PieceRegion(colBlocksNum), 4)
     for (j <- 0 until 4) pieces(j).steup_logic()
 
-
     when(piece.valid) {
       switch(piece.payload) {
         for ((pieceType, rotations) <- binaryTypeOffsetTable) {
@@ -191,8 +149,6 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
 
   }
 
-
-
   //-----------------------------------------------------------------------
   //        checker Area
   // ------------------------------------
@@ -217,15 +173,6 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     // sync read
     val readout = RegNext(region(addr_access_port.payload))
 
-//    val dma_region = dma(start = read_req,
-//      data_in = readout,
-//      word_count = 4,
-//      U(0) -> addr_access_port
-//    )
-//    val read_out_port = dma_region.read_sync()
-
-
-
 
     // input control signals
     val restore = False
@@ -236,20 +183,10 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     val overflowIfLeft = region(0).msb || region(1).msb || region(2).msb | region(3).msb
     val overflowIfRight = region(0).lsb || region(1).lsb || region(2).lsb | region(3).lsb
 
-
     val overflowIfDown = (row === (rowBlocksNum - 1)) |
       ((row === (rowBlocksNum - 2)) && region(1).orR) |
       ((row === (rowBlocksNum - 3)) && region(2).orR) |
       ((row === (rowBlocksNum - 4)) && region(3).orR)
-
-
-    //    val shift_cnt = RegInit ( U(0, colBitsWidth bits )  )
-    //    val shift_counter = Counter2( shift_cnt , right_shift | left_shift )
-    //
-    //    def load_shift_cnt ( n : UInt ) = {
-    //      shift_cnt := n - 1 ;
-    //      shift_counter.clear()
-    //    }
 
     def setup_logic(source: Vec[Bits]): Unit = {
 
@@ -485,16 +422,7 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     val region = Vec(Reg(Bits(colBlocksNum bits)) init (0), size = 4)
 
     // Async read
-    //val readout = region(addr_access_port.payload)
     val readout = RegNext( region(addr_access_port.payload) )
-
-//    val dma_region = dma(start = read_req,
-//      data_in = readout,
-//      word_count = 4,
-//      U(0) -> addr_access_port
-//    )
-//
-//    val read_out_port = dma_region.read_async()
 
     val update = False
 
@@ -507,8 +435,6 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     for (i <- 0 to 3) {
       row_occuppied(i) := region(i).orR
     }
-
-    val touch_bottom = OHToUInt(row_occuppied)
 
     if (sim) {
       when(io.flow_backdoor.valid) {
@@ -532,10 +458,6 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     val collision_bits = Reg(Flow(Bool()))
 
     val src_0, src_1 = Flow(Bits(colBlocksNum bit))
-
-//    collision_bits.valid.init(False)
-//    collision_bits.valid := playfield.read_out_port.valid
-//    collision_bits.payload := (playfield.read_out_port.payload & checker.read_out_port.payload).orR
     collision_bits.valid := src_0.valid
     collision_bits.payload := ( src_0.payload & src_1.payload ) .orR
 
@@ -543,8 +465,6 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
       collision_bits.valid & collision_bits.payload,
       False
     ) clearWhen (start)
-
-    val check_is_done = collision_bits.valid.fall(False)
 
     val is_collision = Flow(Bool())
     is_collision.valid := collision_bits.valid.fall(False)
@@ -554,7 +474,6 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
 
   val output_en = False allowOverride()
   val playfield_dataout, src_0, src_1, src_2 = Flow(Bits( colBlocksNum bit ))
-//  io.row_val.valid := src_0.valid && output_en
   src_0 := playfield_dataout.stage()   // flow readout is later one cycle to playfeild. So playfield readout have be delayed one cycle
 
   io.row_val.valid := src_0.valid && output_en
@@ -573,13 +492,7 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
   //  -
   //-----------------------------------------------------------------------
 
-
-
-//  val row_merged = playfield.read_out_port.payload | flow.read_out_port.payload
-
   val locker = new Area {
-
-    val freeze = False allowOverride()
 
     val addr_access_port = Flow(UInt(2 bits))
 
@@ -588,44 +501,17 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     val data_in_port = Flow(Bits( colBlocksNum bit ))
     region.addAttribute("ram_style", "distributed")
 
-//    val region_access_port = playfield.lock_addr_access_port.m2sPipe
-
-    //val region_access_port = Flow( UInt( 2 bits ))
-    //val readou_is_done = playfield.lock_addr_access_port.valid.fall(False)
-
-
-//    region.write(
-//      enable = region_access_port.valid && data_in_port.valid,
-//      address = region_access_port.payload,
-//      data = data_in_port.payload
-//    )
-
-//    playfield.write_in := region.readAsync(
-//      //enable  = playfield.lock_addr_access_port.valid,
-//      address = region_access_port.payload
-//    )
-
-//    val readout  = region.readSync(
-//      enable = region_access_port.valid,
-//      address =  region_access_port.payload
-//    )
-
     region.write(
           enable = addr_access_port.valid && data_in_port.valid,
           address = addr_access_port.payload,
           data = data_in_port.payload
         )
-
-
     val readout  = region.readSync(
         enable = addr_access_port.valid,
         address =  addr_access_port.payload
       )
 
-//    val readou_is_done = Delay( addr_access_port.valid.fall(False), 2 )
     val readou_is_done = addr_access_port.valid.fall(False)
-
-
 
   }
 
@@ -821,26 +707,12 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
       playfield_dma.stopTrans()
     }
 
-    def execute_transfer_from_locker_to_playfield () = {
-      execute_locker_read()
-      execute_playfield_write()
-    }
-
     def after_transfer_from_locker_to_playfield () = {
       after_locker_read()
       after_playfield_write()
     }
 
-
-
-
   }
-
-//  io.row_val.valid := playfield.read_out_port.valid && output_en
-//  io.row_val.payload := playfield.read_out_port.payload
-//  when(playfield.read_out_port.valid & flow.read_out_port.valid) {
-//    io.row_val.payload := row_merged
-//  }
 
   //-----------------------------------------------------------------------
   //        FSM
@@ -884,17 +756,14 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
 
     val READOUT: State = new State {
       onEntry {
-//        playfield.load_read_req(valid = True, word_count = rowBlocksNum, addr_base = U(0))
         dma.execute_playfield_readout()
       }
 
       whenIsActive {
         output_en := True
         when(playfield.addr_access_eqaul(flow.row)) {
-//          flow.read_req := True
           dma.execute_flow_readout()
         }
-//        when(!playfield.dma_region.is_busy) {
         when ( row_out_done ) {
           goto(WAIT_CONTROL)
         }
@@ -919,8 +788,6 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
 
     val COLLISION_CHECK: State = new State {
       onEntry {
-//        playfield.load_read_req(valid = True, word_count = 4, addr_base = checker.row)
-//        checker.read_req := True
         collision_checker.start := True
         dma.execute_playfield_collision()
         dma.execute_checker_collision()
@@ -963,7 +830,8 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     val END_OF_COLLISION: State = new State {
       whenIsActive {
 
-        when(action === ACTION.LEFT || action === ACTION.RIGHT) {
+//        when(action === ACTION.LEFT || action === ACTION.RIGHT) {
+        when(action === ACTION.LEFT || action === ACTION.RIGHT || action === ACTION.ROTATE ) {
           load_piece := True // restore origin piece
         }
 
@@ -971,9 +839,9 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
           checker.restore()
         }
 
-        when(action === ACTION.ROTATE) {
-          load_piece := True // restore origin piece
-        }
+//        when(action === ACTION.ROTATE) {
+//          load_piece := True // restore origin piece
+//        }
 
         action := ACTION.NO
 
@@ -1101,20 +969,17 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     // Read from both playfield and flow region
     val LOCKER_WRITE_0 = new State {
       onEntry {
-//        playfield.load_read_req(valid = True, word_count = 4, addr_base = flow.row)
         dma.execute_playfield_write_locker()
       }
 
       whenIsActive {
         dma.execute_flow_write_locker()
-        //dma.execute_locker_write()
         goto( LOCKER_WRITE_1 )
       }
 
     }
 
     //write merged data to locker region
-
     val LOCKER_WRITE_1 = new State {
 
       whenIsActive {
@@ -1124,14 +989,9 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
       }
     }
 
-
-
     val WAIT_LOCKER_WRITE_DONE = new State {
 
       whenIsActive {
-//        locker.freeze := True
-//        flow.read_req := locker.freeze.rise(False)
-        //        when(locker.end_of_access) {
         when( row_out_done ) {
           goto(LOCKER_READ)
         }
@@ -1145,8 +1005,6 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
 
     val LOCKER_READ = new State {
       onEntry {
-//        playfield.load_write_req(valid = True, word_count = 4, addr_base = flow.row)
-//        dma.execute_transfer_from_locker_to_playfield()
         dma.execute_locker_read()
         playfield.freeze := True
       }
@@ -1154,7 +1012,6 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
         dma.execute_playfield_write()
         goto(WAIT_LOCKER_READ_DONE)
       }
-
     }
 
 

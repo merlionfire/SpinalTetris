@@ -39,9 +39,7 @@ case class DmaChannel[ T <: Data ]  (  payloadType: HardType[T], id : Int, laten
   def enableOut() = enable := True
   def disableOut() = enable := False
 
-
 }
-
 
 case class DataPort(id: Int, mode: String) {
   require(mode == "read" || mode == "write", s"Invalid mode: $mode")
@@ -58,15 +56,6 @@ object UniDmaConfig {
       (DataPort(tuple._1, tuple._2), PortMapping(ports.toSeq))
     }
   }
-//
-//  def apply(
-//             dataWidth: Int,
-//             count: Int,
-//             maps: (DataPort, PortMapping)*
-//           ): UniDmaConfig = {
-//    UniDmaConfig(dataWidth, count, maps)
-//  }
-
 
 }
 
@@ -85,23 +74,6 @@ case class UniDmaConfig(
 
 }
 
-
-
-
-//
-//case class UniDmaConfig(
-//                         dataWidth : Int,
-//                         count    : Int,
-//                         maps : ( ( Int, String), Int )*
-//                       ) {
-//
-//  def data_in_port_num = maps.map(_._1).distinct.size
-//
-//  def data_out_port_num = maps.map(_._2).distinct.size
-//
-//}
-
-//class UniDma[T <: Data ](addr_port : Flow[UInt], dataWidth : Int, count : Int, syncAccess : Boolean, maps : ( Int, Int )* ) extends ImplicitArea[Int] {
 class UniDma[T <: Data ](addr_port : Flow[UInt],config : UniDmaConfig ) extends ImplicitArea[Int] {
   import config._
 
@@ -111,11 +83,13 @@ class UniDma[T <: Data ](addr_port : Flow[UInt],config : UniDmaConfig ) extends 
   val base_addr  = Reg( addrType() ) init U(0)
   val word_count = Reg( addrType() ) init U(count-1)
 
+  base_addr.allowUnsetRegToAvoidLatch
+  word_count.allowUnsetRegToAvoidLatch
+
   val start = False allowOverride()
 
-  // syncAccess : start followed by access addresswith 1 clock cycle delay
-  // else : start  and access address are within the same clock cycle
   val delay = 1
+
   def setWordCount( n : Int ) = word_count := U(n-1)
   def setBaseAddr( addr : UInt ) = base_addr := addr
   def startTrans() = start := True
@@ -124,8 +98,6 @@ class UniDma[T <: Data ](addr_port : Flow[UInt],config : UniDmaConfig ) extends 
 
 
   // Address bus as output stream
-  //val addr_port = Stream( cloneOf(base_addr))
-
 
   // Logic for address bus
 
@@ -148,11 +120,6 @@ class UniDma[T <: Data ](addr_port : Flow[UInt],config : UniDmaConfig ) extends 
 
   addr_port.valid := req_valid
   addr_port.payload := req_counter + base_addr
-
-//
-//  val data_in_port_num = maps.map(_._1).distinct.size
-//
-//  val data_out_port_num = maps.map(_._2).distinct.size
 
   val source  = Vec.fill(data_in_port_num)(Bits(dataWidth bits ))
   val sink = Vec.fill(data_out_port_num)( Flow( Bits(dataWidth bits )) )
@@ -183,21 +150,6 @@ class UniDma[T <: Data ](addr_port : Flow[UInt],config : UniDmaConfig ) extends 
       channel(j) >> sink(j)
     }
   }
-
-//  for ( ( (i, dir ) , j ) <- maps  ) {
-//    val data_in = Flow(channel(j).payloadType)
-//    data_in.valid := {
-//      dir.toLowerCase match {
-//        case "write" => req_valid
-//        case "read" => req_valid_1d
-//        case _ => False
-//      }
-//    }
-//    data_in.payload := source(i)
-//    channel(j) << data_in
-//    channel(j) >> sink(j)
-//  }
-
 
   def <<( index : Int, data : Bits ) = source(index) := data
   def apply( index : Int )  : Flow[Bits] = sink(index)
@@ -239,9 +191,6 @@ class halfDmaWrapper ( addrWidth : Int , dataWidth : Int ) extends Component {
   val c = dma(2)
   val d = dma(3)
 
-
-//  dma.source(0) := data_in_0
-//  dma.source(1) := data_in_1
   dma << (0, data_in_0 )
   dma << (1, data_in_1 )
 
