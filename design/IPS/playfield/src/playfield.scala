@@ -43,7 +43,8 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
       val down = in Bool()
     }
     val lock = in Bool()
-    val read = in Bool()
+
+    val game_restart = in Bool()
     val row_val = master Flow (Bits(colBlocksNum bits))
     val playfield_backdoor = if (sim) slave Flow (Playfield_Row_Data(rowBitsWidth, colBlocksNum)) else null
     val motion_is_allowed = out Bool()
@@ -53,6 +54,7 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     val start_collision_check = if (sim) in Bool() else null
     val fsm_reset = if (sim) in Bool() else null
     val fsm_contrl = if (sim) in Bool() else null
+    val read = if ( sim ) in Bool() else null
 
   }
 
@@ -353,7 +355,8 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
       }
     }
 
-    when(reset) {
+//    when(reset) {
+    when(io.game_restart) {
       region.clearAll()
     }
 
@@ -457,6 +460,8 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     val start = False allowOverride()
     val collision_bits = Reg(Flow(Bool()))
 
+    collision_bits.valid.init(False)
+
     val src_0, src_1 = Flow(Bits(colBlocksNum bit))
     collision_bits.valid := src_0.valid
     collision_bits.payload := ( src_0.payload & src_1.payload ) .orR
@@ -469,6 +474,8 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
     val is_collision = Flow(Bool())
     is_collision.valid := collision_bits.valid.fall(False)
     is_collision.payload := check_status
+
+
   }
 
 
@@ -723,16 +730,20 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
   //  -
   //-----------------------------------------------------------------------
 
+
   val main_fsm = new StateMachine {
 
     io.status.valid := False
     io.status.payload := False
+
+    val will_goto_idle = RegInit(False)
 
     val IDLE = makeInstantEntry()
     IDLE.whenIsActive {
 
       dma.flow_dma.enableAllChannel()
       dma.checker_dma.enableAllChannel()
+      will_goto_idle := False
 
       if (sim) {
         when(io.fsm_contrl) {
@@ -765,7 +776,11 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
           dma.execute_flow_readout()
         }
         when ( row_out_done ) {
-          goto(WAIT_CONTROL)
+          when ( will_goto_idle ) {
+            goto(IDLE)
+          } otherwise {
+            goto(WAIT_CONTROL)
+          }
         }
       }
 
@@ -857,6 +872,7 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
         io.status.valid := True
         io.status.payload := False
       }
+
       whenIsActive {
         when(action === ACTION.PLACE) {
           flow.update := True
@@ -883,7 +899,12 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
         }
 
 
-        goto(WAIT_CONTROL)
+//        goto(WAIT_CONTROL)
+        if ( sim  ) {
+          goto(WAIT_CONTROL)
+        } else {
+          goto(READOUT)
+        }
       }
 
     }
@@ -899,11 +920,13 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
             goto(IDLE)
           }
 
+          when(io.read) {
+            goto(READOUT)
+          }
+
         }
 
-        when(io.read) {
-          goto(READOUT)
-        }
+
 
         when(io.move_in.left) {
           when(checker.overflowIfLeft) {
@@ -1051,7 +1074,13 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
 
           goto(ROW_REMOVE)
         } otherwise {
-          goto(IDLE)
+//          goto(IDLE)
+          if ( sim ) {
+            goto(IDLE)
+          } else {
+            will_goto_idle := True
+            goto(READOUT)
+          }
         }
       }
     }

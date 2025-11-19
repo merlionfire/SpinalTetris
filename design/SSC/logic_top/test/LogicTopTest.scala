@@ -1,4 +1,4 @@
-package SSC.logic_top
+//package SSC.logic_top
 
 import spinal.core._
 import config.runSimConfig

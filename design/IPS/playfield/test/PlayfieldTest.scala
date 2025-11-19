@@ -251,8 +251,8 @@ class PlayFieldTest extends AnyFunSuite
     compiled.doSimUntilVoid(seed = 42) { dut =>
 
       val predefPlaceTestPattern = List(
-        0 -> PlaceScenarios.basic( BitPatternGenerators.AllZeros),
-        0 -> PlaceScenarios.basic( BitPatternGenerators.AllOnes),
+        1 -> PlaceScenarios.basic( BitPatternGenerators.AllZeros),
+        1 -> PlaceScenarios.basic( BitPatternGenerators.AllOnes),
         0 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(1),  count = 100 ),
         1 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(2),  count = 50 ),
         0 -> PlaceScenarios.basic( BitPatternGenerators.FixedOnes(3),  count = 50 ),
