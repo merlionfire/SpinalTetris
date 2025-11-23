@@ -416,6 +416,25 @@ object MotionPatternGenerators {
   }
 
 
+  def getMotionsDescription( that : Seq[Pattern] ) : String = that.map {
+    case MotionPatternGenerators.Left(step) => s"← ${step}"
+    case MotionPatternGenerators.Right(step) => s"→ ${step}"
+    case MotionPatternGenerators.Rotate(step) => s"↓ ${step}"
+    case MotionPatternGenerators.Down(step) => s"↺ ${step}"
+    case MotionPatternGenerators.Drop => s"↓↓↓"
+    case MotionPatternGenerators.Random => s"Randomized motions"
+  }.mkString(", ")
+
+
+  def expandMotionPatterns( patterns: Seq[Pattern] ): Seq[String] = {
+    patterns.flatMap {
+      case MotionPatternGenerators.Left(step) => List.fill(step)("LF")
+      case MotionPatternGenerators.Right(step) => List.fill(step)("RG")
+      case MotionPatternGenerators.Rotate(step) => List.fill(step)("RT")
+      case MotionPatternGenerators.Down(step) => List.fill(step)("DN")
+      case MotionPatternGenerators.Drop => List.fill(1)("DP")
+    }
+  }
 
 }
 

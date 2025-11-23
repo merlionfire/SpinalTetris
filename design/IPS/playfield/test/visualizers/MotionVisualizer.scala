@@ -13,6 +13,7 @@ class MotionVisualizer (
                         width : Int,
                         height : Int,
                         testClass: Class[_],
+                        middlePath : String = "design/IPS",
                         blockSize: Int = 20
                         ) extends BaseVisualizer( testClass, blockSize )  {
   private val frameQueue = mutable.Queue[(String, Seq[Int])]()
@@ -54,7 +55,7 @@ class MotionVisualizer (
 
     ImageGenerator.fromGridLayout(totalWidth, totalHeight, gridTasks)
       .buildAndSave(
-        PathUtils.getRtlOutputPath(testClass, targetName = s"sim/img/Motions_$roundIndex").toString +
+        PathUtils.getRtlOutputPath(testClass, middlePath= middlePath,  targetName = s"sim/img/Motions_$roundIndex").toString +
           s"/Action_${actionIndex}_${playfieldPattern}_${piecePattern}.png"
       )
   }

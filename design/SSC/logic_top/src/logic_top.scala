@@ -43,7 +43,7 @@ case class  LogicTopConfig ( rowNum : Int, colNum : Int , freeze_screen_in_frame
 
 }
 
-class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Component {
+class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends Component {
 
   import config._
 
@@ -62,6 +62,8 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
     val ctrl_allowed = out Bool()
     val softReset = out Bool()
     val game_restart = out Bool()
+    val new_piece_valid = out Bool()
+    val controller_in_lockdown = sim generate( out Bool () )
   }
 
 
@@ -73,41 +75,39 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
   //***********************************************************
 
   val piece_gen_inst = new seven_bag_rng()
-  val playfield_inst = new playfield(playFieldConfig)
-  val controller_inst = new controller(controllerConfig)
+  val playfield_inst = new playfield(playFieldConfig, sim = false)
+  val controller_inst = new controller(controllerConfig, sim = sim )
 
 
-
-
-  //***********************************************************
-  //              Motion request voter
-  //***********************************************************
-
-  val motion_request = RegInit(B(0, 5 bit))
-
-  /*
-      priority  : Highest Priority
-      b00000000 : LSB, 0 bit
-  */
-  val priority = cloneOf(motion_request) setAsReg() init B(0)  // LSB
-
-  val drop, move_down, move_left, move_right, rotate = Bool()
-
-  val motion_trans_with_indx = Seq(
-    io.drop         -> drop,
-    io.move_down    -> move_down,
-    io.move_left    -> move_left,
-    io.move_right   -> move_right,
-    io.rotate       -> rotate,
-  ).zipWithIndex
-
-  for ( ( ( sig, _ ), i ) <- motion_trans_with_indx )  {
-    motion_request(i) := sig.rise(False)
-  }
-  val motion_voted = OHMasking.roundRobin( requests = motion_request,ohPriority = priority  )
-  for ( ( ( _, sig ), i ) <- motion_trans_with_indx ) {
-    sig := motion_voted(i)
-  }
+//  //***********************************************************
+//  //              Motion request voter
+//  //***********************************************************
+//
+//  val motion_request = RegInit(B(0, 5 bit))
+//
+//  /*
+//      priority  : Highest Priority
+//      b00000000 : LSB, 0 bit
+//  */
+//  val priority = cloneOf(motion_request) setAsReg() init B(0)  // LSB
+//
+//  val drop, move_down, move_left, move_right, rotate = Bool()
+//
+//  val motion_trans_with_indx = Seq(
+//    io.drop         -> drop,
+//    io.move_down    -> move_down,
+//    io.move_left    -> move_left,
+//    io.move_right   -> move_right,
+//    io.rotate       -> rotate,
+//  ).zipWithIndex
+//
+//  for ( ( ( sig, _ ), i ) <- motion_trans_with_indx )  {
+//    motion_request(i) := sig.rise(False)
+//  }
+//  val motion_voted = OHMasking.roundRobin( requests = motion_request,ohPriority = priority  )
+//  for ( ( ( _, sig ), i ) <- motion_trans_with_indx ) {
+//    sig := motion_voted(i)
+//  }
 
 
 
@@ -115,11 +115,11 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
 
   /* Input - io */
   controller_inst.io.game_start := io.game_start
-  controller_inst.io.move_left := move_left
-  controller_inst.io.move_right := move_right
-  controller_inst.io.move_down := move_down
-  controller_inst.io.rotate := rotate
-  controller_inst.io.drop  := drop
+  controller_inst.io.move_left := io.move_left
+  controller_inst.io.move_right := io.move_right
+  controller_inst.io.move_down := io.move_down
+  controller_inst.io.rotate := io.rotate
+  controller_inst.io.drop  := io.drop
   controller_inst.io.screen_is_ready  := io.screen_is_ready
 
 
@@ -145,14 +145,16 @@ class logic_top ( config : LogicTopConfig, test : Boolean = false  ) extends Com
   /* output -> IO */
   io.softReset := controller_inst.io.softReset
   io.game_restart := controller_inst.io.game_restart
-
+  if (sim ) {
+    io.controller_in_lockdown := controller_inst.io.controller_in_lockdown
+  }
 
   // Playfield Connection
 
   /* output -> IO */
   io.row_val <<  playfield_inst.io.row_val
   io.ctrl_allowed := playfield_inst.io.motion_is_allowed
-
+  io.new_piece_valid := controller_inst.io.gen_piece_en
 
 
 //

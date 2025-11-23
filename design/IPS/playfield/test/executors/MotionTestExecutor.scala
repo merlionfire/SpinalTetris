@@ -12,7 +12,75 @@ import java.awt.Color
 import scala.collection.mutable
 import scala.util.control.Breaks.{break, breakable}
 
-trait MotionTestExecutor {
+
+trait MotionTestExecutorBase {
+
+  def printMotionActionHeader(
+                                       action: TestMotionPatternGroup,
+                                       roundIndex: Int,
+                                       actionIndex: Int,
+                                       totalActions: Int
+                                     ): Unit = {
+    println(s"\n${"=" * 100}\n")
+    println(s"\t\tExecuting Round ${roundIndex + 1}, Action ${actionIndex + 1}/${totalActions}")
+    println(s"\t\tPurpose\t: ${action.description}")
+    println(s"\t\tPattern\t: ${action.p0} : ${action.p1} ${action.getMotionsDescription}")
+    println(s"\n${"=" * 100}")
+  }
+
+  /**
+   * Splits a sequence of test motion pattern groups into rounds based on their pattern types.
+   *
+   * This method organizes motion patterns into separate rounds, where each round begins with
+   * a non-Hold pattern (typically AllZeros or other initialization patterns, it acts as game start scenario) and continues
+   * with subsequent Hold patterns that belong to the same round. Each non-Hold pattern starts
+   * a new round ( new game ) , while Hold patterns are appended to the most recent round.
+   *
+   * The splitting logic:
+   * - Any non-Hold pattern starts a new round containing that single element
+   * - Hold patterns are appended to the current (last) round
+   * - The first element must be a non-Hold pattern; otherwise an exception is thrown
+   *
+   * @param allActions the complete sequence of motion pattern groups to be split into rounds.
+   *                   Must start with a non-Hold pattern type.
+   * @return a list of rounds, where each round is a list of TestMotionPatternGroup elements.
+   *         Each round starts with a non-Hold pattern followed by zero or more Hold patterns.
+   * @throws IllegalStateException if the first element is a Hold pattern, or if a Hold pattern
+   *                               is encountered when no prior round exists
+   */
+  def splitMotionsByRound ( allActions : Seq[TestMotionPatternGroup] ) : List[List[TestMotionPatternGroup]] = {
+    allActions.foldLeft( List.empty[List[TestMotionPatternGroup]]) {
+      case ( acc, elem @ TestMotionPatternGroup(playfieldPattern , _,_,_ ) )
+        if playfieldPattern != BitPatternGenerators.Hold => acc :+ List(elem )
+      case ( acc :+ last , elem @ TestMotionPatternGroup(BitPatternGenerators.Hold , _,_,_) ) =>  acc :+ (last :+ elem )
+      case (Nil, elem) =>
+        throw new IllegalStateException(
+          s"Unexpected first element: expected not BitPatternGenerators.HOLD, but got ${elem.p0}"
+        )
+      case (_, elem) =>
+        throw new IllegalStateException(
+          s"Unexpected pattern type: ${elem.p0}. Expected  BitPatternGenerators pattern."
+        )
+    }
+  }
+
+  def printMotionTestSummary(actionsByRound: List[List[TestMotionPatternGroup]]): Unit = {
+    println(s"\n${"=" * 120}\n")
+    println(s"\t\t\t\tMotion Test Group Summary\n")
+    println(f"\t\t\tPlayfield\tx\tPiece\t:\tMotions")
+    for ((round, i) <- actionsByRound.zipWithIndex) {
+      println(f"\tRound ${i + 1}:")
+      for (pattern <- round) {
+        println(f"\t\t${pattern.p0}%10s\tx\t${pattern.p1}%5s\t:\t${pattern.getMotionsDescription}")
+      }
+    }
+    println(s"\n${"=" * 120}")
+  }
+
+}
+
+
+trait MotionTestExecutor extends  MotionTestExecutorBase {
 
   this: PlayfieldTestBase with PlayfieldBackdoorAPI =>
 
@@ -196,67 +264,67 @@ trait MotionTestExecutor {
     currentState
   }
 
-  private def printMotionTestSummary(actionsByRound: List[List[TestMotionPatternGroup]]): Unit = {
-    println(s"\n${"=" * 120}\n")
-    println(s"\t\t\t\tMotion Test Group Summary\n")
-    println(f"\t\t\tPlayfield\tx\tPiece\t:\tMotions")
-    for ((round, i) <- actionsByRound.zipWithIndex) {
-      println(f"\tRound ${i + 1}:")
-      for (pattern <- round) {
-        println(f"\t\t${pattern.p0}%10s\tx\t${pattern.p1}%5s\t:\t${pattern.getMotionsDescription}")
-      }
-    }
-    println(s"\n${"=" * 120}")
-  }
+//  private def printMotionTestSummary(actionsByRound: List[List[TestMotionPatternGroup]]): Unit = {
+//    println(s"\n${"=" * 120}\n")
+//    println(s"\t\t\t\tMotion Test Group Summary\n")
+//    println(f"\t\t\tPlayfield\tx\tPiece\t:\tMotions")
+//    for ((round, i) <- actionsByRound.zipWithIndex) {
+//      println(f"\tRound ${i + 1}:")
+//      for (pattern <- round) {
+//        println(f"\t\t${pattern.p0}%10s\tx\t${pattern.p1}%5s\t:\t${pattern.getMotionsDescription}")
+//      }
+//    }
+//    println(s"\n${"=" * 120}")
+//  }
 
-  private def printMotionActionHeader(
-                                       action: TestMotionPatternGroup,
-                                       roundIndex: Int,
-                                       actionIndex: Int,
-                                       totalActions: Int
-                                     ): Unit = {
-    println(s"\n${"=" * 100}\n")
-    println(s"\t\tExecuting Round ${roundIndex + 1}, Action ${actionIndex + 1}/${totalActions}")
-    println(s"\t\tPurpose\t: ${action.description}")
-    println(s"\t\tPattern\t: ${action.p0} : ${action.p1} ${action.getMotionsDescription}")
-    println(s"\n${"=" * 100}")
-  }
-
-  /**
-   * Splits a sequence of test motion pattern groups into rounds based on their pattern types.
-   *
-   * This method organizes motion patterns into separate rounds, where each round begins with
-   * a non-Hold pattern (typically AllZeros or other initialization patterns, it acts as game start scenario) and continues
-   * with subsequent Hold patterns that belong to the same round. Each non-Hold pattern starts
-   * a new round ( new game ) , while Hold patterns are appended to the most recent round.
-   *
-   * The splitting logic:
-   * - Any non-Hold pattern starts a new round containing that single element
-   * - Hold patterns are appended to the current (last) round
-   * - The first element must be a non-Hold pattern; otherwise an exception is thrown
-   *
-   * @param allActions the complete sequence of motion pattern groups to be split into rounds.
-   *                   Must start with a non-Hold pattern type.
-   * @return a list of rounds, where each round is a list of TestMotionPatternGroup elements.
-   *         Each round starts with a non-Hold pattern followed by zero or more Hold patterns.
-   * @throws IllegalStateException if the first element is a Hold pattern, or if a Hold pattern
-   *                               is encountered when no prior round exists
-   */
-  def splitMotionsByRound ( allActions : Seq[TestMotionPatternGroup] ) : List[List[TestMotionPatternGroup]] = {
-    allActions.foldLeft( List.empty[List[TestMotionPatternGroup]]) {
-      case ( acc, elem @ TestMotionPatternGroup(playfieldPattern , _,_,_ ) )
-        if playfieldPattern != BitPatternGenerators.Hold => acc :+ List(elem )
-      case ( acc :+ last , elem @ TestMotionPatternGroup(BitPatternGenerators.Hold , _,_,_) ) =>  acc :+ (last :+ elem )
-      case (Nil, elem) =>
-        throw new IllegalStateException(
-          s"Unexpected first element: expected not BitPatternGenerators.HOLD, but got ${elem.p0}"
-        )
-      case (_, elem) =>
-        throw new IllegalStateException(
-          s"Unexpected pattern type: ${elem.p0}. Expected  BitPatternGenerators pattern."
-        )
-    }
-  }
+//  private def printMotionActionHeader(
+//                                       action: TestMotionPatternGroup,
+//                                       roundIndex: Int,
+//                                       actionIndex: Int,
+//                                       totalActions: Int
+//                                     ): Unit = {
+//    println(s"\n${"=" * 100}\n")
+//    println(s"\t\tExecuting Round ${roundIndex + 1}, Action ${actionIndex + 1}/${totalActions}")
+//    println(s"\t\tPurpose\t: ${action.description}")
+//    println(s"\t\tPattern\t: ${action.p0} : ${action.p1} ${action.getMotionsDescription}")
+//    println(s"\n${"=" * 100}")
+//  }
+//
+//  /**
+//   * Splits a sequence of test motion pattern groups into rounds based on their pattern types.
+//   *
+//   * This method organizes motion patterns into separate rounds, where each round begins with
+//   * a non-Hold pattern (typically AllZeros or other initialization patterns, it acts as game start scenario) and continues
+//   * with subsequent Hold patterns that belong to the same round. Each non-Hold pattern starts
+//   * a new round ( new game ) , while Hold patterns are appended to the most recent round.
+//   *
+//   * The splitting logic:
+//   * - Any non-Hold pattern starts a new round containing that single element
+//   * - Hold patterns are appended to the current (last) round
+//   * - The first element must be a non-Hold pattern; otherwise an exception is thrown
+//   *
+//   * @param allActions the complete sequence of motion pattern groups to be split into rounds.
+//   *                   Must start with a non-Hold pattern type.
+//   * @return a list of rounds, where each round is a list of TestMotionPatternGroup elements.
+//   *         Each round starts with a non-Hold pattern followed by zero or more Hold patterns.
+//   * @throws IllegalStateException if the first element is a Hold pattern, or if a Hold pattern
+//   *                               is encountered when no prior round exists
+//   */
+//  def splitMotionsByRound ( allActions : Seq[TestMotionPatternGroup] ) : List[List[TestMotionPatternGroup]] = {
+//    allActions.foldLeft( List.empty[List[TestMotionPatternGroup]]) {
+//      case ( acc, elem @ TestMotionPatternGroup(playfieldPattern , _,_,_ ) )
+//        if playfieldPattern != BitPatternGenerators.Hold => acc :+ List(elem )
+//      case ( acc :+ last , elem @ TestMotionPatternGroup(BitPatternGenerators.Hold , _,_,_) ) =>  acc :+ (last :+ elem )
+//      case (Nil, elem) =>
+//        throw new IllegalStateException(
+//          s"Unexpected first element: expected not BitPatternGenerators.HOLD, but got ${elem.p0}"
+//        )
+//      case (_, elem) =>
+//        throw new IllegalStateException(
+//          s"Unexpected pattern type: ${elem.p0}. Expected  BitPatternGenerators pattern."
+//        )
+//    }
+//  }
 
   /**
    * Prepare playfield based on pattern

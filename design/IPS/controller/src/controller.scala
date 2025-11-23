@@ -62,7 +62,7 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
       val down = out Bool()
     }
     val lock = out Bool()
-    val read = out Bool()
+    val controller_in_lockdown = sim generate( out Bool () )
   }
 
 
@@ -78,7 +78,47 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
 
 
 
+  //***********************************************************
+  //              Motion request voter
+  //***********************************************************
 
+//  val motion_is_allowed = fsm.isActive(fsm.FALLING)
+
+  val motion_request = RegInit(B(0, 5 bit))
+
+  /*
+      priority  : Highest Priority
+      b00000000 : LSB, 0 bit
+  */
+  val priority = cloneOf(motion_request) setAsReg() init B(1)  // LSB
+
+  val drop, move_down, move_left, move_right, rotate = Bool()
+
+  val motion_trans_with_indx = Seq(
+    io.drop         -> drop,
+    io.move_down    -> move_down,
+    io.move_left    -> move_left,
+    io.move_right   -> move_right,
+    io.rotate       -> rotate,
+  ).zipWithIndex
+
+  for ( ( ( sig, _ ), i ) <- motion_trans_with_indx )  {
+    when ( sig.rise(False) ) {
+      motion_request(i) := True
+    }
+  }
+
+  val motion_voted = OHMasking.roundRobin( requests = motion_request,ohPriority = priority  )
+
+  for ( ( ( _, sig ), i ) <- motion_trans_with_indx ) {
+    sig := motion_voted(i)
+  }
+
+
+
+  //***********************************************************
+  //              FSM
+  //***********************************************************
 
   val fsm = new StateMachine {
 
@@ -145,25 +185,25 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
     val FALLING: State = new State {
 
       whenIsActive {
-        when ( io.move_down & io.playfiedl_allow_action) {
+        when ( move_down & io.playfiedl_allow_action) {
           goto(DOWN)
         }
 
-        when ( io.drop & io.playfiedl_allow_action ) {
+        when ( drop & io.playfiedl_allow_action ) {
           goto(DROP)
         }
 
-        when (  io.move_left  & io.playfiedl_allow_action ) {
+        when ( move_left  & io.playfiedl_allow_action ) {
           io.move_out.left   := True
           goto(MOVE)
         }
 
-        when (  io.move_right  & io.playfiedl_allow_action ) {
+        when (  move_right  & io.playfiedl_allow_action ) {
           io.move_out.right  := True
           goto(MOVE)
         }
 
-        when (  io.rotate  & io.playfiedl_allow_action ) {
+        when (  rotate  & io.playfiedl_allow_action ) {
           io.move_out.rotate  := True
           goto(MOVE)
         }
@@ -172,6 +212,10 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
           goto(LOCK)
         }
       }
+
+      onExit(
+        motion_request.clearAll()
+      )
 
     }
 
@@ -195,10 +239,21 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
       onEntry {
         io.move_out.down := True
       }
+
       whenIsActive(  // Once it drops on the botton and is locked )
-        transitionOnCollision( onCollision= LOCKDOWN, onNoCollision = DROP)
+        transitionOnCollision( onCollision= LOCKDOWN, onNoCollision = WAIT_ALLOW_ACTION)
       )
+
     }
+
+    val WAIT_ALLOW_ACTION = new State {
+      whenIsActive {
+        when ( io.playfiedl_allow_action )  {
+          goto(DROP)
+        }
+      }
+    }
+
 
     val MOVE : State = new State {
       whenIsActive(
@@ -245,6 +300,11 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
         }
       }
     }
+  }
+
+
+  if ( sim ) {
+    io.controller_in_lockdown := fsm.isActive(fsm.LOCKDOWN)
   }
 }
 

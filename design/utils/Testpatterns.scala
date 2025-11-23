@@ -488,6 +488,47 @@ object TestPatterns {
       }
     }
 
+
+    def m1 ( )  : Seq[Pattern]  = List (
+      Left(3),
+      Right(6),
+      Rotate(2),
+      Left(3),
+      Down(2),
+      Rotate(3),
+      Drop
+    )
+
+    def m2 ( )  : Seq[Pattern]  = List (
+      Down(2),
+      Rotate(3),
+      Right(6),
+      Left(3),
+      Rotate(1),
+      Right(6),
+      Rotate(2),
+      Down(2),
+      Left(3),
+      Drop
+    )
+
+
+    def m3 ( )  : Seq[Pattern] = List(
+      Rotate(1),
+      Down(2),
+      Left(6),
+      Down(3),
+      Rotate(4),
+      Right(2),
+      Rotate(2),
+      Down(2),
+      Drop
+    )
+
+
+
+
+
     def uc1( piecePattern : PiecePatternGenerators.Pattern, playfieldHold : Boolean = false )  : TestMotionPatternGroup = {
       TestMotionPatternGroup(
         p0 = if ( playfieldHold ) BitPatternGenerators.Hold else BitPatternGenerators.AllZeros,
