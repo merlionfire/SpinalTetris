@@ -38,11 +38,11 @@ trait LogicTopTestBase {
     dut.clockDomain.waitSampling()
   }
 
-  def startGame(dut: logic_top ) : Unit = {
-    dut.io.game_start #= true
-    dut.clockDomain.waitSampling()
-    dut.io.game_start #= false
-  }
+//  def startGame(dut: logic_top ) : Unit = {
+//    dut.io.game_start #= true
+//    dut.clockDomain.waitSampling()
+//    dut.io.game_start #= false
+//  }
 
 
   /** Helper method for common DUT setup and initialization logic. */
@@ -118,7 +118,7 @@ class LogicTopTest extends AnyFunSuite
         scbd.addActual( payload.toInt, s"@${simTime()}" )
       }
 
-      startGame(dut)
+
 
       executeTestMotionActions(dut, scbd,
         actions = PlaceTestPatternList,
@@ -152,6 +152,9 @@ class LogicTopTest extends AnyFunSuite
       1 -> MotionScenarios.m3(),
       1 -> MotionScenarios.m2(),
       1 -> MotionScenarios.m1(),
+      1 -> MotionScenarios.m6(),
+      1 -> MotionScenarios.m5(),
+      1 -> MotionScenarios.m4(),
 
     )
 

@@ -64,6 +64,8 @@ class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends
     val game_restart = out Bool()
     val new_piece_valid = out Bool()
     val controller_in_lockdown = sim generate( out Bool () )
+    val controller_in_end      = sim generate( out Bool () )
+    val controller_in_place    = sim generate( out Bool () )
   }
 
 
@@ -147,6 +149,8 @@ class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends
   io.game_restart := controller_inst.io.game_restart
   if (sim ) {
     io.controller_in_lockdown := controller_inst.io.controller_in_lockdown
+    io.controller_in_end      := controller_inst.io.controller_in_end
+    io.controller_in_place    := controller_inst.io.controller_in_place
   }
 
   // Playfield Connection

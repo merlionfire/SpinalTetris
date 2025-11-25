@@ -63,6 +63,8 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
     }
     val lock = out Bool()
     val controller_in_lockdown = sim generate( out Bool () )
+    val controller_in_end     = sim generate( out Bool () )
+    val controller_in_place   = sim generate( out Bool () )
   }
 
 
@@ -177,7 +179,8 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
         when(io.game_start) {
           io.softReset := True // Game fail and restart the game
           io.game_restart := True
-          goto(IDLE)
+//          goto(IDLE)
+          goto(GAME_START)
         }
       }
     }
@@ -305,6 +308,8 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
 
   if ( sim ) {
     io.controller_in_lockdown := fsm.isActive(fsm.LOCKDOWN)
+    io.controller_in_end      := fsm.isActive(fsm.END)
+    io.controller_in_place    := fsm.isActive(fsm.PLACE)
   }
 }
 

@@ -63,16 +63,22 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
     )
     printMotionTestSummary(actions)
 
+    startGame(dut)
+
+    var round = 0
+
     dut.clockDomain.waitSamplingWhere(condAnd = dut.io.new_piece_valid.toBoolean)
     // Main Body
-    for ( ( round,  roundIndex  )  <- actions.zipWithIndex  ) { /* One round means one game round */
+//    for ( ( round,  roundIndex  )  <- actions.zipWithIndex  ) { /* One round means one game round */
+    for (  ( action, actionIndex )   <- actions.zipWithIndex  ) {
+      /* One round means one game round */
 
       if (verbose) {
-        printMotionActionHeader(round, roundIndex)
+        printMotionActionHeader(action, actionIndex)
       }
 
       val motionNames = mutable.Queue[String]("Place")
-      val motionSequence = expandMotionPatterns(round)
+      val motionSequence = expandMotionPatterns(action)
 
       dut.clockDomain.waitSampling(20)
 
@@ -83,33 +89,35 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
       }
 
       // Wait until new piece is placed
-      dut.clockDomain.waitSamplingWhere(condAnd = dut.io.new_piece_valid.toBoolean)
+      //      dut.clockDomain.waitSamplingWhere(condAnd = dut.io.new_piece_valid.toBoolean)
+      dut.clockDomain.waitSamplingWhere(condAnd = dut.io.controller_in_place.toBoolean )
 
       val playfieldList = scbd.actualData.grouped(dut.config.rowBlocksNum).toList
 
       playfieldList.foreach { playfieldState =>
 
-        val motionName = if (motionNames.nonEmpty ) motionNames.dequeue() else "DP"
-        visualizer.recordFrame( motionName, playfieldState  )
+        val motionName = if (motionNames.nonEmpty) motionNames.dequeue() else "DP"
+        visualizer.recordFrame(motionName, playfieldState)
       }
 
-      val targetName = s"sim/img/MotionTest/Action_${roundIndex}.png"
+      val targetName = s"sim/img/Motion_${round}/Action_${actionIndex}.png"
 
-//      visualizer.saveFrameSequence(
-//        roundIndex = roundIndex,
-//        actionIndex = 0,
-//        playfieldPattern = "",
-//        piecePattern = "unknown"
-//      )
 
-      visualizer.saveFrameSequence(  targetName = targetName  )
+      visualizer.saveFrameSequence(targetName = targetName)
       // ✅ Clear visualizer for next action
       visualizer.clear()
       scbd.clear()
 
+      println(s"[DEBUG]${simTime()} Checking if dut.io.controller_in_end is asserted ...  " )
+      val gameIsOver = !dut.clockDomain.waitSamplingWhere(20)(condAnd = dut.io.controller_in_end.toBoolean)
+      println(s"[DEBUG]${simTime()} gameIsOver = ${gameIsOver}" )
+
+      if (gameIsOver) {
+        round = round + 1
+        println(s"[DEBUG]${simTime()} Restart game  !!" )
+        startGame(dut)
+      }
     }
-
-
 
 //      breakable {
 //        for ((action, actionIndex) <- round.zipWithIndex) {
@@ -185,6 +193,12 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
 //        println(s"[INFO] @${simTime()} Placing a new piece failed. Game is over here ")
 //      }
 
+  }
+
+  def startGame(dut: logic_top ) : Unit = {
+    dut.io.game_start #= true
+    dut.clockDomain.waitSampling()
+    dut.io.game_start #= false
   }
 
   def issueMotion(dut: logic_top, motion: String): Boolean  = {
