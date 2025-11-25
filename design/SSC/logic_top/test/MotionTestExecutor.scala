@@ -93,12 +93,16 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
         visualizer.recordFrame( motionName, playfieldState  )
       }
 
-      visualizer.saveFrameSequence(
-        roundIndex = roundIndex,
-        actionIndex = 0,
-        playfieldPattern = "",
-        piecePattern = "unknown"
-      )
+      val targetName = s"sim/img/MotionTest/Action_${roundIndex}.png"
+
+//      visualizer.saveFrameSequence(
+//        roundIndex = roundIndex,
+//        actionIndex = 0,
+//        playfieldPattern = "",
+//        piecePattern = "unknown"
+//      )
+
+      visualizer.saveFrameSequence(  targetName = targetName  )
       // ✅ Clear visualizer for next action
       visualizer.clear()
       scbd.clear()

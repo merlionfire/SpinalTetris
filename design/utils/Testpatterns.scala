@@ -526,6 +526,51 @@ object TestPatterns {
     )
 
 
+    def m4 ()  : Seq[Pattern] = List(
+      Rotate(5),
+      Left(2),
+      Rotate(1),
+      Down(3),
+      Left(1),
+      Rotate(2),
+      Right(1),
+      Rotate(3),
+      Down(2),
+      Rotate(4),
+      Drop
+    )
+
+
+    def m5 ()  : Seq[Pattern] = List(
+      Drop
+    )
+
+    def m6 ()  : Seq[Pattern] =  List(
+      Left(5),
+      Rotate(3),
+      Right(8),
+      Rotate(3),
+      Left(4),
+      Drop
+    )
+
+    def ms1 ()  : Seq[Pattern] =  List(
+      Left(3),
+      Right(6),
+      Rotate(2),
+      Down(2),
+      Rotate(3),
+      Drop
+    )
+
+    def ms2 ()  : Seq[Pattern] = List(
+      Left(5),
+      Rotate(3),
+      Right(8),
+      Rotate(3),
+      Left(4),
+      Drop
+    )
 
 
 

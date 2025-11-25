@@ -29,7 +29,7 @@ case  class flow_region_Data  (rowBitsWidth : Int, colBlocksNum : Int ) extends 
 }
 
 
-class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends Component {
+class playfield(val config : PlayfieldConfig, sim : Boolean = false, enableCollisonReadout : Boolean = false )  extends Component {
 
   import config._
 
@@ -860,7 +860,13 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
 
         action := ACTION.NO
 
-        goto(WAIT_CONTROL)
+//        goto(WAIT_CONTROL)
+
+        if ( enableCollisonReadout ) {
+          goto(READOUT)
+        } else {
+          goto(WAIT_CONTROL)
+        }
 
       }
 
@@ -906,6 +912,11 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false )  extends C
           goto(READOUT)
         }
       }
+
+      // Add
+      onExit(
+        action := ACTION.NO
+      )
 
     }
 

@@ -60,6 +60,23 @@ class MotionVisualizer (
       )
   }
 
+  def saveFrameSequence( targetName : String )  :Unit = {
+
+    val frames = frameQueue.toSeq
+    if (frames.isEmpty) {
+      println(s"[WARN] No frames to visualize for this action")
+      return
+    }
+
+    val gridTasks = buildGridLayout(frames)
+    val (totalWidth, totalHeight) = calculateCanvasSize(frames.size)
+
+    ImageGenerator.fromGridLayout(totalWidth, totalHeight, gridTasks)
+      .buildAndSave(
+        PathUtils.getRtlOutputPath(testClass, middlePath= middlePath,  targetName = targetName ) .toString )
+  }
+
+
   /**
    * Clear all recorded frames for next action
    */

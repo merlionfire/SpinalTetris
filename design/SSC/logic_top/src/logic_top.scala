@@ -75,7 +75,7 @@ class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends
   //***********************************************************
 
   val piece_gen_inst = new seven_bag_rng()
-  val playfield_inst = new playfield(playFieldConfig, sim = false)
+  val playfield_inst = new playfield(playFieldConfig, sim = false, enableCollisonReadout = sim )
   val controller_inst = new controller(controllerConfig, sim = sim )
 
 

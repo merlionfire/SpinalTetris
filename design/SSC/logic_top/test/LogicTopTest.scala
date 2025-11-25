@@ -140,7 +140,18 @@ class LogicTopTest extends AnyFunSuite
     val predefMotionsTestPattern = List(
       1 -> MotionScenarios.m1(),
       1 -> MotionScenarios.m2(),
-      1 -> MotionScenarios.m3()
+      1 -> MotionScenarios.m3(),
+      1 -> MotionScenarios.m4(),
+      1 -> MotionScenarios.m5(),
+      1 -> MotionScenarios.m6(),
+      1 -> MotionScenarios.ms1(),
+      1 -> MotionScenarios.ms2(),
+      1 -> MotionScenarios.m6(),
+      1 -> MotionScenarios.m5(),
+      1 -> MotionScenarios.m4(),
+      1 -> MotionScenarios.m3(),
+      1 -> MotionScenarios.m2(),
+      1 -> MotionScenarios.m1(),
 
     )
 
