@@ -10,9 +10,9 @@ import IPS.playfield.visualizers.MotionVisualizer
 import utils.PlayFieldScoreboard
 import utils.TestPatterns.TestMotionPatternGroup
 import IPS.playfield.{PlayfieldBackdoorAPI, PlayfieldTestBase, playfield}
-
+import utils.MotionPatternGenerators
 import utils.MotionPatternGenerators._
-import utils._
+
 
 import scala.util.control.Breaks.{break, breakable}
 
@@ -109,7 +109,9 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
       scbd.clear()
 
       println(s"[DEBUG]${simTime()} Checking if dut.io.controller_in_end is asserted ...  " )
-      val gameIsOver = !dut.clockDomain.waitSamplingWhere(20)(condAnd = dut.io.controller_in_end.toBoolean)
+
+      // 25 cycles are enough for duration of piece generation + place collision check
+      val gameIsOver = !dut.clockDomain.waitSamplingWhere(25)(condAnd = dut.io.controller_in_end.toBoolean)
       println(s"[DEBUG]${simTime()} gameIsOver = ${gameIsOver}" )
 
       if (gameIsOver) {

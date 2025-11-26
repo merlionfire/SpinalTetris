@@ -135,7 +135,10 @@ class LogicTopTest extends AnyFunSuite
   }
 
 
-  test ("usecase <0> - transverse all states of FSM ") {
+  test ("usecase <1>  " +
+        " - Test fsm from game start to game stop " +
+        " - Test all external inputs including left/right/rotate/down/drop" +
+        " - Test game restart after one game failed. ") {
 
     val predefMotionsTestPattern = List(
       1 -> MotionScenarios.m1(),
@@ -155,7 +158,28 @@ class LogicTopTest extends AnyFunSuite
       1 -> MotionScenarios.m6(),
       1 -> MotionScenarios.m5(),
       1 -> MotionScenarios.m4(),
+    )
 
+    runSimTest(predefMotionsTestPattern)
+  }
+
+  test ("usecase <2>  " +
+    " - Test row removal with score updated " ) {
+
+    val predefMotionsTestPattern = List(
+      1 -> MotionScenarios.rowRemovePt1(),
+      1 -> MotionScenarios.rowRemovePt2(),
+      1 -> MotionScenarios.rowRemovePt3(),
+      1 -> MotionScenarios.rowRemovePt4(),
+      1 -> MotionScenarios.rowRemovePt5(),
+      1 -> MotionScenarios.rowRemovePt6(),
+      1 -> MotionScenarios.rowRemovePt7(),
+      1 -> MotionScenarios.rowRemovePt8(),
+      1 -> MotionScenarios.rowRemovePt9(),
+      1 -> MotionScenarios.rowRemovePt10(),
+      1 -> MotionScenarios.rowRemovePt11(),
+      1 -> MotionScenarios.rowRemovePt12(),
+      1 -> MotionScenarios.m5(),
     )
 
     runSimTest(predefMotionsTestPattern)

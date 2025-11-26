@@ -573,6 +573,74 @@ object TestPatterns {
     )
 
 
+    // row removal pattern 1
+    def rowRemovePt1 ( ): Seq[Pattern] = List(
+      Left(3),
+      Drop
+    )
+
+    def rowRemovePt2 ( ): Seq[Pattern] = List(
+      Right(4),
+      Drop
+    )
+
+    def rowRemovePt3 ( ): Seq[Pattern] = List(
+      Right(3),
+      Drop
+    )
+
+    def rowRemovePt4 ( ): Seq[Pattern] = List(
+      Rotate(1),
+      Left(4),
+      Drop
+    )
+
+    def rowRemovePt5 ( ): Seq[Pattern] = List(
+      Rotate(1),
+      Left(2),
+      Drop
+    )
+
+    def rowRemovePt6 ( ): Seq[Pattern] = List(
+      Down(1),
+      Rotate(1),
+      Right(1),
+      Drop
+    )
+
+    def rowRemovePt7 ( ): Seq[Pattern] = List(
+      Rotate(2),
+      Right(5),
+      Drop
+    )
+
+    def rowRemovePt8 ( ): Seq[Pattern] = List(
+      Drop
+    )
+
+    def rowRemovePt9 ( ): Seq[Pattern] = List(
+      Rotate(1),
+      Left(4),
+      Drop
+    )
+
+    def rowRemovePt10 ( ): Seq[Pattern] = List(
+      Drop
+    )
+
+    def rowRemovePt11 ( ): Seq[Pattern] = List(
+      Rotate(2),
+      Right(2),
+      Drop
+    )
+
+    def rowRemovePt12 ( ): Seq[Pattern] = List(
+      Left(1),
+      Drop
+    )
+
+
+
 
     def uc1( piecePattern : PiecePatternGenerators.Pattern, playfieldHold : Boolean = false )  : TestMotionPatternGroup = {
       TestMotionPatternGroup(
@@ -898,6 +966,8 @@ object TestPatterns {
       )
 
     }
+
+
 
 
   }
