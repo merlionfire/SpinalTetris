@@ -1,5 +1,7 @@
 package utils
 
+import SSC.tetris_core.{VgaFrame, VgaPixel}
+
 import java.awt.image.BufferedImage
 import java.awt.{BasicStroke, Color, Font, Graphics2D, RenderingHints}
 import java.io.File
@@ -82,25 +84,20 @@ object ImageGenerator {
   def fromPixelData(
                      width: Int,
                      height: Int,
-                     pixelData: mutable.Queue[Int],
-                     colorConverter: Int => Int = identity
+                     pixelData: Seq[VgaPixel],
                    ): ImageBuilder = {
     new ImageBuilder(width, height)
       .addDrawOperation { g =>
         val img = g.getDeviceConfiguration.createCompatibleImage(width, height)
-        for (y <- 0 until height) {
-          for (x <- 0 until width) {
-            if (pixelData.nonEmpty) {
-              val rgb = pixelData.dequeue()
-              img.setRGB(x, y, colorConverter(rgb))
+        pixelData.grouped(width).zipWithIndex.foreach {
+          case (rowPixels, y) =>
+            rowPixels.zipWithIndex.foreach {
+              case (rgb, x) =>
+                img.setRGB(x, y, rgb.vga4BitTo8Bit())
             }
-          }
         }
         g.drawImage(img, 0, 0, null)
 
-        if (pixelData.nonEmpty) {
-          println(s"[Warning] Pixel data queue not empty: ${pixelData.size} items remaining")
-        }
       }
   }
 

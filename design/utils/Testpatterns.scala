@@ -488,6 +488,13 @@ object TestPatterns {
       }
     }
 
+    def m0 ( )  : Seq[Pattern]  = List (
+      Left(2),
+      Right(1),
+      Rotate(2),
+      Down(4),
+      Drop,
+    )
 
     def m1 ( )  : Seq[Pattern]  = List (
       Left(3),
@@ -553,6 +560,13 @@ object TestPatterns {
       Left(4),
       Drop
     )
+
+
+    def m10 ()  : Seq[Pattern] =  List(
+      Down(19),
+      Drop
+    )
+
 
     def ms1 ()  : Seq[Pattern] =  List(
       Left(3),

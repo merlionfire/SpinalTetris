@@ -1120,9 +1120,8 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false, enableColli
 
 object playfieldMain{
   def main(args: Array[String]) {
-    val rowNum : Int = 22   // include bottom wall
-    val colNum :Int = 10    // include left and right wall
-
+    val rowNum : Int = 22   //
+    val colNum :Int = 10    //
     val rowBitsWidth = log2Up(rowNum)
     val colBitsWidth = log2Up(colNum)
     val rowBlocksNum = rowNum   // working field for Tetromino

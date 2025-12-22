@@ -15,16 +15,19 @@ case class TetrisCoreConfig (
                               offset_x : Int = 0,
                               offset_y : Int = 0,
                               rowNum : Int = 23,   // include bottom wall
-                              colNum :Int = 12    // include left and right wall
+                              colNum :Int = 12,    // include left and right wall
+                              levelFallInCycle : Int = 473 * 50000,
+                              lockDownInCycle  : Int = 500 * 50000
+
                             ){
 
 
-  val logicTopConfig = LogicTopConfig( rowNum, colNum )
+  val logicTopConfig = LogicTopConfig( rowNum, colNum, levelFallInCycle=levelFallInCycle, lockDownInCycle = lockDownInCycle )
 
   val displayTopConfig = DisplayTopConfig(xWidth, yWidth, offset_x, offset_y )
 }
 
-class tetris_core ( config : TetrisCoreConfig ) extends Component {
+class tetris_core ( val config : TetrisCoreConfig, sim  : Boolean = false  ) extends Component {
 
   import config._
 
@@ -41,9 +44,11 @@ class tetris_core ( config : TetrisCoreConfig ) extends Component {
     val move_right = in Bool()
     val move_down = in Bool()
     val rotate = in Bool()
+    val drop = in Bool()
     val ctrl_allowed = out Bool()
     val vga      = master(Vga(displayTopConfig.rgbConfig, withColorEn = true ))
-
+    val screen_is_ready = sim generate ( out Bool() )
+    val vga_sof = sim generate ( out Bool() )
   }
 
   noIoPrefix()
@@ -63,20 +68,44 @@ class tetris_core ( config : TetrisCoreConfig ) extends Component {
   //              Instantiation
   //***********************************************************
 
-  val game_logic_inst = coreClockDomain( new logic_top(logicTopConfig) )
+  val game_logic_inst = coreClockDomain( new logic_top(logicTopConfig, sim= false ) )
 
   val game_display_inst = new display_top(displayTopConfig)
 
 
 
   //***********************************************************
-  //    Connection
+  //    onnection io <-> display_top
   //***********************************************************
-  io -> game_display_inst.io connectByName List("vga_clk", "vga_rst", "core_clk", "core_rst", "game_start")
-  io -> game_logic_inst.io connectByName List ( "game_start", "move_left", "move_right", "move_down", "rotate")
-  io.ctrl_allowed := game_logic_inst.io.ctrl_allowed
+  io -> game_display_inst.io connectByName List(
+    "vga_clk",
+    "vga_rst",
+    "core_clk",
+    "core_rst",
+    "game_start"
+  )
+
   io.vga := game_display_inst.io.vga
 
+  //***********************************************************
+  //    Connection io <-> logic_top
+  //***********************************************************
+
+  io -> game_logic_inst.io connectByName List (
+    "game_start",
+    "move_left",
+    "move_right",
+    "move_down",
+    "rotate",
+    "drop"
+  )
+
+  io.ctrl_allowed := game_logic_inst.io.ctrl_allowed
+
+
+  //***********************************************************
+  //    Connection display_top <-> logic_top
+  //***********************************************************
 
   game_display_inst.io.row_val <> game_logic_inst.io.row_val
   game_logic_inst.io.vga_sof := game_display_inst.io.sof
@@ -84,11 +113,28 @@ class tetris_core ( config : TetrisCoreConfig ) extends Component {
   game_logic_inst.io.screen_is_ready := game_display_inst.io.screen_is_ready
   game_display_inst.io.softRest := game_logic_inst.io.softReset
   game_display_inst.io.game_restart := game_logic_inst.io.game_restart
+
+
+  //***********************************************************
+  //    Debug
+  //***********************************************************
+  if ( sim  )  {
+    io.screen_is_ready  := game_display_inst.io.screen_is_ready
+    io.vga_sof          := game_display_inst.io.sof
+
+  }
 }
 
 object TetrisCoreMain{
 
   def main(args: Array[String]) {
+
+    val config =  TetrisCoreConfig(
+      offset_x = 32,
+      levelFallInCycle = 4 * 50000,
+      lockDownInCycle = 4 * 50000
+    )
+
     SpinalConfig(
       targetDirectory = PathUtils.getRtlOutputPath(getClass,middlePath = "design/SSC").toString,
       verbose = true,
@@ -97,7 +143,7 @@ object TetrisCoreMain{
       anonymSignalPrefix = "temp",
       mergeAsyncProcess = true
     ).generateVerilog(
-      gen = new tetris_core(TetrisCoreConfig())
+      gen = new tetris_core(config,sim = true)
     )
   }
 

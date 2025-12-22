@@ -16,7 +16,9 @@ import spinal.lib.fsm.{State, StateFsm, StateMachine}
 case class ControllerConfig (
                               rowNum : Int,
                               colNum : Int ,
-                              freeze_screen_in_frames : Int = 40
+                              freeze_screen_in_frames : Int = 40,
+                              levelFallInCycle : Int = 473 * 50000,
+                              lockDownInCycle  : Int = 500 * 50000
                             ) {
   val rowBitsWidth = log2Up(rowNum)
   val colBitsWidth = log2Up(colNum)
@@ -24,17 +26,17 @@ case class ControllerConfig (
   val colBlocksNum = colNum - 2   // working field for Tetromino
 
   // 437 ms / ( 1 / 50 MHz ) = 437 * 50 * 1000
-  val levelFallInCycle = 473 * 50000
-  val lockDownInCycle  = 500 * 50000
+//  val levelFallInCycle = 473 * 50000
+//  val lockDownInCycle  = 500 * 50000
 
-  val playFieldConfig = PlayFieldConfig(
-    rowBlocksNum = rowBlocksNum,
-    colBlocksNum = colBlocksNum,
-    rowBitsWidth = rowBitsWidth,
-    colBitsWidth = colBitsWidth
-  )
+//  val playFieldConfig = PlayFieldConfig(
+//    rowBlocksNum = rowBlocksNum,
+//    colBlocksNum = colBlocksNum,
+//    rowBitsWidth = rowBitsWidth,
+//    colBitsWidth = colBitsWidth
+//  )
 
-  val picollerConfig =  PicollerConfig( colBitsWidth, rowBitsWidth)
+//  val picollerConfig =  PicollerConfig( colBitsWidth, rowBitsWidth)
 }
 
 
@@ -62,6 +64,7 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
       val down = out Bool()
     }
     val lock = out Bool()
+    val debug_place_new = out Bool()
     val controller_in_lockdown = sim generate( out Bool () )
     val controller_in_end     = sim generate( out Bool () )
     val controller_in_place   = sim generate( out Bool () )
@@ -122,6 +125,13 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
   //              FSM
   //***********************************************************
 
+  val debug_place_new_cnt = Counter(stateCount = 2  )
+
+  io.debug_place_new.addAttribute("keep")
+  io.debug_place_new  := debug_place_new_cnt.willOverflow
+
+
+
   val fsm = new StateMachine {
 
     def transitionOnCollision(onCollision: State, onNoCollision: State): Unit = {
@@ -171,7 +181,10 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
         transitionOnCollision( onCollision= END, onNoCollision = FALLING)
       }
 
-      onExit( drop_timeout.clear())
+      onExit {
+        drop_timeout.clear()
+        debug_place_new_cnt.increment()
+      }
     }
 
     val END: State  = new State {
@@ -186,6 +199,7 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
     }
 
     val FALLING: State = new State {
+
 
       whenIsActive {
         when ( move_down & io.playfiedl_allow_action) {
@@ -299,10 +313,21 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
     val CLEAN :State = new State {
       whenIsActive {
         when ( io.playfiedl_in_idle ) {
+          lock_timeout.clear()
+          goto(WAIT_TIME)
+        }
+      }
+    }
+
+    // Wait for a while until all playfield is written into frame buffer
+    val WAIT_TIME :State = new State {
+      whenIsActive {
+        when (lock_timeout) {
           goto(RANDOM_GEN)
         }
       }
     }
+
   }
 
 

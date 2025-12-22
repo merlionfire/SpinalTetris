@@ -156,16 +156,20 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
     val row_cnt = Counter(stateCount = rowBlocksNum, row_cnt_inc  )
 
 
+
     val row_value = memory.readSync(
       address = row_cnt,
       enable = rd_en
     )
 
+    rd_en.addAttribute("keep")
+
 
     val load = Bool()
     val shift_en = Bool()
     val row_bits = cloneOf(row_value ) setAsReg()
-    val row_bits_next = row_bits |>> 1
+    //val row_bits_next = row_bits |>> 1
+    val row_bits_next = row_bits |<< 1
     val gen_start = io.row_val.valid.fall(False)
 
     when ( load ) {
@@ -175,7 +179,8 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
     }
 
     val ft_color = U(piece_bg_color, IDX_W bits)
-    when (row_bits.lsb ) {
+//    when (row_bits.lsb ) {
+    when (row_bits.msb ) {
       ft_color  := piece_ft_color
     }
 

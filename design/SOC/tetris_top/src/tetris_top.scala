@@ -66,6 +66,10 @@ class tetris_top ( config : TetrisCoreConfig , rot_dir_swap : Boolean = false ) 
   noIoPrefix()
 
 
+  //***********************************************************
+  //              Clock and Reset
+  //***********************************************************
+
   val key_clk = io.core_clk
   val key_rst = io.core_rst
 
@@ -74,15 +78,22 @@ class tetris_top ( config : TetrisCoreConfig , rot_dir_swap : Boolean = false ) 
     reset = key_rst
   )
 
+  //***********************************************************
+  //              IPs Instantiation
+  //***********************************************************
+
   val tetris_core_inst = new tetris_core(config)
   val kd_ps2_inst = keyClockDomain( new kd_ps2(KdPs2Config()) )
+
+
+
+
+
 
   io.ps2_clk  <> kd_ps2_inst.io.ps2_clk
   io.ps2_data <> kd_ps2_inst.io.ps2_data
 
   io.vga <> tetris_core_inst.io.vga
-
-
 
   tetris_core_inst.io.core_clk := io.core_clk
   tetris_core_inst.io.core_rst := io.core_rst
@@ -100,6 +111,7 @@ class tetris_top ( config : TetrisCoreConfig , rot_dir_swap : Boolean = false ) 
 
   tetris_core_inst.io.game_start := io.btns.btn_west
   tetris_core_inst.io.move_down  := io.btns.rot_push
+  tetris_core_inst.io.drop       := io.btns.btn_east
 
   tetris_core_inst.io.move_left  :=  { if (rot_dir_swap) io.btns.rot_right else  io.btns.rot_left  }
   tetris_core_inst.io.move_right :=  { if (rot_dir_swap) io.btns.rot_left  else  io.btns.rot_right }

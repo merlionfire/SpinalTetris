@@ -14,7 +14,12 @@ import utils._
 import spinal.lib.fsm.{State, StateFsm, StateMachine}
 
 
-case class  LogicTopConfig ( rowNum : Int, colNum : Int , freeze_screen_in_frames : Int = 40  ) {
+case class  LogicTopConfig ( rowNum : Int,
+                             colNum : Int ,
+                             freeze_screen_in_frames : Int = 40,
+                             levelFallInCycle : Int = 473 * 50000,
+                             lockDownInCycle  : Int = 500 * 50000
+                           ) {
 
   val rowBitsWidth = log2Up(rowNum)
   val colBitsWidth = log2Up(colNum)
@@ -22,8 +27,8 @@ case class  LogicTopConfig ( rowNum : Int, colNum : Int , freeze_screen_in_frame
   val colBlocksNum = colNum - 2   // working field for Tetromino
 
   // 437 ms / ( 1 / 50 MHz ) = 437 * 50 * 1000
-  val levelFallInCycle = 473 * 50000
-  val lockDownInCycle  = 500 * 50000
+//  val levelFallInCycle = 473 * 50000
+//  val lockDownInCycle  = 500 * 50000
 
   val playFieldConfig = PlayfieldConfig(
     rowBlocksNum = rowBlocksNum,
@@ -35,7 +40,9 @@ case class  LogicTopConfig ( rowNum : Int, colNum : Int , freeze_screen_in_frame
   val controllerConfig = ControllerConfig (
     rowNum = rowNum,
     colNum = colNum,
-    freeze_screen_in_frames = freeze_screen_in_frames
+    freeze_screen_in_frames = freeze_screen_in_frames,
+    levelFallInCycle = levelFallInCycle,
+    lockDownInCycle = lockDownInCycle
   )
 
   val picollerConfig =  PicollerConfig( colBitsWidth, rowBitsWidth)
@@ -62,10 +69,11 @@ class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends
     val ctrl_allowed = out Bool()
     val softReset = out Bool()
     val game_restart = out Bool()
-    val new_piece_valid = out Bool()
+
     val controller_in_lockdown = sim generate( out Bool () )
     val controller_in_end      = sim generate( out Bool () )
     val controller_in_place    = sim generate( out Bool () )
+    val new_piece_valid        = sim generate( out Bool () )
   }
 
 
@@ -151,6 +159,7 @@ class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends
     io.controller_in_lockdown := controller_inst.io.controller_in_lockdown
     io.controller_in_end      := controller_inst.io.controller_in_end
     io.controller_in_place    := controller_inst.io.controller_in_place
+    io.new_piece_valid := controller_inst.io.gen_piece_en
   }
 
   // Playfield Connection
@@ -158,7 +167,7 @@ class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends
   /* output -> IO */
   io.row_val <<  playfield_inst.io.row_val
   io.ctrl_allowed := playfield_inst.io.motion_is_allowed
-  io.new_piece_valid := controller_inst.io.gen_piece_en
+
 
 
 //

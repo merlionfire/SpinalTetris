@@ -11,6 +11,7 @@ class dcm extends BlackBox {
     val CLK0_OUT = out Bool()
     val LOCKED_OUT = out Bool()
     val CLK2X_OUT = out Bool()
+    val CLK180_OUT = out Bool()
   }
 
   noIoPrefix()

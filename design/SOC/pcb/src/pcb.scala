@@ -53,6 +53,9 @@ class pcb extends  Component {
   dcm_inst.io.RST_IN := False
 
 
+  // vga_clk = 50 / 2 = 25MHz
+  // core_clk = 50 MHz
+
   //val core_clk = dcm_inst.io.CLK0_OUT
   val vga_clk = dcm_inst.io.CLKDV_OUT
   val core_fast_clk, dcm_clocked  = Bool()
@@ -63,6 +66,10 @@ class pcb extends  Component {
   dcm_clocked.addAttribute("keep")
 
   val core_clk =  BUFG.on( dcm_inst.io.CLK0_OUT )
+  val cdc_clk = BUFG.on( dcm_inst.io.CLK180_OUT)
+
+  cdc_clk.addAttribute("keep")
+
   // --------------------------------------------
   //          button
   // --------------------------------------------
@@ -115,7 +122,7 @@ class pcb extends  Component {
   // --------------------------------------------
   //val tetris_top_inst = new tetris_top(TetrisCoreConfig())
   val tetris_top_inst = new tetris_top(
-    TetrisCoreConfig(offset_x = 32 ),
+    TetrisCoreConfig( offset_x = 32, levelFallInCycle = 473 * 50000,  lockDownInCycle =500 * 50000  ),
     rot_dir_swap = true
   ) // For Spartan 3A with limitd BRAM
   tetris_top_inst.addAttribute( "keep_hierarchy", "yes")
