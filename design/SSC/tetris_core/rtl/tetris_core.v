@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : tetris_core
-// Git hash  : cd0c22999bd4bb6fd3a8f1f8466e84843ae2b29f
+// Git hash  : 1ecff4de3000c0e1942c98d0a39390e4b441d404
 
 `timescale 1ns/1ps
 
@@ -1149,6 +1149,9 @@ module display_controller (
   reg        [9:0]    row_bits;
   wire       [9:0]    row_bits_next;
   reg                 row_val_valid_regNext;
+  wire                data_ready;
+  reg                 wait_date_readout;
+  reg                 wait_date_readout_regNext;
   wire                gen_start;
   reg        [3:0]    ft_color;
   reg        [8:0]    x;
@@ -1406,7 +1409,8 @@ module display_controller (
 
   assign row_value = memory_spinal_port1;
   assign row_bits_next = (row_bits <<< 1);
-  assign gen_start = ((! row_val_valid) && row_val_valid_regNext);
+  assign data_ready = ((! row_val_valid) && row_val_valid_regNext);
+  assign gen_start = ((! wait_date_readout) && wait_date_readout_regNext);
   always @(*) begin
     ft_color = 4'b0010;
     if(row_bits[9]) begin
@@ -1667,6 +1671,8 @@ module display_controller (
       col_cnt_value <= 4'b0000;
       row_cnt_value <= 5'h0;
       row_val_valid_regNext <= 1'b0;
+      wait_date_readout <= 1'b0;
+      wait_date_readout_regNext <= 1'b0;
       x <= 9'h0;
       y <= 8'h0;
       cnt_value <= 4'b0000;
@@ -1681,6 +1687,14 @@ module display_controller (
       col_cnt_value <= col_cnt_valueNext;
       row_cnt_value <= row_cnt_valueNext;
       row_val_valid_regNext <= row_val_valid;
+      if(data_ready) begin
+        wait_date_readout <= 1'b1;
+      end else begin
+        if(draw_openning_start) begin
+          wait_date_readout <= 1'b0;
+        end
+      end
+      wait_date_readout_regNext <= wait_date_readout;
       if(gen_start) begin
         x <= 9'h02b;
         y <= 8'h14;

@@ -5,7 +5,11 @@ NET "CLK_50M"       LOC = "E12"  | IOSTANDARD = LVCMOS33 | PERIOD = 20.000 ;
 TIMEGRP "LO_SPD" OFFSET = IN   3.0 VALID 3.0 BEFORE "CLK_50M" ;
 TIMEGRP "HI_SPD" OFFSET = IN   3.0 VALID 3.0 BEFORE "CLK_50M" ;
 TIMEGRP "LO_SPD" OFFSET = OUT 10.0 AFTER "CLK_50M" ;
-TIMEGRP "HI_SPD" OFFSET = OUT  5.0 AFTER "CLK_50M" ;
+# Comment related setting in terms of VGA Clock freqeuency
+#TIMEGRP "HI_SPD" OFFSET = OUT  5.0 AFTER "CLK_50M" ;
+NET "dcm_inst_CLKDV_OUT" TNM_NET = "clk_25m";
+TIMESPEC TS_clk_25m = PERIOD "clk_25m" 40.000 ns HIGH 50%;
+TIMEGRP "HI_SPD" OFFSET = OUT 10.0 AFTER "dcm_inst_CLKDV_OUT";
 
 ##############################################################################
 # Directional Push-Buttons (BTN)

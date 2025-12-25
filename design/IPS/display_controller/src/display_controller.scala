@@ -170,7 +170,20 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
     val row_bits = cloneOf(row_value ) setAsReg()
     //val row_bits_next = row_bits |>> 1
     val row_bits_next = row_bits |<< 1
-    val gen_start = io.row_val.valid.fall(False)
+//    val gen_start = io.row_val.valid.fall(False)
+
+    // CCT temp begin
+    // Update FrameBuffer with playfield must be at intra-frame. So SOF is treated as start trigger of updating FrameBuffer
+    val data_ready = io.row_val.valid.fall(False)
+    val wait_date_readout = RegInit(False)
+    when ( data_ready  ) {
+      wait_date_readout := True
+    } .elsewhen (io.draw_openning_start ) {  /* draw_openning_start is sof of VGA */
+      wait_date_readout := False
+    }
+    val gen_start = wait_date_readout.fall(False)
+
+    // CCT temp end
 
     when ( load ) {
       row_bits := row_value
