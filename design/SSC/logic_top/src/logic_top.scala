@@ -62,6 +62,7 @@ class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends
     val rotate = in Bool()
     val drop = in Bool()
     val row_val = master Flow (Bits(colBlocksNum bits))
+    val score_val = master Flow (UInt( config.playFieldConfig.scoreBitsWidth bits))
     val draw_field_done = in Bool()
     val screen_is_ready = in Bool()
     //val force_refresh = in Bool()
@@ -166,6 +167,7 @@ class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends
 
   /* output -> IO */
   io.row_val <<  playfield_inst.io.row_val
+  io.score_val << playfield_inst.io.score_val
   io.ctrl_allowed := playfield_inst.io.motion_is_allowed
 
 

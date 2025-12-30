@@ -206,6 +206,21 @@ class TetrisCoreTest2 extends TetrisCoreTest {
     runSimTest(DoublePieceMotionsTestPattern)
   }
 
+  test ("usecase <4>  " +
+    " - Test fsm from game start to game stop " +
+    " - Test all external inputs including left/right/rotate/down/drop" +
+    " - Test game restart after one game failed. ") {
+
+    val DoublePieceMotionsTestPattern = List(
+      1 -> MotionScenarios.m0(),
+      0 -> MotionScenarios.rowRemovePt12(),
+      0 -> MotionScenarios.rowRemovePt12()
+    )
+
+    runSimTest(DoublePieceMotionsTestPattern)
+  }
+
+
 }
 
 

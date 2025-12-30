@@ -8,14 +8,15 @@ import config._
 import utils.PathUtils
 
 import scala.collection.mutable
-
+import IPS.bcd._
 
 case class DisplayControllerConfig(
                                  IDX_W : Int = 4,
                                  FB_X_ADDRWIDTH : Int,
                                  FB_Y_ADDRWIDTH : Int,
                                  bg_color_idx  : Int ,
-                                 playFieldConfig : TetrisPlayFeildConfig
+                                 playFieldConfig : TetrisPlayFeildConfig,
+                                 scoreBitsWidth : Int = 10
                                ) {
   case class charInfo(
                        x_orig : Int,
@@ -39,6 +40,14 @@ case class DisplayControllerConfig(
   val offset =  stringList.keys zip ( keyLengths.scanLeft(0)(_ + _).dropRight(1) )  toMap
 
 
+  val score_orig_x = 214
+  val score_orig_y = 80
+
+  val score_scale = 0
+  val score_fg_color = 6
+
+  val score_width = 12
+
   val wallInfoLsit = List(
     //x, y , width, height, in_color, pattern_colorm, fill_pattern
     List(x_orig, y_orig, wall_width, wall_height, 0, 15, 3),   /* Left Wall */
@@ -46,6 +55,8 @@ case class DisplayControllerConfig(
     List(getBaseOrig._1, getBaseOrig._2, base_width, base_height, 0, 15, 3), /* Base */
     List(190, 10, 2, 222, 15, 14 , 0 )  /* Split */
   )
+
+
 
   def wallRomInit( bitLengths : List[Int] ) = wallInfoLsit.map { row =>  /* First word is stored at the least position */
     val (packedWord, _) = (row zip bitLengths).foldLeft(BigInt(0), 0) { case ((accWord, currentShift), (value, bitLength)) =>
@@ -113,6 +124,7 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
     val draw_openning_start = in Bool()
     val game_start = in Bool()
     val row_val =  slave Flow( Bits(colBlocksNum bits) )
+    val score_val = slave Flow (UInt( scoreBitsWidth bits))
     val screen_is_ready = out Bool()
 
     val draw_char = master( new draw_char_if(IDX_W))
@@ -127,6 +139,38 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
   }
 
   noIoPrefix()
+
+
+  val update_score = new Area {
+
+    val bcd_inst = new bcd(binaryWidth = scoreBitsWidth )
+
+    bcd_inst.io.data_in_bin << io.score_val
+
+    val score = RegNextWhen( bcd_inst.io.data_out_dec.payload, bcd_inst.io.data_out_dec.valid, init=B(0))
+
+
+    // score_vec(0) store the left-most digital in decimal
+    val score_vec = Vec.fill(bcd_inst.bcdDigits)(UInt(4 bits))
+
+    for ( i <- 0 until( bcd_inst.bcdDigits ) ) {
+        val digitMsb = bcd_inst.bcdWidth - 1 - i * 4
+        val a = score( digitMsb downto ( digitMsb-3) ).asBits
+        score_vec(i) := a.asUInt
+    }
+
+
+    val digital_cnt = Counter(stateCount = ( bcd_inst.bcdDigits ) , io.row_val.valid )
+
+
+    val itf = new draw_char_if(IDX_W)
+    itf.scale := score_scale
+    itf.color := score_fg_color
+    itf.word := U(3, 3 bit ) @@ score_vec(digital_cnt.value)  // Covert to Ascii
+    itf.start := False
+
+  }.setName("")
+
 
   val update_playfield = new Area {
 
@@ -236,6 +280,13 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
     io.draw_field_done := False
 
 
+
+
+
+
+
+
+
     val fsm = new StateMachine {
 
       rd_en := False
@@ -279,8 +330,8 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
             when(row_cnt.willOverflowIfInc && col_cnt.willOverflowIfInc ) {
               row_cnt_inc := True
               col_cnt_inc := True
-              io.draw_field_done := True
-              goto(IDLE)
+//              io.draw_field_done := True
+              goto(PRE_DRAW_SCORE)
             } otherwise {
               col_cnt_inc := True
               when(col_cnt.willOverflowIfInc) {
@@ -295,11 +346,57 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
         }
       }
 
+      val PRE_DRAW_SCORE : State = new State {
+        whenIsActive {
+            x := score_orig_x
+            y := score_orig_y
+            goto(DRAW_DIGIT)
+        }
+      }
+
+      val DRAW_DIGIT : State = new State {
+
+        whenIsActive {
+          update_score.itf.start := True
+          goto(WAIT_DRAW_DIGIT_DONE)
+
+        }
+      }
+
+      val WAIT_DRAW_DIGIT_DONE : State = new State {
+
+        whenIsActive {
+          when(update_score.itf.done) {
+            when ( update_score.digital_cnt.willOverflowIfInc ) {
+              goto(POST_DRAW_SCORE)
+            } .otherwise {
+              goto(DRAW_DIGIT)
+            }
+
+          }
+        }
+
+        onExit {
+          x := x + score_width
+          update_score.digital_cnt.increment()
+        }
+
+      }
+
+      val POST_DRAW_SCORE : State = new State {
+        whenIsActive {
+          update_score.digital_cnt.clear()
+          io.draw_field_done := True
+          goto(IDLE)
+
+        }
+      }
 
     }
 
 
   } .setName("")
+
 
 
 
@@ -414,6 +511,7 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
       io.screen_is_ready := False
       io.bf_clear_start := False
       allStrings.cnt.willIncrement := False
+      update_score.digital_cnt.willIncrement := False
 
       val SETUP_IDLE = makeInstantEntry()
 
@@ -578,7 +676,17 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
 
 
   // connect draw_char_engine interface
-  io.draw_char <> allStrings.itf
+//  io.draw_char <> allStrings.itf
+
+  io.draw_char.start :=  allStrings.itf.start || update_score.itf.start
+  io.draw_char.scale :=  allStrings.itf.start  ? allStrings.itf.scale | update_score.itf.scale
+  io.draw_char.color :=  allStrings.itf.start  ? allStrings.itf.color | update_score.itf.color
+  io.draw_char.word  :=  allStrings.itf.start  ? allStrings.itf.word  | update_score.itf.word
+
+  allStrings.itf.done   := io.draw_char.done
+  update_score.itf.done := io.draw_char.done
+
+
 
   // connect draw_block_engine interface
   io.draw_block.start :=  update_playfield.itf.start  || wall.itf.start

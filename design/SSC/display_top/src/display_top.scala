@@ -152,6 +152,7 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
     val vga_clk = in Bool()
     val vga_rst = in Bool()
     val row_val =  slave Flow( Bits(colBlocksNum bits) )
+    val score_val = slave Flow (UInt( config.displayControllerConfig.scoreBitsWidth bits))
     val game_start            = in Bool()
     val game_restart          = in Bool()
 
@@ -225,6 +226,7 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
 
     // piece_draw_engine interface
     draw_controller.io.row_val := io.row_val
+    draw_controller.io.score_val := io.score_val
 
     io.draw_field_done := draw_controller.io.draw_field_done
 

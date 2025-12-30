@@ -221,10 +221,12 @@ class DisplayTopTest extends AnyFunSuite {
   def init(dut:display_top): Unit = {
     dut.io.softRest #= false
     dut.io.game_restart #= false
+    dut.io.row_val.valid #= false
+    dut.io.score_val.valid #= false
     if (debugMode) {
       dut.io.debug.draw_char_start #= false
       dut.io.debug.draw_block_start #= false
-      dut.io.row_val.valid #= false
+
       dut.io.debug.draw_x_orig #= 0
       dut.io.debug.draw_y_orig #= 0
    } else {
@@ -583,9 +585,6 @@ class DisplayTopTest extends AnyFunSuite {
       dut.vgaClockDomain.forkSimSpeedPrinter()
 
 
-      FlowMonitor(dut.vga.pixel_debug, dut.vgaClockDomain) { payload =>
-        obs_mem.enqueue((payload.r.toInt, payload.g.toInt, payload.b.toInt))
-      }
 
       dut.vgaClockDomain.waitSampling(20)
       dut.io.softRest #= false
@@ -608,6 +607,13 @@ class DisplayTopTest extends AnyFunSuite {
       dut.coreClockDomain.waitSamplingWhere(dut.core.draw_controller.setup_fsm.fsm_debug.toInt == 11   ) /* DRAW_SCORE */
 
       // Testing Piece draw
+
+      dut.io.score_val.valid #= true
+      dut.io.score_val.payload #= 987
+      dut.coreClockDomain.waitSampling()
+      dut.io.score_val.valid #= false
+      dut.coreClockDomain.waitSampling(20)
+
 
       val blocks_array = for {
         row <- 0 until  rowBlocksNum
@@ -646,6 +652,14 @@ class DisplayTopTest extends AnyFunSuite {
 
       dut.vgaClockDomain.waitSamplingWhere(dut.vga.vga_sync.io.sof.toBoolean)
       println(f"[DEBUG] @${simTime()} The 2nd frame has been started and then stop sim now !")
+
+
+      FlowMonitor(dut.vga.pixel_debug, dut.vgaClockDomain) { payload =>
+        obs_mem.enqueue((payload.r.toInt, payload.g.toInt, payload.b.toInt))
+      }
+
+      dut.vgaClockDomain.waitSamplingWhere(dut.vga.vga_sync.io.sof.toBoolean)
+      println(f"[DEBUG] @${simTime()} The 3nd frame has been started and then stop sim now !")
 
       //*************************************************************
       //        GUI Entry Point

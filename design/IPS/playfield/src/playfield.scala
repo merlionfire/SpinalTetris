@@ -13,7 +13,8 @@ case class PlayfieldConfig(
                             colBlocksNum : Int,
                             rowBitsWidth : Int,
                             colBitsWidth : Int,
-                            placeOffset  : Int = 3
+                            placeOffset  : Int = 3,
+                            scoreBitsWidth : Int = 10
                           ) {
 }
 
@@ -46,6 +47,7 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false, enableColli
 
     val game_restart = in Bool()
     val row_val = master Flow (Bits(colBlocksNum bits))
+    val score_val = master Flow (UInt( scoreBitsWidth bits))
     val playfield_backdoor = if (sim) slave Flow (Playfield_Row_Data(rowBitsWidth, colBlocksNum)) else null
     val motion_is_allowed = out Bool()
     val fsm_is_idle = out Bool()
@@ -248,6 +250,7 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false, enableColli
     val reset = False
     val freeze = False.allowOverride()
     val clear = False.allowOverride()
+    val update_score = False.allowOverride()
 
     val access_row_base = U(0, rowBitsWidth bits) allowOverride()
 
@@ -368,6 +371,7 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false, enableColli
       ones(i) := region(i).andR
     }
 
+    //val count = RegNext(CountOne(ones), init = U(0, scoreBitsWidth bits ))
     val count = RegNext(CountOne(ones), init = U(0))
 
 
@@ -392,6 +396,23 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false, enableColli
     }
 
 
+    // Add Score
+
+
+    val total_score = RegInit( U( 0, scoreBitsWidth bits ) )
+
+
+    // Delay 2 cycles for count being stable.
+    val lock_score = Delay(update_score, 2 , init= False )
+    val lock_score_1d = Delay(lock_score, 1 , init= False )
+    when ( io.game_restart ) {
+      total_score := U(0)
+    } .elsewhen(lock_score ) {
+      total_score := total_score + count
+    }
+
+    io.score_val.valid := lock_score_1d  || io.game_restart.fall()
+    io.score_val.payload := total_score
 
 
     // Backdoor access for simulation only
@@ -796,6 +817,11 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false, enableColli
       // Piecee in piece_buffer is copied to checker.region
       whenIsActive {
         load_piece := True
+
+        //temp to add here for update score again
+        // begin
+        //playfield.update_score := True
+        // end
         goto(COLLISION_CHECK)
       }
     }
@@ -1074,6 +1100,9 @@ class playfield(val config : PlayfieldConfig, sim : Boolean = false, enableColli
         flow.row := 0
         checker.row := 0
         checker.row_backup := 0
+
+        playfield.update_score := True
+
         goto(CHECK_ROW_FULL)
       }
     }

@@ -108,6 +108,7 @@ class tetris_core ( val config : TetrisCoreConfig, sim  : Boolean = false  ) ext
   //***********************************************************
 
   game_display_inst.io.row_val <> game_logic_inst.io.row_val
+  game_display_inst.io.score_val <> game_logic_inst.io.score_val
   game_logic_inst.io.vga_sof := game_display_inst.io.sof
   game_logic_inst.io.draw_field_done := game_display_inst.io.draw_field_done
   game_logic_inst.io.screen_is_ready := game_display_inst.io.screen_is_ready
