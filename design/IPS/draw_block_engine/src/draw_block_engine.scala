@@ -38,6 +38,7 @@ class draw_block_engine ( config : DrawBlockEngConfig ) extends Component {
   val width_reg = RegNextWhen(io.width, io.start) init (0)
   val height_reg = RegNextWhen(io.height, io.start) init (0)
   val fill_pattern_reg = RegNextWhen(io.fill_pattern, io.start) init (0)
+  val pat_color = RegNextWhen(io.pat_color, io.start)
 
   val addr_comp_active = RegInit(False)
   val h_cnt = Counter2(width_reg, addr_comp_active)
@@ -79,15 +80,28 @@ class draw_block_engine ( config : DrawBlockEngConfig ) extends Component {
   }
 
 
+  val in_color_1d  = RegNext(in_color)
+  val pat_color_1d = RegNext(pat_color)
+
   // Stage 3
   val active_2d = RegNext(active_1d) init (False)
-  val out_color = Delay(in_color,2)
+
+//  val out_color = Delay(in_color,2)
+//  when ( ( border_en  || fill_en ) && ! no_pattern )  {
+//    out_color := Delay(io.pat_color,3)
+//  }
+
+  val out_color = cloneOf(in_color) setAsReg()
   when ( ( border_en  || fill_en ) && ! no_pattern )  {
-    out_color := Delay(io.pat_color,3)
-  }
+    out_color := pat_color_1d
+  } .otherwise(
+    out_color := in_color_1d
+  )
+
 
   // Interface
   io.out_valid := active_2d
+//  io.out_color := out_color
   io.out_color := out_color
   io.done      := ( ~ active_1d  ) & active_2d
 

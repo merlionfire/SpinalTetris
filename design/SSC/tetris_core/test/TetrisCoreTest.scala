@@ -212,7 +212,7 @@ class TetrisCoreTest2 extends TetrisCoreTest {
     " - Test game restart after one game failed. ") {
 
     val DoublePieceMotionsTestPattern = List(
-      1 -> MotionScenarios.m0(),
+      1 -> MotionScenarios.rowRemovePt12(),
       0 -> MotionScenarios.rowRemovePt12(),
       0 -> MotionScenarios.rowRemovePt12()
     )

@@ -48,13 +48,24 @@ case class DisplayControllerConfig(
 
   val score_width = 12
 
+//  val wallInfoLsit = List(
+//    //x, y , width, height, in_color, pattern_colorm, fill_pattern
+//    List(x_orig, y_orig, wall_width, wall_height, 0, 15, 3),   /* Left Wall */
+//    List(getRightWallOrig._1, getRightWallOrig._2, wall_width, wall_height, 0, 15, 3), /*Right Wall */
+//    List(getBaseOrig._1, getBaseOrig._2, base_width, base_height, 0, 15, 3), /* Base */
+//    List(190, 10, 2, 222, 15, 14 , 0 )  /* Split */
+//  )
+
+  // width and height is minus by 1 is to match the max value of width and height counter value
   val wallInfoLsit = List(
     //x, y , width, height, in_color, pattern_colorm, fill_pattern
-    List(x_orig, y_orig, wall_width, wall_height, 0, 15, 3),   /* Left Wall */
-    List(getRightWallOrig._1, getRightWallOrig._2, wall_width, wall_height, 0, 15, 3), /*Right Wall */
-    List(getBaseOrig._1, getBaseOrig._2, base_width, base_height, 0, 15, 3), /* Base */
+    List(x_orig, y_orig, wall_width-1, wall_height-1, 0, 15, 3),   /* Left Wall */
+    List(getRightWallOrig._1, getRightWallOrig._2, wall_width-1, wall_height-1, 0, 15, 3), /*Right Wall */
+    List(getBaseOrig._1, getBaseOrig._2, base_width-1, base_height-1, 0, 15, 3), /* Base */
     List(190, 10, 2, 222, 15, 14 , 0 )  /* Split */
   )
+
+
 
 
 
@@ -244,8 +255,10 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
 
     val x = RegInit( U(0,  FB_X_ADDRWIDTH bits) )
     val y = RegInit( U(0,  FB_Y_ADDRWIDTH bits) )
+
     val x_next = x + U(block_len)
     val y_next = y + U(block_len)
+
 
     when (gen_start ) {
       x := U(getFieldOrig._1)
@@ -267,16 +280,22 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
         y := y_next
       }
 
+
+
     }
 
     val itf = new draw_block_if(IDX_W)
 
     itf.start := False
     itf.in_color := ft_color
-    itf.width := U( block_len-1 ) // -1 because draw_block_engine.io.width = N-1 where N is total width
-    itf.height:= U( block_len-1 ) // -1 because draw_block_engine.io.width = N-1 where N is total width
-    itf.fill_pattern := U(0) // solid
-    itf.pat_color := U(0)
+//    itf.width := U( block_len-1 ) // -1 because draw_block_engine.io.width = N-1 where N is total width
+//    itf.height:= U( block_len-1 ) // -1 because draw_block_engine.io.width = N-1 where N is total width
+//    itf.fill_pattern := U(0) // solid
+//    itf.pat_color := U(0)
+    itf.width := U( block_len-2 ) // -1 because draw_block_engine.io.width = N-1 where N is total width
+    itf.height:= U( block_len-2 ) // -1 because draw_block_engine.io.width = N-1 where N is total width
+        itf.fill_pattern := U(0) // solid
+        itf.pat_color := U(bg_color_idx)
     io.draw_field_done := False
 
 
@@ -693,7 +712,7 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
   io.draw_block.width := update_playfield.itf.start  ? update_playfield.itf.width | wall.itf.width
   io.draw_block.height := update_playfield.itf.start  ? update_playfield.itf.height | wall.itf.height
   io.draw_block.in_color := update_playfield.itf.start  ? update_playfield.itf.in_color | wall.itf.in_color
-  io.draw_block.pat_color := wall.itf.pat_color  // ?
+  io.draw_block.pat_color := update_playfield.itf.start ? update_playfield.itf.pat_color|  wall.itf.pat_color  // ?
   io.draw_block.fill_pattern := update_playfield.itf.start  ? update_playfield.itf.fill_pattern | wall.itf.fill_pattern
   update_playfield.itf.done := io.draw_block.done
   wall.itf.done := io.draw_block.done
