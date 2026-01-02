@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : draw_char_engine
-// Git hash  : 1966d2c2753e3d447f4de5f4d933de13c0cb6e6b
+// Git hash  : d54b6a330ebf6d5323d8457a59bd98439303851f
 
 `timescale 1ns/1ps
 
@@ -31,6 +31,8 @@ module draw_char_engine (
   wire       [0:0]    temp_y_cnt_valueNext_1;
   wire       [7:0]    temp_when;
   reg        [6:0]    word_reg;
+  reg        [2:0]    scale_reg;
+  reg        [3:0]    color_reg;
   reg                 rom_rd_en;
   reg                 x_scale_cnt_willIncrement;
   wire                x_scale_cnt_willClear;
@@ -38,6 +40,7 @@ module draw_char_engine (
   reg        [2:0]    x_scale_cnt_value;
   wire                x_scale_cnt_willOverflowIfInc;
   wire                x_scale_cnt_willOverflow;
+  reg                 x_scale_cnt_isDone;
   reg                 x_cnt_willIncrement;
   wire                x_cnt_willClear;
   reg        [2:0]    x_cnt_valueNext;
@@ -51,6 +54,7 @@ module draw_char_engine (
   reg        [2:0]    y_scale_cnt_value;
   wire                y_scale_cnt_willOverflowIfInc;
   wire                y_scale_cnt_willOverflow;
+  reg                 y_scale_cnt_isDone;
   reg                 y_cnt_willIncrement;
   wire                y_cnt_willClear;
   reg        [3:0]    y_cnt_valueNext;
@@ -63,7 +67,7 @@ module draw_char_engine (
   reg        [6:0]    v_cnt_1;
   reg        [3:0]    char_color;
   reg        [2:0]    pix_idx;
-  reg        [3:0]    color_delay_1;
+  reg        [3:0]    color_reg_delay_1;
   reg                 rom_rd_en_delay_1;
   reg                 rom_rd_en_delay_2;
   reg                 rom_rd_en_regNext;
@@ -93,7 +97,7 @@ module draw_char_engine (
   end
 
   assign x_scale_cnt_willClear = 1'b0;
-  assign x_scale_cnt_willOverflowIfInc = (x_scale_cnt_value == scale);
+  assign x_scale_cnt_willOverflowIfInc = (x_scale_cnt_value == scale_reg);
   assign x_scale_cnt_willOverflow = (x_scale_cnt_willOverflowIfInc && x_scale_cnt_willIncrement);
   always @(*) begin
     if(x_scale_cnt_willOverflow) begin
@@ -132,7 +136,7 @@ module draw_char_engine (
   end
 
   assign y_scale_cnt_willClear = 1'b0;
-  assign y_scale_cnt_willOverflowIfInc = (y_scale_cnt_value == scale);
+  assign y_scale_cnt_willOverflowIfInc = (y_scale_cnt_value == scale_reg);
   assign y_scale_cnt_willOverflow = (y_scale_cnt_willOverflowIfInc && y_scale_cnt_willIncrement);
   always @(*) begin
     if(y_scale_cnt_willOverflow) begin
@@ -174,6 +178,8 @@ module draw_char_engine (
   always @(posedge clk or posedge reset) begin
     if(reset) begin
       word_reg <= 7'h0;
+      scale_reg <= 3'b000;
+      color_reg <= 4'b0000;
       rom_rd_en <= 1'b0;
       x_scale_cnt_value <= 3'b000;
       x_cnt_value <= 3'b000;
@@ -188,6 +194,12 @@ module draw_char_engine (
     end else begin
       if(start) begin
         word_reg <= word;
+      end
+      if(start) begin
+        scale_reg <= scale;
+      end
+      if(start) begin
+        color_reg <= color;
       end
       x_scale_cnt_value <= x_scale_cnt_valueNext;
       x_cnt_value <= x_cnt_valueNext;
@@ -218,7 +230,7 @@ module draw_char_engine (
       end
       pix_idx <= x_cnt_value;
       if(temp_when[pix_idx]) begin
-        char_color <= color_delay_1;
+        char_color <= color_reg_delay_1;
       end else begin
         char_color <= 4'b0010;
       end
@@ -228,11 +240,17 @@ module draw_char_engine (
   end
 
   always @(posedge clk) begin
-    color_delay_1 <= color;
+    if(1'b0) begin
+      x_scale_cnt_isDone <= x_scale_cnt_willOverflow;
+    end
+    if(1'b0) begin
+      y_scale_cnt_isDone <= y_scale_cnt_willOverflow;
+    end
+    rom_rd_en_regNext <= rom_rd_en;
   end
 
   always @(posedge clk) begin
-    rom_rd_en_regNext <= rom_rd_en;
+    color_reg_delay_1 <= color_reg;
   end
 
 

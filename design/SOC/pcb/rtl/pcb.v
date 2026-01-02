@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : pcb
-// Git hash  : 39db3a2cb8f7a078d16a5dce7d14097771ef6fa2
+// Git hash  : d54b6a330ebf6d5323d8457a59bd98439303851f
 
 `timescale 1ns/1ps
 
@@ -2043,10 +2043,10 @@ module display_controller (
   assign x_next = (x + 9'h009);
   assign y_next = (y + 8'h09);
   assign itf_in_color = ft_color;
-  assign itf_width = 8'h08;
-  assign itf_height = 8'h08;
+  assign itf_width = 8'h07;
+  assign itf_height = 8'h07;
   assign itf_fill_pattern = 2'b00;
-  assign itf_pat_color = 4'b0000;
+  assign itf_pat_color = 4'b0010;
   assign fsm_wantExit = 1'b0;
   assign fsm_wantKill = 1'b0;
   always @(*) begin
@@ -2193,7 +2193,7 @@ module display_controller (
   assign draw_block_width = (itf_start_1 ? itf_width : itf_width_1);
   assign draw_block_height = (itf_start_1 ? itf_height : itf_height_1);
   assign draw_block_in_color = (itf_start_1 ? itf_in_color : itf_in_color_1);
-  assign draw_block_pat_color = itf_pat_color_1;
+  assign draw_block_pat_color = (itf_start_1 ? itf_pat_color : itf_pat_color_1);
   assign draw_block_fill_pattern = (itf_start_1 ? itf_fill_pattern : itf_fill_pattern_1);
   assign itf_done_1 = draw_block_done;
   assign itf_done_3 = draw_block_done;
@@ -2510,6 +2510,7 @@ module draw_block_engine (
   reg        [7:0]    width_reg;
   reg        [7:0]    height_reg;
   reg        [1:0]    fill_pattern_reg;
+  reg        [3:0]    pat_color_1;
   reg                 addr_comp_active;
   reg                 h_cnt_willIncrement;
   wire                h_cnt_willClear;
@@ -2530,12 +2531,10 @@ module draw_block_engine (
   reg                 border_en;
   reg                 fill_en;
   reg                 no_pattern;
+  reg        [3:0]    in_color_1d;
+  reg        [3:0]    pat_color_1d;
   reg                 active_2d;
-  reg        [3:0]    in_color_1_delay_1;
   reg        [3:0]    out_color_1;
-  reg        [3:0]    pat_color_delay_1;
-  reg        [3:0]    pat_color_delay_2;
-  reg        [3:0]    pat_color_delay_3;
 
   assign temp_h_cnt_valueNext_1 = h_cnt_willIncrement;
   assign temp_h_cnt_valueNext = {7'd0, temp_h_cnt_valueNext_1};
@@ -2594,16 +2593,21 @@ module draw_block_engine (
     if(start) begin
       in_color_1 <= in_color;
     end
+    if(start) begin
+      pat_color_1 <= pat_color;
+    end
     if(1'b0) begin
       h_cnt_isDone <= h_cnt_willOverflow;
     end
     if(1'b0) begin
       v_cnt_isDone <= v_cnt_willOverflow;
     end
-    in_color_1_delay_1 <= in_color_1;
-    out_color_1 <= in_color_1_delay_1;
+    in_color_1d <= in_color_1;
+    pat_color_1d <= pat_color_1;
     if(((border_en || fill_en) && (! no_pattern))) begin
-      out_color_1 <= pat_color_delay_3;
+      out_color_1 <= pat_color_1d;
+    end else begin
+      out_color_1 <= in_color_1d;
     end
   end
 
@@ -2657,12 +2661,6 @@ module draw_block_engine (
     end
   end
 
-  always @(posedge core_clk) begin
-    pat_color_delay_1 <= pat_color;
-    pat_color_delay_2 <= pat_color_delay_1;
-    pat_color_delay_3 <= pat_color_delay_2;
-  end
-
 
 endmodule
 
@@ -2693,6 +2691,8 @@ module draw_char_engine (
   wire       [0:0]    temp_y_cnt_valueNext_1;
   wire       [7:0]    temp_when;
   reg        [6:0]    word_reg;
+  reg        [2:0]    scale_reg;
+  reg        [3:0]    color_reg;
   reg                 rom_rd_en;
   reg                 x_scale_cnt_willIncrement;
   wire                x_scale_cnt_willClear;
@@ -2727,7 +2727,7 @@ module draw_char_engine (
   reg        [7:0]    v_cnt_1;
   reg        [3:0]    char_color;
   reg        [2:0]    pix_idx;
-  reg        [3:0]    color_delay_1;
+  reg        [3:0]    color_reg_delay_1;
   reg                 rom_rd_en_delay_1;
   reg                 rom_rd_en_delay_2;
   reg                 rom_rd_en_regNext;
@@ -2757,7 +2757,7 @@ module draw_char_engine (
   end
 
   assign x_scale_cnt_willClear = 1'b0;
-  assign x_scale_cnt_willOverflowIfInc = (x_scale_cnt_value == scale);
+  assign x_scale_cnt_willOverflowIfInc = (x_scale_cnt_value == scale_reg);
   assign x_scale_cnt_willOverflow = (x_scale_cnt_willOverflowIfInc && x_scale_cnt_willIncrement);
   always @(*) begin
     if(x_scale_cnt_willOverflow) begin
@@ -2796,7 +2796,7 @@ module draw_char_engine (
   end
 
   assign y_scale_cnt_willClear = 1'b0;
-  assign y_scale_cnt_willOverflowIfInc = (y_scale_cnt_value == scale);
+  assign y_scale_cnt_willOverflowIfInc = (y_scale_cnt_value == scale_reg);
   assign y_scale_cnt_willOverflow = (y_scale_cnt_willOverflowIfInc && y_scale_cnt_willIncrement);
   always @(*) begin
     if(y_scale_cnt_willOverflow) begin
@@ -2838,6 +2838,8 @@ module draw_char_engine (
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
       word_reg <= 7'h0;
+      scale_reg <= 3'b000;
+      color_reg <= 4'b0000;
       rom_rd_en <= 1'b0;
       x_scale_cnt_value <= 3'b000;
       x_cnt_value <= 3'b000;
@@ -2852,6 +2854,12 @@ module draw_char_engine (
     end else begin
       if(start) begin
         word_reg <= word;
+      end
+      if(start) begin
+        scale_reg <= scale;
+      end
+      if(start) begin
+        color_reg <= color;
       end
       x_scale_cnt_value <= x_scale_cnt_valueNext;
       x_cnt_value <= x_cnt_valueNext;
@@ -2882,7 +2890,7 @@ module draw_char_engine (
       end
       pix_idx <= x_cnt_value;
       if(temp_when[pix_idx]) begin
-        char_color <= color_delay_1;
+        char_color <= color_reg_delay_1;
       end else begin
         char_color <= 4'b0010;
       end
@@ -2902,7 +2910,7 @@ module draw_char_engine (
   end
 
   always @(posedge core_clk) begin
-    color_delay_1 <= color;
+    color_reg_delay_1 <= color_reg;
   end
 
 
@@ -3436,26 +3444,46 @@ module controller (
       if(lock_timeout_counter_willOverflow) begin
         lock_timeout_state <= 1'b1;
       end
+      if((game_start || game_restart)) begin
+        motion_request[0] <= 1'b0;
+      end else begin
+        if((drop && (! drop_regNext))) begin
+          motion_request[0] <= 1'b1;
+        end
+      end
       drop_regNext <= drop;
-      if((drop && (! drop_regNext))) begin
-        motion_request[0] <= 1'b1;
+      if((game_start || game_restart)) begin
+        motion_request[1] <= 1'b0;
+      end else begin
+        if((move_down && (! move_down_regNext))) begin
+          motion_request[1] <= 1'b1;
+        end
       end
       move_down_regNext <= move_down;
-      if((move_down && (! move_down_regNext))) begin
-        motion_request[1] <= 1'b1;
+      if((game_start || game_restart)) begin
+        motion_request[2] <= 1'b0;
+      end else begin
+        if((move_left && (! move_left_regNext))) begin
+          motion_request[2] <= 1'b1;
+        end
       end
       move_left_regNext <= move_left;
-      if((move_left && (! move_left_regNext))) begin
-        motion_request[2] <= 1'b1;
+      if((game_start || game_restart)) begin
+        motion_request[3] <= 1'b0;
+      end else begin
+        if((move_right && (! move_right_regNext))) begin
+          motion_request[3] <= 1'b1;
+        end
       end
       move_right_regNext <= move_right;
-      if((move_right && (! move_right_regNext))) begin
-        motion_request[3] <= 1'b1;
+      if((game_start || game_restart)) begin
+        motion_request[4] <= 1'b0;
+      end else begin
+        if((rotate && (! rotate_regNext))) begin
+          motion_request[4] <= 1'b1;
+        end
       end
       rotate_regNext <= rotate;
-      if((rotate && (! rotate_regNext))) begin
-        motion_request[4] <= 1'b1;
-      end
       debug_place_new_cnt_value <= debug_place_new_cnt_valueNext;
       fsm_stateReg <= fsm_stateNext;
       case(fsm_stateReg)

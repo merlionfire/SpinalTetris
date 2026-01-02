@@ -108,9 +108,15 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
   ).zipWithIndex
 
   for ( ( ( sig, _ ), i ) <- motion_trans_with_indx )  {
-    when ( sig.rise(False) ) {
+//    when ( sig.rise(False) ) {
+//      motion_request(i) := True
+//    }
+    when ( io.game_start || io.game_restart ) {
+      motion_request(i) := False
+    } .elsewhen( sig.rise(False) ) {
       motion_request(i) := True
     }
+
   }
 
   val motion_voted = OHMasking.roundRobin( requests = motion_request,ohPriority = priority  )

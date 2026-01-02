@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : tetris_core
-// Git hash  : 39db3a2cb8f7a078d16a5dce7d14097771ef6fa2
+// Git hash  : d54b6a330ebf6d5323d8457a59bd98439303851f
 
 `timescale 1ns/1ps
 
@@ -1524,7 +1524,7 @@ module display_controller (
     end
   end
 
-  assign itf_scale = 3'b001;
+  assign itf_scale = 3'b000;
   assign itf_color = 4'b0110;
   assign itf_word = {3'b011,temp_itf_word};
   always @(*) begin
@@ -1604,10 +1604,10 @@ module display_controller (
   assign x_next = (x + 9'h009);
   assign y_next = (y + 8'h09);
   assign itf_in_color = ft_color;
-  assign itf_width = 8'h08;
-  assign itf_height = 8'h08;
+  assign itf_width = 8'h07;
+  assign itf_height = 8'h07;
   assign itf_fill_pattern = 2'b00;
-  assign itf_pat_color = 4'b0000;
+  assign itf_pat_color = 4'b0010;
   assign fsm_wantExit = 1'b0;
   assign fsm_wantKill = 1'b0;
   always @(*) begin
@@ -1754,7 +1754,7 @@ module display_controller (
   assign draw_block_width = (itf_start_1 ? itf_width : itf_width_1);
   assign draw_block_height = (itf_start_1 ? itf_height : itf_height_1);
   assign draw_block_in_color = (itf_start_1 ? itf_in_color : itf_in_color_1);
-  assign draw_block_pat_color = itf_pat_color_1;
+  assign draw_block_pat_color = (itf_start_1 ? itf_pat_color : itf_pat_color_1);
   assign draw_block_fill_pattern = (itf_start_1 ? itf_fill_pattern : itf_fill_pattern_1);
   assign itf_done_1 = draw_block_done;
   assign itf_done_3 = draw_block_done;
@@ -1871,7 +1871,7 @@ module display_controller (
         WAIT_DONE : begin
         end
         PRE_DRAW_SCORE : begin
-          x <= 9'h0d2;
+          x <= 9'h0d6;
           y <= 8'h50;
         end
         DRAW_DIGIT : begin
@@ -1884,7 +1884,7 @@ module display_controller (
         end
       endcase
       if(fsm_onExit_WAIT_DRAW_DIGIT_DONE) begin
-        x <= (x + 9'h014);
+        x <= (x + 9'h00c);
       end
       stepup_fsm_stateReg <= stepup_fsm_stateNext;
       case(stepup_fsm_stateReg)
@@ -2071,6 +2071,7 @@ module draw_block_engine (
   reg        [7:0]    width_reg;
   reg        [7:0]    height_reg;
   reg        [1:0]    fill_pattern_reg;
+  reg        [3:0]    pat_color_1;
   reg                 addr_comp_active;
   reg                 h_cnt_willIncrement;
   wire                h_cnt_willClear;
@@ -2091,12 +2092,10 @@ module draw_block_engine (
   reg                 border_en;
   reg                 fill_en;
   reg                 no_pattern;
+  reg        [3:0]    in_color_1d;
+  reg        [3:0]    pat_color_1d;
   reg                 active_2d;
-  reg        [3:0]    in_color_1_delay_1;
   reg        [3:0]    out_color_1;
-  reg        [3:0]    pat_color_delay_1;
-  reg        [3:0]    pat_color_delay_2;
-  reg        [3:0]    pat_color_delay_3;
 
   assign temp_h_cnt_valueNext_1 = h_cnt_willIncrement;
   assign temp_h_cnt_valueNext = {7'd0, temp_h_cnt_valueNext_1};
@@ -2155,16 +2154,21 @@ module draw_block_engine (
     if(start) begin
       in_color_1 <= in_color;
     end
+    if(start) begin
+      pat_color_1 <= pat_color;
+    end
     if(1'b0) begin
       h_cnt_isDone <= h_cnt_willOverflow;
     end
     if(1'b0) begin
       v_cnt_isDone <= v_cnt_willOverflow;
     end
-    in_color_1_delay_1 <= in_color_1;
-    out_color_1 <= in_color_1_delay_1;
+    in_color_1d <= in_color_1;
+    pat_color_1d <= pat_color_1;
     if(((border_en || fill_en) && (! no_pattern))) begin
-      out_color_1 <= pat_color_delay_3;
+      out_color_1 <= pat_color_1d;
+    end else begin
+      out_color_1 <= in_color_1d;
     end
   end
 
@@ -2218,12 +2222,6 @@ module draw_block_engine (
     end
   end
 
-  always @(posedge core_clk) begin
-    pat_color_delay_1 <= pat_color;
-    pat_color_delay_2 <= pat_color_delay_1;
-    pat_color_delay_3 <= pat_color_delay_2;
-  end
-
 
 endmodule
 
@@ -2254,6 +2252,8 @@ module draw_char_engine (
   wire       [0:0]    temp_y_cnt_valueNext_1;
   wire       [7:0]    temp_when;
   reg        [6:0]    word_reg;
+  reg        [2:0]    scale_reg;
+  reg        [3:0]    color_reg;
   reg                 rom_rd_en;
   reg                 x_scale_cnt_willIncrement;
   wire                x_scale_cnt_willClear;
@@ -2288,7 +2288,7 @@ module draw_char_engine (
   reg        [7:0]    v_cnt_1;
   reg        [3:0]    char_color;
   reg        [2:0]    pix_idx;
-  reg        [3:0]    color_delay_1;
+  reg        [3:0]    color_reg_delay_1;
   reg                 rom_rd_en_delay_1;
   reg                 rom_rd_en_delay_2;
   reg                 rom_rd_en_regNext;
@@ -2318,7 +2318,7 @@ module draw_char_engine (
   end
 
   assign x_scale_cnt_willClear = 1'b0;
-  assign x_scale_cnt_willOverflowIfInc = (x_scale_cnt_value == scale);
+  assign x_scale_cnt_willOverflowIfInc = (x_scale_cnt_value == scale_reg);
   assign x_scale_cnt_willOverflow = (x_scale_cnt_willOverflowIfInc && x_scale_cnt_willIncrement);
   always @(*) begin
     if(x_scale_cnt_willOverflow) begin
@@ -2357,7 +2357,7 @@ module draw_char_engine (
   end
 
   assign y_scale_cnt_willClear = 1'b0;
-  assign y_scale_cnt_willOverflowIfInc = (y_scale_cnt_value == scale);
+  assign y_scale_cnt_willOverflowIfInc = (y_scale_cnt_value == scale_reg);
   assign y_scale_cnt_willOverflow = (y_scale_cnt_willOverflowIfInc && y_scale_cnt_willIncrement);
   always @(*) begin
     if(y_scale_cnt_willOverflow) begin
@@ -2399,6 +2399,8 @@ module draw_char_engine (
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
       word_reg <= 7'h0;
+      scale_reg <= 3'b000;
+      color_reg <= 4'b0000;
       rom_rd_en <= 1'b0;
       x_scale_cnt_value <= 3'b000;
       x_cnt_value <= 3'b000;
@@ -2413,6 +2415,12 @@ module draw_char_engine (
     end else begin
       if(start) begin
         word_reg <= word;
+      end
+      if(start) begin
+        scale_reg <= scale;
+      end
+      if(start) begin
+        color_reg <= color;
       end
       x_scale_cnt_value <= x_scale_cnt_valueNext;
       x_cnt_value <= x_cnt_valueNext;
@@ -2443,7 +2451,7 @@ module draw_char_engine (
       end
       pix_idx <= x_cnt_value;
       if(temp_when[pix_idx]) begin
-        char_color <= color_delay_1;
+        char_color <= color_reg_delay_1;
       end else begin
         char_color <= 4'b0010;
       end
@@ -2463,7 +2471,7 @@ module draw_char_engine (
   end
 
   always @(posedge core_clk) begin
-    color_delay_1 <= color;
+    color_reg_delay_1 <= color_reg;
   end
 
 
@@ -3296,7 +3304,9 @@ module playfield (
   wire       [21:0]   playfield_lowestOne;
   wire       [21:0]   playfield_rows_to_clear;
   reg        [9:0]    playfield_total_score;
-  reg                 playfield_update_score_regNext;
+  reg                 playfield_update_score_delay_1;
+  reg                 playfield_lock_score;
+  reg                 playfield_lock_score_1d;
   reg                 game_restart_regNext;
   reg        [4:0]    flow_row;
   wire                flow_read_req;
@@ -4144,7 +4154,7 @@ module playfield (
   assign playfield_isRowFull = (|playfield_ones);
   assign playfield_lowestOne = (playfield_ones & (~ temp_playfield_lowestOne));
   assign playfield_rows_to_clear = (playfield_lowestOne - 22'h000001);
-  assign score_val_valid = (playfield_update_score_regNext && ((! game_restart) && game_restart_regNext));
+  assign score_val_valid = (playfield_lock_score_1d || ((! game_restart) && game_restart_regNext));
   assign score_val_payload = playfield_total_score;
   assign flow_read_req = 1'b0;
   always @(*) begin
@@ -4358,7 +4368,9 @@ module playfield (
       playfield_ones <= 22'h0;
       playfield_count <= 5'h0;
       playfield_total_score <= 10'h0;
-      playfield_update_score_regNext <= 1'b0;
+      playfield_update_score_delay_1 <= 1'b0;
+      playfield_lock_score <= 1'b0;
+      playfield_lock_score_1d <= 1'b0;
       flow_row <= 5'h0;
       flow_region_0 <= 10'h0;
       flow_region_1 <= 10'h0;
@@ -4628,14 +4640,16 @@ module playfield (
       if(playfield_clear) begin
         playfield_region_0 <= 10'h0;
       end
+      playfield_update_score_delay_1 <= playfield_update_score;
+      playfield_lock_score <= playfield_update_score_delay_1;
+      playfield_lock_score_1d <= playfield_lock_score;
       if(game_restart) begin
         playfield_total_score <= 10'h0;
       end else begin
-        if(playfield_update_score) begin
+        if(playfield_lock_score) begin
           playfield_total_score <= (playfield_total_score + temp_playfield_total_score);
         end
       end
-      playfield_update_score_regNext <= playfield_update_score;
       if(flow_update) begin
         flow_region_0 <= checker_region_0;
         flow_region_1 <= checker_region_1;

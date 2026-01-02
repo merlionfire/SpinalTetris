@@ -38,11 +38,13 @@ class draw_char_engine ( config : DrawCharEngConfig ) extends Component {
 
   // Stage 1
   val word_reg = RegNextWhen(io.word, io.start) init (0)
+  val scale_reg = RegNextWhen(io.scale, io.start) init (0)
+  val color_reg = RegNextWhen(io.color, io.start) init (0)
 
 
   val rom_rd_en = RegInit(False)
 
-  val x_scale_cnt = Counter2(  io.scale, rom_rd_en)
+  val x_scale_cnt = Counter2(  scale_reg, rom_rd_en)
 
 
   //val h_cnt = Counter(stateCount = CHAR_PIXEL_WIDTH, rom_rd_en)
@@ -53,7 +55,7 @@ class draw_char_engine ( config : DrawCharEngConfig ) extends Component {
 
   val x_last_cycle = x_cnt.willOverflow & x_scale_cnt.willOverflow
 
-  val y_scale_cnt = Counter2(  io.scale, x_last_cycle  )
+  val y_scale_cnt = Counter2(  scale_reg, x_last_cycle  )
 
   val y_cnt = Counter(stateCount = CHAR_PIXEL_HEIGHT, y_scale_cnt.willOverflow && x_last_cycle )
 
@@ -97,7 +99,7 @@ class draw_char_engine ( config : DrawCharEngConfig ) extends Component {
   val pix_idx = RegNext(x_cnt.value) init (0)
 
   when(char_pix_rom.io.font_bitmap_byte.reversed(pix_idx)) {
-    char_color := Delay(io.color,1)
+    char_color := Delay(color_reg,1)
   } otherwise {
     char_color := bg_color_idx
   }
