@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : tetris_top
-// Git hash  : cd0c22999bd4bb6fd3a8f1f8466e84843ae2b29f
+// Git hash  : 8cdd7f1904d512b88dc8af743360db1708be332e
 
 `timescale 1ns/1ps
 
@@ -20,6 +20,8 @@ module tetris_top (
   output wire          btns_rot_clr,
   inout  wire          ps2_clk,
   inout  wire          ps2_data,
+  output wire          uart_txd,
+  input  wire          uart_rxd,
   output wire          vga_vSync,
   output wire          vga_hSync,
   output wire          vga_colorEn,
@@ -37,22 +39,28 @@ module tetris_top (
   wire       [3:0]    tetris_core_inst_vga_color_b;
   wire                kd_ps2_inst_rd_data_valid;
   wire       [7:0]    kd_ps2_inst_rd_data_payload;
-  wire       [4:0]    kd_ps2_inst_keys_valid;
+  wire       [5:0]    kd_ps2_inst_keys_valid;
+  wire                uart_inst_io_uart_txd;
+  wire                uart_inst_io_game_start;
+  wire                uart_inst_io_move_left;
+  wire                uart_inst_io_move_right;
+  wire                uart_inst_io_move_down;
+  wire                uart_inst_io_rotate;
+  wire                uart_inst_io_drop;
   reg                 ctrl_allowed_regNext;
-  reg                 temp_rotate;
-  reg                 btns_btn_south_regNext;
+  wire                temp_btns_rot_clr;
 
   tetris_core tetris_core_inst (
     .core_clk     (core_clk                         ), //i
     .core_rst     (core_rst                         ), //i
     .vga_clk      (vga_clk                          ), //i
     .vga_rst      (vga_rst                          ), //i
-    .game_start   (btns_btn_west                    ), //i
-    .move_left    (btns_rot_left                    ), //i
-    .move_right   (btns_rot_right                   ), //i
-    .move_down    (btns_rot_push                    ), //i
-    .rotate       (temp_rotate                      ), //i
-    .drop         (btns_btn_east                    ), //i
+    .game_start   (uart_inst_io_game_start          ), //i
+    .move_left    (uart_inst_io_move_left           ), //i
+    .move_right   (uart_inst_io_move_right          ), //i
+    .move_down    (uart_inst_io_move_down           ), //i
+    .rotate       (uart_inst_io_rotate              ), //i
+    .drop         (uart_inst_io_drop                ), //i
     .ctrl_allowed (tetris_core_inst_ctrl_allowed    ), //o
     .vga_vSync    (tetris_core_inst_vga_vSync       ), //o
     .vga_hSync    (tetris_core_inst_vga_hSync       ), //o
@@ -66,30 +74,142 @@ module tetris_top (
     .ps2_data        (ps2_data                        ), //~
     .rd_data_valid   (kd_ps2_inst_rd_data_valid       ), //o
     .rd_data_payload (kd_ps2_inst_rd_data_payload[7:0]), //o
-    .keys_valid      (kd_ps2_inst_keys_valid[4:0]     ), //o
+    .keys_valid      (kd_ps2_inst_keys_valid[5:0]     ), //o
     .core_rst        (core_rst                        ), //i
     .core_clk        (core_clk                        )  //i
   );
+  uart_controller uart_inst (
+    .io_uart_txd     (uart_inst_io_uart_txd  ), //o
+    .io_uart_rxd     (uart_rxd               ), //i
+    .io_controlReset (temp_btns_rot_clr      ), //i
+    .io_game_start   (uart_inst_io_game_start), //o
+    .io_move_left    (uart_inst_io_move_left ), //o
+    .io_move_right   (uart_inst_io_move_right), //o
+    .io_move_down    (uart_inst_io_move_down ), //o
+    .io_rotate       (uart_inst_io_rotate    ), //o
+    .io_drop         (uart_inst_io_drop      ), //o
+    .core_clk        (core_clk               ), //i
+    .core_rst        (core_rst               )  //i
+  );
+  assign uart_txd = uart_inst_io_uart_txd;
   assign vga_vSync = tetris_core_inst_vga_vSync;
   assign vga_hSync = tetris_core_inst_vga_hSync;
   assign vga_colorEn = tetris_core_inst_vga_colorEn;
   assign vga_color_r = tetris_core_inst_vga_color_r;
   assign vga_color_g = tetris_core_inst_vga_color_g;
   assign vga_color_b = tetris_core_inst_vga_color_b;
-  assign btns_rot_clr = (tetris_core_inst_ctrl_allowed && (! ctrl_allowed_regNext));
+  assign temp_btns_rot_clr = (tetris_core_inst_ctrl_allowed && (! ctrl_allowed_regNext));
+  assign btns_rot_clr = temp_btns_rot_clr;
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
       ctrl_allowed_regNext <= 1'b0;
-      temp_rotate <= 1'b0;
-      btns_btn_south_regNext <= 1'b0;
     end else begin
       ctrl_allowed_regNext <= tetris_core_inst_ctrl_allowed;
-      btns_btn_south_regNext <= btns_btn_south;
-      if((btns_btn_south && (! btns_btn_south_regNext))) begin
-        temp_rotate <= 1'b1;
-      end
-      if(btns_rot_clr) begin
-        temp_rotate <= 1'b0;
+    end
+  end
+
+
+endmodule
+
+module uart_controller (
+  output wire          io_uart_txd,
+  input  wire          io_uart_rxd,
+  input  wire          io_controlReset,
+  output wire          io_game_start,
+  output wire          io_move_left,
+  output wire          io_move_right,
+  output wire          io_move_down,
+  output wire          io_rotate,
+  output wire          io_drop,
+  input  wire          core_clk,
+  input  wire          core_rst
+);
+  localparam NONE = 2'd0;
+  localparam EVEN = 2'd1;
+  localparam ODD = 2'd2;
+  localparam ONE = 1'd0;
+  localparam TWO = 1'd1;
+
+  wire                uartCtrl_1_io_write_ready;
+  wire                uartCtrl_1_io_read_valid;
+  wire       [7:0]    uartCtrl_1_io_read_payload;
+  wire                uartCtrl_1_io_uart_txd;
+  wire                uartCtrl_1_io_readError;
+  wire                uartCtrl_1_io_readBreak;
+  reg                 game_start_reg;
+  reg                 move_left_reg;
+  reg                 move_right_reg;
+  reg                 move_down_reg;
+  reg                 rotate_reg;
+  reg                 drop_reg;
+
+  UartCtrl uartCtrl_1 (
+    .io_config_frame_dataLength (3'b111                         ), //i
+    .io_config_frame_stop       (ONE                            ), //i
+    .io_config_frame_parity     (NONE                           ), //i
+    .io_config_clockDivider     (20'h00145                      ), //i
+    .io_write_valid             (1'b0                           ), //i
+    .io_write_ready             (uartCtrl_1_io_write_ready      ), //o
+    .io_write_payload           (8'h0                           ), //i
+    .io_read_valid              (uartCtrl_1_io_read_valid       ), //o
+    .io_read_ready              (1'b1                           ), //i
+    .io_read_payload            (uartCtrl_1_io_read_payload[7:0]), //o
+    .io_uart_txd                (uartCtrl_1_io_uart_txd         ), //o
+    .io_uart_rxd                (io_uart_rxd                    ), //i
+    .io_readError               (uartCtrl_1_io_readError        ), //o
+    .io_writeBreak              (1'b0                           ), //i
+    .io_readBreak               (uartCtrl_1_io_readBreak        ), //o
+    .core_clk                   (core_clk                       ), //i
+    .core_rst                   (core_rst                       )  //i
+  );
+  assign io_uart_txd = uartCtrl_1_io_uart_txd;
+  assign io_game_start = game_start_reg;
+  assign io_move_left = move_left_reg;
+  assign io_move_right = move_right_reg;
+  assign io_move_down = move_down_reg;
+  assign io_rotate = rotate_reg;
+  assign io_drop = drop_reg;
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      game_start_reg <= 1'b0;
+      move_left_reg <= 1'b0;
+      move_right_reg <= 1'b0;
+      move_down_reg <= 1'b0;
+      rotate_reg <= 1'b0;
+      drop_reg <= 1'b0;
+    end else begin
+      if(io_controlReset) begin
+        game_start_reg <= 1'b0;
+        move_left_reg <= 1'b0;
+        move_right_reg <= 1'b0;
+        move_down_reg <= 1'b0;
+        rotate_reg <= 1'b0;
+        drop_reg <= 1'b0;
+      end else begin
+        if(uartCtrl_1_io_read_valid) begin
+          case(uartCtrl_1_io_read_payload)
+            8'h77 : begin
+              game_start_reg <= 1'b1;
+            end
+            8'h61 : begin
+              move_left_reg <= 1'b1;
+            end
+            8'h64 : begin
+              move_right_reg <= 1'b1;
+            end
+            8'h73 : begin
+              move_down_reg <= 1'b1;
+            end
+            8'h20 : begin
+              rotate_reg <= 1'b1;
+            end
+            8'h0d : begin
+              drop_reg <= 1'b1;
+            end
+            default : begin
+            end
+          endcase
+        end
       end
     end
   end
@@ -102,7 +222,7 @@ module kd_ps2 (
   inout  wire          ps2_data,
   output wire          rd_data_valid,
   output wire [7:0]    rd_data_payload,
-  output reg  [4:0]    keys_valid,
+  output reg  [5:0]    keys_valid,
   input  wire          core_rst,
   input  wire          core_clk
 );
@@ -124,9 +244,9 @@ module kd_ps2 (
   wire                rx_fsm_wantKill;
   wire                is_fsm_in_idle;
   wire                is_fsm_exit_wait_last;
-  wire                up_tick;
-  reg                 up_valid;
-  wire                up_tick_2nd;
+  wire                start_tick;
+  reg                 start_valid;
+  wire                start_tick_2nd;
   wire                down_tick;
   reg                 down_valid;
   wire                down_tick_2nd;
@@ -136,9 +256,12 @@ module kd_ps2 (
   wire                right_tick;
   reg                 right_valid;
   wire                right_tick_2nd;
-  wire                space_tick;
-  reg                 space_valid;
-  wire                space_tick_2nd;
+  wire                rotate_tick;
+  reg                 rotate_valid;
+  wire                rotate_tick_2nd;
+  wire                drop_tick;
+  reg                 drop_valid;
+  wire                drop_tick_2nd;
   reg        [1:0]    rx_fsm_stateReg;
   reg        [1:0]    rx_fsm_stateNext;
   wire                rx_fsm_onExit_IDLE;
@@ -223,14 +346,15 @@ module kd_ps2 (
   end
 
   assign rx_fsm_wantKill = 1'b0;
-  assign up_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1d));
-  assign up_tick_2nd = (up_tick && up_valid);
+  assign start_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1d));
+  assign start_tick_2nd = (start_tick && start_valid);
   always @(*) begin
-    keys_valid[0] = up_valid;
+    keys_valid[0] = start_valid;
     keys_valid[1] = down_valid;
     keys_valid[2] = left_valid;
     keys_valid[3] = right_valid;
-    keys_valid[4] = space_valid;
+    keys_valid[4] = rotate_valid;
+    keys_valid[5] = drop_valid;
   end
 
   assign down_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1b));
@@ -239,10 +363,12 @@ module kd_ps2 (
   assign left_tick_2nd = (left_tick && left_valid);
   assign right_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h23));
   assign right_tick_2nd = (right_tick && right_valid);
-  assign space_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h29));
-  assign space_tick_2nd = (space_tick && space_valid);
-  assign is_key_received = (|{space_tick,{right_tick,{left_tick,{down_tick,up_tick}}}});
-  assign is_key_2nd_recevied = (|{space_tick_2nd,{right_tick_2nd,{left_tick_2nd,{down_tick_2nd,up_tick_2nd}}}});
+  assign rotate_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h29));
+  assign rotate_tick_2nd = (rotate_tick && rotate_valid);
+  assign drop_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h5a));
+  assign drop_tick_2nd = (drop_tick && drop_valid);
+  assign is_key_received = (|{drop_tick,{rotate_tick,{right_tick,{left_tick,{down_tick,start_tick}}}}});
+  assign is_key_2nd_recevied = (|{drop_tick_2nd,{rotate_tick_2nd,{right_tick_2nd,{left_tick_2nd,{down_tick_2nd,start_tick_2nd}}}}});
   assign rx_fsm_onExit_IDLE = ((rx_fsm_stateNext != IDLE) && (rx_fsm_stateReg == IDLE));
   assign rx_fsm_onExit_WAIT_BREAK = ((rx_fsm_stateNext != WAIT_BREAK) && (rx_fsm_stateReg == WAIT_BREAK));
   assign rx_fsm_onExit_WAIT_LAST = ((rx_fsm_stateNext != WAIT_LAST) && (rx_fsm_stateReg == WAIT_LAST));
@@ -255,18 +381,19 @@ module kd_ps2 (
   assign is_fsm_exit_wait_last = ((rx_fsm_stateNext != WAIT_LAST) && (rx_fsm_stateReg == WAIT_LAST));
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
-      up_valid <= 1'b0;
+      start_valid <= 1'b0;
       down_valid <= 1'b0;
       left_valid <= 1'b0;
       right_valid <= 1'b0;
-      space_valid <= 1'b0;
+      rotate_valid <= 1'b0;
+      drop_valid <= 1'b0;
       rx_fsm_stateReg <= IDLE;
     end else begin
       if(is_fsm_in_idle) begin
-        up_valid <= up_tick;
+        start_valid <= start_tick;
       end
       if(is_fsm_exit_wait_last) begin
-        up_valid <= 1'b0;
+        start_valid <= 1'b0;
       end
       if(is_fsm_in_idle) begin
         down_valid <= down_tick;
@@ -287,10 +414,16 @@ module kd_ps2 (
         right_valid <= 1'b0;
       end
       if(is_fsm_in_idle) begin
-        space_valid <= space_tick;
+        rotate_valid <= rotate_tick;
       end
       if(is_fsm_exit_wait_last) begin
-        space_valid <= 1'b0;
+        rotate_valid <= 1'b0;
+      end
+      if(is_fsm_in_idle) begin
+        drop_valid <= drop_tick;
+      end
+      if(is_fsm_exit_wait_last) begin
+        drop_valid <= 1'b0;
       end
       rx_fsm_stateReg <= rx_fsm_stateNext;
     end
@@ -321,10 +454,11 @@ module tetris_core (
 
   wire                game_logic_inst_row_val_valid;
   wire       [9:0]    game_logic_inst_row_val_payload;
+  wire                game_logic_inst_score_val_valid;
+  wire       [9:0]    game_logic_inst_score_val_payload;
   wire                game_logic_inst_ctrl_allowed;
   wire                game_logic_inst_softReset;
   wire                game_logic_inst_game_restart;
-  wire                game_logic_inst_new_piece_valid;
   wire                game_display_inst_vga_vSync;
   wire                game_display_inst_vga_hSync;
   wire                game_display_inst_vga_colorEn;
@@ -337,44 +471,47 @@ module tetris_core (
   wire                game_display_inst_sof;
 
   logic_top game_logic_inst (
-    .game_start      (game_start                          ), //i
-    .move_left       (move_left                           ), //i
-    .move_right      (move_right                          ), //i
-    .move_down       (move_down                           ), //i
-    .rotate          (rotate                              ), //i
-    .drop            (drop                                ), //i
-    .row_val_valid   (game_logic_inst_row_val_valid       ), //o
-    .row_val_payload (game_logic_inst_row_val_payload[9:0]), //o
-    .draw_field_done (game_display_inst_draw_field_done   ), //i
-    .screen_is_ready (game_display_inst_screen_is_ready   ), //i
-    .vga_sof         (game_display_inst_sof               ), //i
-    .ctrl_allowed    (game_logic_inst_ctrl_allowed        ), //o
-    .softReset       (game_logic_inst_softReset           ), //o
-    .game_restart    (game_logic_inst_game_restart        ), //o
-    .new_piece_valid (game_logic_inst_new_piece_valid     ), //o
-    .core_clk        (core_clk                            ), //i
-    .core_rst        (core_rst                            )  //i
+    .game_start        (game_start                            ), //i
+    .move_left         (move_left                             ), //i
+    .move_right        (move_right                            ), //i
+    .move_down         (move_down                             ), //i
+    .rotate            (rotate                                ), //i
+    .drop              (drop                                  ), //i
+    .row_val_valid     (game_logic_inst_row_val_valid         ), //o
+    .row_val_payload   (game_logic_inst_row_val_payload[9:0]  ), //o
+    .score_val_valid   (game_logic_inst_score_val_valid       ), //o
+    .score_val_payload (game_logic_inst_score_val_payload[9:0]), //o
+    .draw_field_done   (game_display_inst_draw_field_done     ), //i
+    .screen_is_ready   (game_display_inst_screen_is_ready     ), //i
+    .vga_sof           (game_display_inst_sof                 ), //i
+    .ctrl_allowed      (game_logic_inst_ctrl_allowed          ), //o
+    .softReset         (game_logic_inst_softReset             ), //o
+    .game_restart      (game_logic_inst_game_restart          ), //o
+    .core_clk          (core_clk                              ), //i
+    .core_rst          (core_rst                              )  //i
   );
   display_top game_display_inst (
-    .vga_vSync       (game_display_inst_vga_vSync         ), //o
-    .vga_hSync       (game_display_inst_vga_hSync         ), //o
-    .vga_colorEn     (game_display_inst_vga_colorEn       ), //o
-    .vga_color_r     (game_display_inst_vga_color_r[3:0]  ), //o
-    .vga_color_g     (game_display_inst_vga_color_g[3:0]  ), //o
-    .vga_color_b     (game_display_inst_vga_color_b[3:0]  ), //o
-    .softRest        (game_logic_inst_softReset           ), //i
-    .core_clk        (core_clk                            ), //i
-    .core_rst        (core_rst                            ), //i
-    .vga_clk         (vga_clk                             ), //i
-    .vga_rst         (vga_rst                             ), //i
-    .row_val_valid   (game_logic_inst_row_val_valid       ), //i
-    .row_val_payload (game_logic_inst_row_val_payload[9:0]), //i
-    .game_start      (game_start                          ), //i
-    .game_restart    (game_logic_inst_game_restart        ), //i
-    .draw_done       (game_display_inst_draw_done         ), //o
-    .draw_field_done (game_display_inst_draw_field_done   ), //o
-    .screen_is_ready (game_display_inst_screen_is_ready   ), //o
-    .sof             (game_display_inst_sof               )  //o
+    .vga_vSync         (game_display_inst_vga_vSync           ), //o
+    .vga_hSync         (game_display_inst_vga_hSync           ), //o
+    .vga_colorEn       (game_display_inst_vga_colorEn         ), //o
+    .vga_color_r       (game_display_inst_vga_color_r[3:0]    ), //o
+    .vga_color_g       (game_display_inst_vga_color_g[3:0]    ), //o
+    .vga_color_b       (game_display_inst_vga_color_b[3:0]    ), //o
+    .softRest          (game_logic_inst_softReset             ), //i
+    .core_clk          (core_clk                              ), //i
+    .core_rst          (core_rst                              ), //i
+    .vga_clk           (vga_clk                               ), //i
+    .vga_rst           (vga_rst                               ), //i
+    .row_val_valid     (game_logic_inst_row_val_valid         ), //i
+    .row_val_payload   (game_logic_inst_row_val_payload[9:0]  ), //i
+    .score_val_valid   (game_logic_inst_score_val_valid       ), //i
+    .score_val_payload (game_logic_inst_score_val_payload[9:0]), //i
+    .game_start        (game_start                            ), //i
+    .game_restart      (game_logic_inst_game_restart          ), //i
+    .draw_done         (game_display_inst_draw_done           ), //o
+    .draw_field_done   (game_display_inst_draw_field_done     ), //o
+    .screen_is_ready   (game_display_inst_screen_is_ready     ), //o
+    .sof               (game_display_inst_sof                 )  //o
   );
   assign vga_vSync = game_display_inst_vga_vSync;
   assign vga_hSync = game_display_inst_vga_hSync;
@@ -383,6 +520,130 @@ module tetris_core (
   assign vga_color_g = game_display_inst_vga_color_g;
   assign vga_color_b = game_display_inst_vga_color_b;
   assign ctrl_allowed = game_logic_inst_ctrl_allowed;
+
+endmodule
+
+module UartCtrl (
+  input  wire [2:0]    io_config_frame_dataLength,
+  input  wire [0:0]    io_config_frame_stop,
+  input  wire [1:0]    io_config_frame_parity,
+  input  wire [19:0]   io_config_clockDivider,
+  input  wire          io_write_valid,
+  output reg           io_write_ready,
+  input  wire [7:0]    io_write_payload,
+  output wire          io_read_valid,
+  input  wire          io_read_ready,
+  output wire [7:0]    io_read_payload,
+  output wire          io_uart_txd,
+  input  wire          io_uart_rxd,
+  output wire          io_readError,
+  input  wire          io_writeBreak,
+  output wire          io_readBreak,
+  input  wire          core_clk,
+  input  wire          core_rst
+);
+  localparam ONE = 1'd0;
+  localparam TWO = 1'd1;
+  localparam NONE = 2'd0;
+  localparam EVEN = 2'd1;
+  localparam ODD = 2'd2;
+
+  wire                tx_io_write_ready;
+  wire                tx_io_txd;
+  wire                rx_io_read_valid;
+  wire       [7:0]    rx_io_read_payload;
+  wire                rx_io_rts;
+  wire                rx_io_error;
+  wire                rx_io_break;
+  reg        [19:0]   clockDivider_counter;
+  wire                clockDivider_tick;
+  reg                 clockDivider_tickReg;
+  reg                 io_write_throwWhen_valid;
+  wire                io_write_throwWhen_ready;
+  wire       [7:0]    io_write_throwWhen_payload;
+  `ifndef SYNTHESIS
+  reg [23:0] io_config_frame_stop_string;
+  reg [31:0] io_config_frame_parity_string;
+  `endif
+
+
+  UartCtrlTx tx (
+    .io_configFrame_dataLength (io_config_frame_dataLength[2:0]), //i
+    .io_configFrame_stop       (io_config_frame_stop           ), //i
+    .io_configFrame_parity     (io_config_frame_parity[1:0]    ), //i
+    .io_samplingTick           (clockDivider_tickReg           ), //i
+    .io_write_valid            (io_write_throwWhen_valid       ), //i
+    .io_write_ready            (tx_io_write_ready              ), //o
+    .io_write_payload          (io_write_throwWhen_payload[7:0]), //i
+    .io_cts                    (1'b0                           ), //i
+    .io_txd                    (tx_io_txd                      ), //o
+    .io_break                  (io_writeBreak                  ), //i
+    .core_clk                  (core_clk                       ), //i
+    .core_rst                  (core_rst                       )  //i
+  );
+  UartCtrlRx rx (
+    .io_configFrame_dataLength (io_config_frame_dataLength[2:0]), //i
+    .io_configFrame_stop       (io_config_frame_stop           ), //i
+    .io_configFrame_parity     (io_config_frame_parity[1:0]    ), //i
+    .io_samplingTick           (clockDivider_tickReg           ), //i
+    .io_read_valid             (rx_io_read_valid               ), //o
+    .io_read_ready             (io_read_ready                  ), //i
+    .io_read_payload           (rx_io_read_payload[7:0]        ), //o
+    .io_rxd                    (io_uart_rxd                    ), //i
+    .io_rts                    (rx_io_rts                      ), //o
+    .io_error                  (rx_io_error                    ), //o
+    .io_break                  (rx_io_break                    ), //o
+    .core_clk                  (core_clk                       ), //i
+    .core_rst                  (core_rst                       )  //i
+  );
+  `ifndef SYNTHESIS
+  always @(*) begin
+    case(io_config_frame_stop)
+      ONE : io_config_frame_stop_string = "ONE";
+      TWO : io_config_frame_stop_string = "TWO";
+      default : io_config_frame_stop_string = "???";
+    endcase
+  end
+  always @(*) begin
+    case(io_config_frame_parity)
+      NONE : io_config_frame_parity_string = "NONE";
+      EVEN : io_config_frame_parity_string = "EVEN";
+      ODD : io_config_frame_parity_string = "ODD ";
+      default : io_config_frame_parity_string = "????";
+    endcase
+  end
+  `endif
+
+  assign clockDivider_tick = (clockDivider_counter == 20'h0);
+  always @(*) begin
+    io_write_throwWhen_valid = io_write_valid;
+    io_write_ready = io_write_throwWhen_ready;
+    if(rx_io_break) begin
+      io_write_throwWhen_valid = 1'b0;
+      io_write_ready = 1'b1;
+    end
+  end
+
+  assign io_write_throwWhen_payload = io_write_payload;
+  assign io_write_throwWhen_ready = tx_io_write_ready;
+  assign io_read_valid = rx_io_read_valid;
+  assign io_read_payload = rx_io_read_payload;
+  assign io_uart_txd = tx_io_txd;
+  assign io_readError = rx_io_error;
+  assign io_readBreak = rx_io_break;
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      clockDivider_counter <= 20'h0;
+      clockDivider_tickReg <= 1'b0;
+    end else begin
+      clockDivider_tickReg <= clockDivider_tick;
+      clockDivider_counter <= (clockDivider_counter - 20'h00001);
+      if(clockDivider_tick) begin
+        clockDivider_counter <= io_config_clockDivider;
+      end
+    end
+  end
+
 
 endmodule
 
@@ -400,6 +661,8 @@ module display_top (
   input  wire          vga_rst,
   input  wire          row_val_valid,
   input  wire [9:0]    row_val_payload,
+  input  wire          score_val_valid,
+  input  wire [9:0]    score_val_payload,
   input  wire          game_start,
   input  wire          game_restart,
   output wire          draw_done,
@@ -459,6 +722,8 @@ module display_top (
   wire                vga_sync_io_sos_buffercc_io_dataOut;
   wire                vga_sync_io_sof_buffercc_io_dataOut;
   wire                lb_load_valid_buffercc_io_dataOut;
+  wire       [4:0]    temp_temp_rd_start_1;
+  wire       [0:0]    temp_temp_rd_start_1_1;
   wire       [8:0]    temp_dma_fb_fetch_en_cnt_valueNext;
   wire       [0:0]    temp_dma_fb_fetch_en_cnt_valueNext_1;
   wire       [16:0]   temp_dma_fb_fetch_addr_valueNext;
@@ -475,6 +740,12 @@ module display_top (
   wire                fb_scale_cnt_willOverflowIfInc;
   wire                fb_scale_cnt_willOverflow;
   wire                lb_load_valid;
+  reg                 temp_1;
+  reg                 temp_rd_start;
+  reg        [4:0]    temp_rd_start_1;
+  reg        [4:0]    temp_rd_start_2;
+  wire                temp_rd_start_3;
+  wire                temp_rd_start_4;
   reg                 vga_sync_io_hSync_delay_1;
   reg                 vga_sync_io_hSync_delay_2;
   reg                 vga_sync_io_vSync_delay_1;
@@ -508,6 +779,8 @@ module display_top (
   wire       [3:0]    dma_lb_wr_payload;
   reg                 dma_fb_fetch_en_regNext;
 
+  assign temp_temp_rd_start_1_1 = temp_rd_start;
+  assign temp_temp_rd_start_1 = {4'd0, temp_temp_rd_start_1_1};
   assign temp_dma_fb_fetch_en_cnt_valueNext_1 = dma_fb_fetch_en_cnt_willIncrement;
   assign temp_dma_fb_fetch_en_cnt_valueNext = {8'd0, temp_dma_fb_fetch_en_cnt_valueNext_1};
   assign temp_dma_fb_fetch_addr_valueNext_1 = dma_fb_fetch_addr_willIncrement;
@@ -570,6 +843,8 @@ module display_top (
     .game_start              (game_start                                  ), //i
     .row_val_valid           (row_val_valid                               ), //i
     .row_val_payload         (row_val_payload[9:0]                        ), //i
+    .score_val_valid         (score_val_valid                             ), //i
+    .score_val_payload       (score_val_payload[9:0]                      ), //i
     .screen_is_ready         (draw_controller_screen_is_ready             ), //o
     .draw_char_start         (draw_controller_draw_char_start             ), //o
     .draw_char_word          (draw_controller_draw_char_word[6:0]         ), //o
@@ -616,7 +891,7 @@ module display_top (
   linebuffer lb (
     .wr_in_valid    (dma_lb_wr_valid       ), //i
     .wr_in_payload  (dma_lb_wr_payload[3:0]), //i
-    .rd_start       (vga_sync_io_sol       ), //i
+    .rd_start       (temp_rd_start_4       ), //i
     .rd_out_valid   (lb_rd_out_valid       ), //o
     .rd_out_payload (lb_rd_out_payload[3:0]), //o
     .core_clk       (core_clk              ), //i
@@ -708,6 +983,22 @@ module display_top (
   end
 
   assign lb_load_valid = ((fb_scale_cnt_value == 1'b0) && vga_sync_io_vColorEn);
+  always @(*) begin
+    temp_rd_start = 1'b0;
+    if(temp_1) begin
+      temp_rd_start = 1'b1;
+    end
+  end
+
+  assign temp_rd_start_3 = (temp_rd_start_2 == 5'h1f);
+  assign temp_rd_start_4 = (temp_rd_start_3 && temp_rd_start);
+  always @(*) begin
+    temp_rd_start_1 = (temp_rd_start_2 + temp_temp_rd_start_1);
+    if(1'b0) begin
+      temp_rd_start_1 = 5'h0;
+    end
+  end
+
   assign lbcp_io_addr = lb_rd_out_payload;
   assign vga_hSync = vga_sync_io_hSync_delay_2;
   assign vga_vSync = vga_sync_io_vSync_delay_2;
@@ -754,7 +1045,7 @@ module display_top (
     end
   end
 
-  assign dma_fb_fetch_en_cnt_willOverflowIfInc = (dma_fb_fetch_en_cnt_value == 9'h13f);
+  assign dma_fb_fetch_en_cnt_willOverflowIfInc = (dma_fb_fetch_en_cnt_value == 9'h11f);
   assign dma_fb_fetch_en_cnt_willOverflow = (dma_fb_fetch_en_cnt_willOverflowIfInc && dma_fb_fetch_en_cnt_willIncrement);
   always @(*) begin
     if(dma_fb_fetch_en_cnt_willOverflow) begin
@@ -781,7 +1072,7 @@ module display_top (
     end
   end
 
-  assign dma_fb_fetch_addr_willOverflowIfInc = (dma_fb_fetch_addr_value == 17'h12bff);
+  assign dma_fb_fetch_addr_willOverflowIfInc = (dma_fb_fetch_addr_value == 17'h10dff);
   assign dma_fb_fetch_addr_willOverflow = (dma_fb_fetch_addr_willOverflowIfInc && dma_fb_fetch_addr_willIncrement);
   always @(*) begin
     if(dma_fb_fetch_addr_willOverflow) begin
@@ -826,10 +1117,19 @@ module display_top (
     if(vga_rst) begin
       vga_sync_io_colorEn_regNext <= 1'b0;
       fb_scale_cnt_value <= 1'b0;
+      temp_1 <= 1'b0;
+      temp_rd_start_2 <= 5'h0;
       is_bg_color <= 1'b0;
     end else begin
       vga_sync_io_colorEn_regNext <= vga_sync_io_colorEn;
       fb_scale_cnt_value <= fb_scale_cnt_valueNext;
+      temp_rd_start_2 <= temp_rd_start_1;
+      if(vga_sync_io_sol) begin
+        temp_1 <= 1'b1;
+      end
+      if(temp_rd_start_3) begin
+        temp_1 <= 1'b0;
+      end
       is_bg_color <= (lb_rd_out_payload == 4'b0010);
     end
   end
@@ -855,13 +1155,14 @@ module logic_top (
   input  wire          drop,
   output wire          row_val_valid,
   output wire [9:0]    row_val_payload,
+  output wire          score_val_valid,
+  output wire [9:0]    score_val_payload,
   input  wire          draw_field_done,
   input  wire          screen_is_ready,
   input  wire          vga_sof,
   output wire          ctrl_allowed,
   output wire          softReset,
   output wire          game_restart,
-  output wire          new_piece_valid,
   input  wire          core_clk,
   input  wire          core_rst
 );
@@ -880,6 +1181,8 @@ module logic_top (
   wire                playfield_inst_status_payload;
   wire                playfield_inst_row_val_valid;
   wire       [9:0]    playfield_inst_row_val_payload;
+  wire                playfield_inst_score_val_valid;
+  wire       [9:0]    playfield_inst_score_val_payload;
   wire                playfield_inst_motion_is_allowed;
   wire                playfield_inst_fsm_is_idle;
   wire                controller_inst_game_restart;
@@ -890,6 +1193,7 @@ module logic_top (
   wire                controller_inst_move_out_rotate;
   wire                controller_inst_move_out_down;
   wire                controller_inst_lock;
+  wire                controller_inst_debug_place_new;
   reg                 playfield_inst_status_stage_valid;
   reg                 playfield_inst_status_stage_payload;
   wire       [3:0]    temp_piece_in_valid;
@@ -907,22 +1211,24 @@ module logic_top (
     .core_rst         (core_rst                            )  //i
   );
   playfield playfield_inst (
-    .piece_in_valid    (playfield_inst_piece_in_valid      ), //i
-    .piece_in_payload  (temp_piece_in_payload[2:0]         ), //i
-    .status_valid      (playfield_inst_status_valid        ), //o
-    .status_payload    (playfield_inst_status_payload      ), //o
-    .move_in_left      (controller_inst_move_out_left      ), //i
-    .move_in_right     (controller_inst_move_out_right     ), //i
-    .move_in_rotate    (controller_inst_move_out_rotate    ), //i
-    .move_in_down      (controller_inst_move_out_down      ), //i
-    .lock              (controller_inst_lock               ), //i
-    .game_restart      (controller_inst_game_restart       ), //i
-    .row_val_valid     (playfield_inst_row_val_valid       ), //o
-    .row_val_payload   (playfield_inst_row_val_payload[9:0]), //o
-    .motion_is_allowed (playfield_inst_motion_is_allowed   ), //o
-    .fsm_is_idle       (playfield_inst_fsm_is_idle         ), //o
-    .core_clk          (core_clk                           ), //i
-    .core_rst          (core_rst                           )  //i
+    .piece_in_valid    (playfield_inst_piece_in_valid        ), //i
+    .piece_in_payload  (temp_piece_in_payload[2:0]           ), //i
+    .status_valid      (playfield_inst_status_valid          ), //o
+    .status_payload    (playfield_inst_status_payload        ), //o
+    .move_in_left      (controller_inst_move_out_left        ), //i
+    .move_in_right     (controller_inst_move_out_right       ), //i
+    .move_in_rotate    (controller_inst_move_out_rotate      ), //i
+    .move_in_down      (controller_inst_move_out_down        ), //i
+    .lock              (controller_inst_lock                 ), //i
+    .game_restart      (controller_inst_game_restart         ), //i
+    .row_val_valid     (playfield_inst_row_val_valid         ), //o
+    .row_val_payload   (playfield_inst_row_val_payload[9:0]  ), //o
+    .score_val_valid   (playfield_inst_score_val_valid       ), //o
+    .score_val_payload (playfield_inst_score_val_payload[9:0]), //o
+    .motion_is_allowed (playfield_inst_motion_is_allowed     ), //o
+    .fsm_is_idle       (playfield_inst_fsm_is_idle           ), //o
+    .core_clk          (core_clk                             ), //i
+    .core_rst          (core_rst                             )  //i
   );
   controller controller_inst (
     .game_start               (game_start                         ), //i
@@ -944,6 +1250,7 @@ module logic_top (
     .move_out_rotate          (controller_inst_move_out_rotate    ), //o
     .move_out_down            (controller_inst_move_out_down      ), //o
     .lock                     (controller_inst_lock               ), //o
+    .debug_place_new          (controller_inst_debug_place_new    ), //o
     .core_clk                 (core_clk                           ), //i
     .core_rst                 (core_rst                           )  //i
   );
@@ -969,8 +1276,9 @@ module logic_top (
   assign game_restart = controller_inst_game_restart;
   assign row_val_valid = playfield_inst_row_val_valid;
   assign row_val_payload = playfield_inst_row_val_payload;
+  assign score_val_valid = playfield_inst_score_val_valid;
+  assign score_val_payload = playfield_inst_score_val_payload;
   assign ctrl_allowed = playfield_inst_motion_is_allowed;
-  assign new_piece_valid = controller_inst_gen_piece_en;
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
       playfield_inst_status_stage_valid <= 1'b0;
@@ -981,6 +1289,509 @@ module logic_top (
 
   always @(posedge core_clk) begin
     playfield_inst_status_stage_payload <= playfield_inst_status_payload;
+  end
+
+
+endmodule
+
+module UartCtrlRx (
+  input  wire [2:0]    io_configFrame_dataLength,
+  input  wire [0:0]    io_configFrame_stop,
+  input  wire [1:0]    io_configFrame_parity,
+  input  wire          io_samplingTick,
+  output wire          io_read_valid,
+  input  wire          io_read_ready,
+  output wire [7:0]    io_read_payload,
+  input  wire          io_rxd,
+  output wire          io_rts,
+  output reg           io_error,
+  output wire          io_break,
+  input  wire          core_clk,
+  input  wire          core_rst
+);
+  localparam ONE = 1'd0;
+  localparam TWO = 1'd1;
+  localparam NONE = 2'd0;
+  localparam EVEN = 2'd1;
+  localparam ODD = 2'd2;
+  localparam IDLE = 3'd0;
+  localparam START = 3'd1;
+  localparam DATA = 3'd2;
+  localparam PARITY = 3'd3;
+  localparam STOP = 3'd4;
+
+  wire                io_rxd_buffercc_io_dataOut;
+  wire                temp_sampler_value;
+  wire                temp_sampler_value_1;
+  wire                temp_sampler_value_2;
+  wire                temp_sampler_value_3;
+  wire                temp_sampler_value_4;
+  wire                temp_sampler_value_5;
+  wire                temp_sampler_value_6;
+  wire                temp_when;
+  wire                temp_when_1;
+  wire                temp_when_2;
+  wire                temp_when_3;
+  wire       [2:0]    temp_when_4;
+  wire       [0:0]    temp_when_5;
+  reg                 temp_io_rts;
+  wire                sampler_synchroniser;
+  wire                sampler_samples_0;
+  reg                 sampler_samples_1;
+  reg                 sampler_samples_2;
+  reg                 sampler_samples_3;
+  reg                 sampler_samples_4;
+  reg                 sampler_value;
+  reg                 sampler_tick;
+  reg        [2:0]    bitTimer_counter;
+  reg                 bitTimer_tick;
+  reg        [2:0]    bitCounter_value;
+  reg        [6:0]    break_counter;
+  wire                break_valid;
+  reg        [2:0]    stateMachine_state;
+  reg                 stateMachine_parity;
+  reg        [7:0]    stateMachine_shifter;
+  reg                 stateMachine_validReg;
+  `ifndef SYNTHESIS
+  reg [23:0] io_configFrame_stop_string;
+  reg [31:0] io_configFrame_parity_string;
+  reg [47:0] stateMachine_state_string;
+  `endif
+
+
+  assign temp_when_2 = (stateMachine_parity == sampler_value);
+  assign temp_when_3 = (! sampler_value);
+  assign temp_when = ((sampler_tick && (! sampler_value)) && (! break_valid));
+  assign temp_when_1 = (bitCounter_value == io_configFrame_dataLength);
+  assign temp_when_5 = ((io_configFrame_stop == ONE) ? 1'b0 : 1'b1);
+  assign temp_when_4 = {2'd0, temp_when_5};
+  assign temp_sampler_value = ((((1'b0 || ((temp_sampler_value_1 && sampler_samples_1) && sampler_samples_2)) || (((temp_sampler_value_2 && sampler_samples_0) && sampler_samples_1) && sampler_samples_3)) || (((1'b1 && sampler_samples_0) && sampler_samples_2) && sampler_samples_3)) || (((1'b1 && sampler_samples_1) && sampler_samples_2) && sampler_samples_3));
+  assign temp_sampler_value_3 = (((1'b1 && sampler_samples_0) && sampler_samples_1) && sampler_samples_4);
+  assign temp_sampler_value_4 = ((1'b1 && sampler_samples_0) && sampler_samples_2);
+  assign temp_sampler_value_5 = (1'b1 && sampler_samples_1);
+  assign temp_sampler_value_6 = 1'b1;
+  assign temp_sampler_value_1 = (1'b1 && sampler_samples_0);
+  assign temp_sampler_value_2 = 1'b1;
+  (* keep_hierarchy = "TRUE" *) BufferCC_4 io_rxd_buffercc (
+    .io_dataIn  (io_rxd                    ), //i
+    .io_dataOut (io_rxd_buffercc_io_dataOut), //o
+    .core_clk   (core_clk                  ), //i
+    .core_rst   (core_rst                  )  //i
+  );
+  `ifndef SYNTHESIS
+  always @(*) begin
+    case(io_configFrame_stop)
+      ONE : io_configFrame_stop_string = "ONE";
+      TWO : io_configFrame_stop_string = "TWO";
+      default : io_configFrame_stop_string = "???";
+    endcase
+  end
+  always @(*) begin
+    case(io_configFrame_parity)
+      NONE : io_configFrame_parity_string = "NONE";
+      EVEN : io_configFrame_parity_string = "EVEN";
+      ODD : io_configFrame_parity_string = "ODD ";
+      default : io_configFrame_parity_string = "????";
+    endcase
+  end
+  always @(*) begin
+    case(stateMachine_state)
+      IDLE : stateMachine_state_string = "IDLE  ";
+      START : stateMachine_state_string = "START ";
+      DATA : stateMachine_state_string = "DATA  ";
+      PARITY : stateMachine_state_string = "PARITY";
+      STOP : stateMachine_state_string = "STOP  ";
+      default : stateMachine_state_string = "??????";
+    endcase
+  end
+  `endif
+
+  always @(*) begin
+    io_error = 1'b0;
+    case(stateMachine_state)
+      IDLE : begin
+      end
+      START : begin
+      end
+      DATA : begin
+      end
+      PARITY : begin
+        if(bitTimer_tick) begin
+          if(!temp_when_2) begin
+            io_error = 1'b1;
+          end
+        end
+      end
+      default : begin
+        if(bitTimer_tick) begin
+          if(temp_when_3) begin
+            io_error = 1'b1;
+          end
+        end
+      end
+    endcase
+  end
+
+  assign io_rts = temp_io_rts;
+  assign sampler_synchroniser = io_rxd_buffercc_io_dataOut;
+  assign sampler_samples_0 = sampler_synchroniser;
+  always @(*) begin
+    bitTimer_tick = 1'b0;
+    if(sampler_tick) begin
+      if((bitTimer_counter == 3'b000)) begin
+        bitTimer_tick = 1'b1;
+      end
+    end
+  end
+
+  assign break_valid = (break_counter == 7'h68);
+  assign io_break = break_valid;
+  assign io_read_valid = stateMachine_validReg;
+  assign io_read_payload = stateMachine_shifter;
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      temp_io_rts <= 1'b0;
+      sampler_samples_1 <= 1'b1;
+      sampler_samples_2 <= 1'b1;
+      sampler_samples_3 <= 1'b1;
+      sampler_samples_4 <= 1'b1;
+      sampler_value <= 1'b1;
+      sampler_tick <= 1'b0;
+      break_counter <= 7'h0;
+      stateMachine_state <= IDLE;
+      stateMachine_validReg <= 1'b0;
+    end else begin
+      temp_io_rts <= (! io_read_ready);
+      if(io_samplingTick) begin
+        sampler_samples_1 <= sampler_samples_0;
+      end
+      if(io_samplingTick) begin
+        sampler_samples_2 <= sampler_samples_1;
+      end
+      if(io_samplingTick) begin
+        sampler_samples_3 <= sampler_samples_2;
+      end
+      if(io_samplingTick) begin
+        sampler_samples_4 <= sampler_samples_3;
+      end
+      sampler_value <= ((((((temp_sampler_value || temp_sampler_value_3) || (temp_sampler_value_4 && sampler_samples_4)) || ((temp_sampler_value_5 && sampler_samples_2) && sampler_samples_4)) || (((temp_sampler_value_6 && sampler_samples_0) && sampler_samples_3) && sampler_samples_4)) || (((1'b1 && sampler_samples_1) && sampler_samples_3) && sampler_samples_4)) || (((1'b1 && sampler_samples_2) && sampler_samples_3) && sampler_samples_4));
+      sampler_tick <= io_samplingTick;
+      if(sampler_value) begin
+        break_counter <= 7'h0;
+      end else begin
+        if((io_samplingTick && (! break_valid))) begin
+          break_counter <= (break_counter + 7'h01);
+        end
+      end
+      stateMachine_validReg <= 1'b0;
+      case(stateMachine_state)
+        IDLE : begin
+          if(temp_when) begin
+            stateMachine_state <= START;
+          end
+        end
+        START : begin
+          if(bitTimer_tick) begin
+            stateMachine_state <= DATA;
+            if((sampler_value == 1'b1)) begin
+              stateMachine_state <= IDLE;
+            end
+          end
+        end
+        DATA : begin
+          if(bitTimer_tick) begin
+            if(temp_when_1) begin
+              if((io_configFrame_parity == NONE)) begin
+                stateMachine_state <= STOP;
+                stateMachine_validReg <= 1'b1;
+              end else begin
+                stateMachine_state <= PARITY;
+              end
+            end
+          end
+        end
+        PARITY : begin
+          if(bitTimer_tick) begin
+            if(temp_when_2) begin
+              stateMachine_state <= STOP;
+              stateMachine_validReg <= 1'b1;
+            end else begin
+              stateMachine_state <= IDLE;
+            end
+          end
+        end
+        default : begin
+          if(bitTimer_tick) begin
+            if(temp_when_3) begin
+              stateMachine_state <= IDLE;
+            end else begin
+              if((bitCounter_value == temp_when_4)) begin
+                stateMachine_state <= IDLE;
+              end
+            end
+          end
+        end
+      endcase
+    end
+  end
+
+  always @(posedge core_clk) begin
+    if(sampler_tick) begin
+      bitTimer_counter <= (bitTimer_counter - 3'b001);
+    end
+    if(bitTimer_tick) begin
+      bitCounter_value <= (bitCounter_value + 3'b001);
+    end
+    if(bitTimer_tick) begin
+      stateMachine_parity <= (stateMachine_parity ^ sampler_value);
+    end
+    case(stateMachine_state)
+      IDLE : begin
+        if(temp_when) begin
+          bitTimer_counter <= 3'b010;
+        end
+      end
+      START : begin
+        if(bitTimer_tick) begin
+          bitCounter_value <= 3'b000;
+          stateMachine_parity <= (io_configFrame_parity == ODD);
+        end
+      end
+      DATA : begin
+        if(bitTimer_tick) begin
+          stateMachine_shifter[bitCounter_value] <= sampler_value;
+          if(temp_when_1) begin
+            bitCounter_value <= 3'b000;
+          end
+        end
+      end
+      PARITY : begin
+        if(bitTimer_tick) begin
+          bitCounter_value <= 3'b000;
+        end
+      end
+      default : begin
+      end
+    endcase
+  end
+
+
+endmodule
+
+module UartCtrlTx (
+  input  wire [2:0]    io_configFrame_dataLength,
+  input  wire [0:0]    io_configFrame_stop,
+  input  wire [1:0]    io_configFrame_parity,
+  input  wire          io_samplingTick,
+  input  wire          io_write_valid,
+  output reg           io_write_ready,
+  input  wire [7:0]    io_write_payload,
+  input  wire          io_cts,
+  output wire          io_txd,
+  input  wire          io_break,
+  input  wire          core_clk,
+  input  wire          core_rst
+);
+  localparam ONE = 1'd0;
+  localparam TWO = 1'd1;
+  localparam NONE = 2'd0;
+  localparam EVEN = 2'd1;
+  localparam ODD = 2'd2;
+  localparam IDLE = 3'd0;
+  localparam START = 3'd1;
+  localparam DATA = 3'd2;
+  localparam PARITY = 3'd3;
+  localparam STOP = 3'd4;
+
+  wire       [2:0]    temp_clockDivider_counter_valueNext;
+  wire       [0:0]    temp_clockDivider_counter_valueNext_1;
+  wire                temp_when;
+  wire       [2:0]    temp_when_1;
+  wire       [0:0]    temp_when_2;
+  reg                 clockDivider_counter_willIncrement;
+  wire                clockDivider_counter_willClear;
+  reg        [2:0]    clockDivider_counter_valueNext;
+  reg        [2:0]    clockDivider_counter_value;
+  wire                clockDivider_counter_willOverflowIfInc;
+  wire                clockDivider_counter_willOverflow;
+  reg        [2:0]    tickCounter_value;
+  reg        [2:0]    stateMachine_state;
+  reg                 stateMachine_parity;
+  reg                 stateMachine_txd;
+  wire       [2:0]    temp_stateMachine_state;
+  reg                 temp_io_txd;
+  `ifndef SYNTHESIS
+  reg [23:0] io_configFrame_stop_string;
+  reg [31:0] io_configFrame_parity_string;
+  reg [47:0] stateMachine_state_string;
+  reg [47:0] temp_stateMachine_state_string;
+  `endif
+
+
+  assign temp_when = (tickCounter_value == io_configFrame_dataLength);
+  assign temp_clockDivider_counter_valueNext_1 = clockDivider_counter_willIncrement;
+  assign temp_clockDivider_counter_valueNext = {2'd0, temp_clockDivider_counter_valueNext_1};
+  assign temp_when_2 = ((io_configFrame_stop == ONE) ? 1'b0 : 1'b1);
+  assign temp_when_1 = {2'd0, temp_when_2};
+  `ifndef SYNTHESIS
+  always @(*) begin
+    case(io_configFrame_stop)
+      ONE : io_configFrame_stop_string = "ONE";
+      TWO : io_configFrame_stop_string = "TWO";
+      default : io_configFrame_stop_string = "???";
+    endcase
+  end
+  always @(*) begin
+    case(io_configFrame_parity)
+      NONE : io_configFrame_parity_string = "NONE";
+      EVEN : io_configFrame_parity_string = "EVEN";
+      ODD : io_configFrame_parity_string = "ODD ";
+      default : io_configFrame_parity_string = "????";
+    endcase
+  end
+  always @(*) begin
+    case(stateMachine_state)
+      IDLE : stateMachine_state_string = "IDLE  ";
+      START : stateMachine_state_string = "START ";
+      DATA : stateMachine_state_string = "DATA  ";
+      PARITY : stateMachine_state_string = "PARITY";
+      STOP : stateMachine_state_string = "STOP  ";
+      default : stateMachine_state_string = "??????";
+    endcase
+  end
+  always @(*) begin
+    case(temp_stateMachine_state)
+      IDLE : temp_stateMachine_state_string = "IDLE  ";
+      START : temp_stateMachine_state_string = "START ";
+      DATA : temp_stateMachine_state_string = "DATA  ";
+      PARITY : temp_stateMachine_state_string = "PARITY";
+      STOP : temp_stateMachine_state_string = "STOP  ";
+      default : temp_stateMachine_state_string = "??????";
+    endcase
+  end
+  `endif
+
+  always @(*) begin
+    clockDivider_counter_willIncrement = 1'b0;
+    if(io_samplingTick) begin
+      clockDivider_counter_willIncrement = 1'b1;
+    end
+  end
+
+  assign clockDivider_counter_willClear = 1'b0;
+  assign clockDivider_counter_willOverflowIfInc = (clockDivider_counter_value == 3'b111);
+  assign clockDivider_counter_willOverflow = (clockDivider_counter_willOverflowIfInc && clockDivider_counter_willIncrement);
+  always @(*) begin
+    clockDivider_counter_valueNext = (clockDivider_counter_value + temp_clockDivider_counter_valueNext);
+    if(clockDivider_counter_willClear) begin
+      clockDivider_counter_valueNext = 3'b000;
+    end
+  end
+
+  always @(*) begin
+    stateMachine_txd = 1'b1;
+    io_write_ready = io_break;
+    case(stateMachine_state)
+      IDLE : begin
+      end
+      START : begin
+        stateMachine_txd = 1'b0;
+      end
+      DATA : begin
+        stateMachine_txd = io_write_payload[tickCounter_value];
+        if(clockDivider_counter_willOverflow) begin
+          if(temp_when) begin
+            io_write_ready = 1'b1;
+          end
+        end
+      end
+      PARITY : begin
+        stateMachine_txd = stateMachine_parity;
+      end
+      default : begin
+      end
+    endcase
+  end
+
+  assign temp_stateMachine_state = (io_write_valid ? START : IDLE);
+  assign io_txd = temp_io_txd;
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      clockDivider_counter_value <= 3'b000;
+      stateMachine_state <= IDLE;
+      temp_io_txd <= 1'b1;
+    end else begin
+      clockDivider_counter_value <= clockDivider_counter_valueNext;
+      case(stateMachine_state)
+        IDLE : begin
+          if(((io_write_valid && (! io_cts)) && clockDivider_counter_willOverflow)) begin
+            stateMachine_state <= START;
+          end
+        end
+        START : begin
+          if(clockDivider_counter_willOverflow) begin
+            stateMachine_state <= DATA;
+          end
+        end
+        DATA : begin
+          if(clockDivider_counter_willOverflow) begin
+            if(temp_when) begin
+              if((io_configFrame_parity == NONE)) begin
+                stateMachine_state <= STOP;
+              end else begin
+                stateMachine_state <= PARITY;
+              end
+            end
+          end
+        end
+        PARITY : begin
+          if(clockDivider_counter_willOverflow) begin
+            stateMachine_state <= STOP;
+          end
+        end
+        default : begin
+          if(clockDivider_counter_willOverflow) begin
+            if((tickCounter_value == temp_when_1)) begin
+              stateMachine_state <= temp_stateMachine_state;
+            end
+          end
+        end
+      endcase
+      temp_io_txd <= (stateMachine_txd && (! io_break));
+    end
+  end
+
+  always @(posedge core_clk) begin
+    if(clockDivider_counter_willOverflow) begin
+      tickCounter_value <= (tickCounter_value + 3'b001);
+    end
+    if(clockDivider_counter_willOverflow) begin
+      stateMachine_parity <= (stateMachine_parity ^ stateMachine_txd);
+    end
+    case(stateMachine_state)
+      IDLE : begin
+      end
+      START : begin
+        if(clockDivider_counter_willOverflow) begin
+          stateMachine_parity <= (io_configFrame_parity == ODD);
+          tickCounter_value <= 3'b000;
+        end
+      end
+      DATA : begin
+        if(clockDivider_counter_willOverflow) begin
+          if(temp_when) begin
+            tickCounter_value <= 3'b000;
+          end
+        end
+      end
+      PARITY : begin
+        if(clockDivider_counter_willOverflow) begin
+          tickCounter_value <= 3'b000;
+        end
+      end
+      default : begin
+      end
+    endcase
   end
 
 
@@ -1066,7 +1877,7 @@ module linebuffer (
   wire       [3:0]    rd_data_payload;
   wire       [3:0]    rd_rd_data;
   reg                 rd_enable_regNext;
-  (* ram_style = "distributed" *) reg [3:0] ram [0:319];
+  (* ram_style = "distributed" *) reg [3:0] ram [0:287];
 
   always @(posedge core_clk) begin
     if(wr_in_valid) begin
@@ -1115,7 +1926,7 @@ module linebuffer (
       wr_addr <= 9'h0;
     end else begin
       if(wr_in_valid) begin
-        if((wr_addr == 9'h13f)) begin
+        if((wr_addr == 9'h11f)) begin
           wr_addr <= 9'h0;
         end else begin
           wr_addr <= (wr_addr + 9'h001);
@@ -1135,7 +1946,7 @@ module linebuffer (
       if(rd_start) begin
         rd_enable <= 1'b1;
       end else begin
-        if(((rd_addr == 9'h13f) && rd_scale_cnt_willOverflowIfInc)) begin
+        if(((rd_addr == 9'h11f) && rd_scale_cnt_willOverflowIfInc)) begin
           rd_enable <= 1'b0;
         end
       end
@@ -1326,6 +2137,8 @@ module display_controller (
   input  wire          game_start,
   input  wire          row_val_valid,
   input  wire [9:0]    row_val_payload,
+  input  wire          score_val_valid,
+  input  wire [9:0]    score_val_payload,
   output reg           screen_is_ready,
   output wire          draw_char_start,
   output wire [6:0]    draw_char_word,
@@ -1347,11 +2160,15 @@ module display_controller (
   input  wire          core_clk,
   input  wire          core_rst
 );
-  localparam IDLE = 3'd0;
-  localparam FETCH = 3'd1;
-  localparam DATA_READY = 3'd2;
-  localparam DRAW = 3'd3;
-  localparam WAIT_DONE = 3'd4;
+  localparam IDLE = 4'd0;
+  localparam FETCH = 4'd1;
+  localparam DATA_READY = 4'd2;
+  localparam DRAW = 4'd3;
+  localparam WAIT_DONE = 4'd4;
+  localparam PRE_DRAW_SCORE = 4'd5;
+  localparam DRAW_DIGIT = 4'd6;
+  localparam WAIT_DRAW_DIGIT_DONE = 4'd7;
+  localparam POST_DRAW_SCORE = 4'd8;
   localparam SETUP_IDLE = 4'd0;
   localparam CLEAN_SCREEN = 4'd1;
   localparam START_DRAW_OPEN = 4'd2;
@@ -1368,6 +2185,11 @@ module display_controller (
   reg        [9:0]    memory_spinal_port1;
   wire       [6:0]    rom_spinal_port0;
   wire       [42:0]   wall_rom_spinal_port0;
+  wire                bcd_inst_data_out_dec_valid;
+  wire       [15:0]   bcd_inst_data_out_dec_payload;
+  wire       [1:0]    temp_digital_cnt_valueNext;
+  wire       [0:0]    temp_digital_cnt_valueNext_1;
+  reg        [3:0]    temp_itf_word;
   wire       [4:0]    temp_wr_row_cnt_valueNext;
   wire       [0:0]    temp_wr_row_cnt_valueNext_1;
   wire       [3:0]    temp_col_cnt_valueNext;
@@ -1380,13 +2202,29 @@ module display_controller (
   wire       [0:0]    temp_cnt_valueNext_1_2;
   wire                temp_when;
   wire                temp_when_1;
+  reg        [15:0]   score;
+  wire       [3:0]    score_vec_0;
+  wire       [3:0]    score_vec_1;
+  wire       [3:0]    score_vec_2;
+  wire       [3:0]    score_vec_3;
+  reg                 digital_cnt_willIncrement;
+  reg                 digital_cnt_willClear;
+  reg        [1:0]    digital_cnt_valueNext;
+  reg        [1:0]    digital_cnt_value;
+  wire                digital_cnt_willOverflowIfInc;
+  wire                digital_cnt_willOverflow;
+  reg                 itf_start;
+  wire       [6:0]    itf_word;
+  wire       [2:0]    itf_scale;
+  wire       [3:0]    itf_color;
+  wire                itf_done;
   reg                 wr_row_cnt_willIncrement;
   wire                wr_row_cnt_willClear;
   reg        [4:0]    wr_row_cnt_valueNext;
   reg        [4:0]    wr_row_cnt_value;
   wire                wr_row_cnt_willOverflowIfInc;
   wire                wr_row_cnt_willOverflow;
-  reg                 rd_en;
+  (* keep *) reg                 rd_en;
   reg                 row_cnt_inc;
   reg                 col_cnt_inc;
   reg                 col_cnt_willIncrement;
@@ -1407,27 +2245,30 @@ module display_controller (
   reg        [9:0]    row_bits;
   wire       [9:0]    row_bits_next;
   reg                 row_val_valid_regNext;
+  wire                data_ready;
+  reg                 wait_date_readout;
+  reg                 wait_date_readout_regNext;
   wire                gen_start;
   reg        [3:0]    ft_color;
   reg        [8:0]    x;
   reg        [7:0]    y;
   wire       [8:0]    x_next;
   wire       [7:0]    y_next;
-  reg                 itf_start;
+  reg                 itf_start_1;
   wire       [7:0]    itf_width;
   wire       [7:0]    itf_height;
   wire       [3:0]    itf_in_color;
   wire       [3:0]    itf_pat_color;
   wire       [1:0]    itf_fill_pattern;
-  wire                itf_done;
+  wire                itf_done_1;
   wire                fsm_wantExit;
   reg                 fsm_wantStart;
   wire                fsm_wantKill;
-  wire                itf_start_1;
-  wire       [6:0]    itf_word;
-  wire       [2:0]    itf_scale;
-  wire       [3:0]    itf_color;
-  wire                itf_done_1;
+  wire                itf_start_2;
+  wire       [6:0]    itf_word_1;
+  wire       [2:0]    itf_scale_1;
+  wire       [3:0]    itf_color_1;
+  wire                itf_done_2;
   reg                 cnt_willIncrement;
   wire                cnt_willClear;
   reg        [3:0]    cnt_valueNext;
@@ -1436,13 +2277,13 @@ module display_controller (
   wire                cnt_willOverflow;
   wire       [8:0]    x_1;
   wire       [7:0]    y_1;
-  wire                itf_start_2;
+  wire                itf_start_3;
   wire       [7:0]    itf_width_1;
   wire       [7:0]    itf_height_1;
   wire       [3:0]    itf_in_color_1;
   wire       [3:0]    itf_pat_color_1;
   wire       [1:0]    itf_fill_pattern_1;
-  wire                itf_done_2;
+  wire                itf_done_3;
   reg                 cnt_willIncrement_1;
   wire                cnt_willClear_1;
   reg        [1:0]    cnt_valueNext_1;
@@ -1461,18 +2302,26 @@ module display_controller (
   reg                 stepup_fsm_wantStart;
   wire                stepup_fsm_wantKill;
   wire       [3:0]    stepup_fsm_debug;
-  reg        [2:0]    fsm_stateReg;
-  reg        [2:0]    fsm_stateNext;
+  reg        [3:0]    fsm_stateReg;
+  reg        [3:0]    fsm_stateNext;
   wire                fsm_onExit_IDLE;
   wire                fsm_onExit_FETCH;
   wire                fsm_onExit_DATA_READY;
   wire                fsm_onExit_DRAW;
   wire                fsm_onExit_WAIT_DONE;
+  wire                fsm_onExit_PRE_DRAW_SCORE;
+  wire                fsm_onExit_DRAW_DIGIT;
+  wire                fsm_onExit_WAIT_DRAW_DIGIT_DONE;
+  wire                fsm_onExit_POST_DRAW_SCORE;
   wire                fsm_onEntry_IDLE;
   wire                fsm_onEntry_FETCH;
   wire                fsm_onEntry_DATA_READY;
   wire                fsm_onEntry_DRAW;
   wire                fsm_onEntry_WAIT_DONE;
+  wire                fsm_onEntry_PRE_DRAW_SCORE;
+  wire                fsm_onEntry_DRAW_DIGIT;
+  wire                fsm_onEntry_WAIT_DRAW_DIGIT_DONE;
+  wire                fsm_onEntry_POST_DRAW_SCORE;
   reg        [3:0]    stepup_fsm_stateReg;
   reg        [3:0]    stepup_fsm_stateNext;
   wire                stepup_fsm_onExit_SETUP_IDLE;
@@ -1500,8 +2349,8 @@ module display_controller (
   wire                stepup_fsm_onEntry_WAIT_DRAW_WALL_DONE;
   wire                stepup_fsm_onEntry_DRAW_SCORE;
   `ifndef SYNTHESIS
-  reg [79:0] fsm_stateReg_string;
-  reg [79:0] fsm_stateNext_string;
+  reg [159:0] fsm_stateReg_string;
+  reg [159:0] fsm_stateNext_string;
   reg [167:0] stepup_fsm_stateReg_string;
   reg [167:0] stepup_fsm_stateNext_string;
   `endif
@@ -1512,6 +2361,8 @@ module display_controller (
 
   assign temp_when = (cnt_value == 4'b0101);
   assign temp_when_1 = (cnt_value == 4'b1010);
+  assign temp_digital_cnt_valueNext_1 = digital_cnt_willIncrement;
+  assign temp_digital_cnt_valueNext = {1'd0, temp_digital_cnt_valueNext_1};
   assign temp_wr_row_cnt_valueNext_1 = wr_row_cnt_willIncrement;
   assign temp_wr_row_cnt_valueNext = {4'd0, temp_wr_row_cnt_valueNext_1};
   assign temp_col_cnt_valueNext_1 = col_cnt_willIncrement;
@@ -1542,25 +2393,50 @@ module display_controller (
     $readmemb("tetris_top.v_toplevel_tetris_core_inst_game_display_inst_draw_controller_wall_rom.bin",wall_rom);
   end
   assign wall_rom_spinal_port0 = wall_rom[cnt_value_1];
+  bcd bcd_inst (
+    .data_in_bin_valid    (score_val_valid                    ), //i
+    .data_in_bin_payload  (score_val_payload[9:0]             ), //i
+    .data_out_dec_valid   (bcd_inst_data_out_dec_valid        ), //o
+    .data_out_dec_payload (bcd_inst_data_out_dec_payload[15:0]), //o
+    .core_clk             (core_clk                           ), //i
+    .core_rst             (core_rst                           )  //i
+  );
+  always @(*) begin
+    case(digital_cnt_value)
+      2'b00 : temp_itf_word = score_vec_0;
+      2'b01 : temp_itf_word = score_vec_1;
+      2'b10 : temp_itf_word = score_vec_2;
+      default : temp_itf_word = score_vec_3;
+    endcase
+  end
+
   `ifndef SYNTHESIS
   always @(*) begin
     case(fsm_stateReg)
-      IDLE : fsm_stateReg_string = "IDLE      ";
-      FETCH : fsm_stateReg_string = "FETCH     ";
-      DATA_READY : fsm_stateReg_string = "DATA_READY";
-      DRAW : fsm_stateReg_string = "DRAW      ";
-      WAIT_DONE : fsm_stateReg_string = "WAIT_DONE ";
-      default : fsm_stateReg_string = "??????????";
+      IDLE : fsm_stateReg_string = "IDLE                ";
+      FETCH : fsm_stateReg_string = "FETCH               ";
+      DATA_READY : fsm_stateReg_string = "DATA_READY          ";
+      DRAW : fsm_stateReg_string = "DRAW                ";
+      WAIT_DONE : fsm_stateReg_string = "WAIT_DONE           ";
+      PRE_DRAW_SCORE : fsm_stateReg_string = "PRE_DRAW_SCORE      ";
+      DRAW_DIGIT : fsm_stateReg_string = "DRAW_DIGIT          ";
+      WAIT_DRAW_DIGIT_DONE : fsm_stateReg_string = "WAIT_DRAW_DIGIT_DONE";
+      POST_DRAW_SCORE : fsm_stateReg_string = "POST_DRAW_SCORE     ";
+      default : fsm_stateReg_string = "????????????????????";
     endcase
   end
   always @(*) begin
     case(fsm_stateNext)
-      IDLE : fsm_stateNext_string = "IDLE      ";
-      FETCH : fsm_stateNext_string = "FETCH     ";
-      DATA_READY : fsm_stateNext_string = "DATA_READY";
-      DRAW : fsm_stateNext_string = "DRAW      ";
-      WAIT_DONE : fsm_stateNext_string = "WAIT_DONE ";
-      default : fsm_stateNext_string = "??????????";
+      IDLE : fsm_stateNext_string = "IDLE                ";
+      FETCH : fsm_stateNext_string = "FETCH               ";
+      DATA_READY : fsm_stateNext_string = "DATA_READY          ";
+      DRAW : fsm_stateNext_string = "DRAW                ";
+      WAIT_DONE : fsm_stateNext_string = "WAIT_DONE           ";
+      PRE_DRAW_SCORE : fsm_stateNext_string = "PRE_DRAW_SCORE      ";
+      DRAW_DIGIT : fsm_stateNext_string = "DRAW_DIGIT          ";
+      WAIT_DRAW_DIGIT_DONE : fsm_stateNext_string = "WAIT_DRAW_DIGIT_DONE";
+      POST_DRAW_SCORE : fsm_stateNext_string = "POST_DRAW_SCORE     ";
+      default : fsm_stateNext_string = "????????????????????";
     endcase
   end
   always @(*) begin
@@ -1599,6 +2475,109 @@ module display_controller (
   end
   `endif
 
+  assign score_vec_0 = score[15 : 12];
+  assign score_vec_1 = score[11 : 8];
+  assign score_vec_2 = score[7 : 4];
+  assign score_vec_3 = score[3 : 0];
+  always @(*) begin
+    digital_cnt_willIncrement = 1'b0;
+    if(row_val_valid) begin
+      digital_cnt_willIncrement = 1'b1;
+    end
+    digital_cnt_willIncrement = 1'b0;
+    if(fsm_onExit_WAIT_DRAW_DIGIT_DONE) begin
+      digital_cnt_willIncrement = 1'b1;
+    end
+  end
+
+  always @(*) begin
+    digital_cnt_willClear = 1'b0;
+    itf_start = 1'b0;
+    itf_start_1 = 1'b0;
+    draw_field_done = 1'b0;
+    fsm_wantStart = 1'b0;
+    rd_en = 1'b0;
+    load = 1'b0;
+    col_cnt_inc = 1'b0;
+    row_cnt_inc = 1'b0;
+    shift_en = 1'b0;
+    fsm_stateNext = fsm_stateReg;
+    case(fsm_stateReg)
+      FETCH : begin
+        rd_en = 1'b1;
+        fsm_stateNext = DATA_READY;
+      end
+      DATA_READY : begin
+        load = 1'b1;
+        fsm_stateNext = DRAW;
+      end
+      DRAW : begin
+        itf_start_1 = 1'b1;
+        fsm_stateNext = WAIT_DONE;
+      end
+      WAIT_DONE : begin
+        if(itf_done_1) begin
+          if((row_cnt_willOverflowIfInc && col_cnt_willOverflowIfInc)) begin
+            row_cnt_inc = 1'b1;
+            col_cnt_inc = 1'b1;
+            fsm_stateNext = PRE_DRAW_SCORE;
+          end else begin
+            col_cnt_inc = 1'b1;
+            if(col_cnt_willOverflowIfInc) begin
+              row_cnt_inc = 1'b1;
+              fsm_stateNext = FETCH;
+            end else begin
+              shift_en = 1'b1;
+              fsm_stateNext = DRAW;
+            end
+          end
+        end
+      end
+      PRE_DRAW_SCORE : begin
+        fsm_stateNext = DRAW_DIGIT;
+      end
+      DRAW_DIGIT : begin
+        itf_start = 1'b1;
+        fsm_stateNext = WAIT_DRAW_DIGIT_DONE;
+      end
+      WAIT_DRAW_DIGIT_DONE : begin
+        if(itf_done) begin
+          if(digital_cnt_willOverflowIfInc) begin
+            fsm_stateNext = POST_DRAW_SCORE;
+          end else begin
+            fsm_stateNext = DRAW_DIGIT;
+          end
+        end
+      end
+      POST_DRAW_SCORE : begin
+        digital_cnt_willClear = 1'b1;
+        draw_field_done = 1'b1;
+        fsm_stateNext = IDLE;
+      end
+      default : begin
+        if(gen_start) begin
+          fsm_stateNext = FETCH;
+        end
+        fsm_wantStart = 1'b1;
+      end
+    endcase
+    if(fsm_wantKill) begin
+      fsm_stateNext = IDLE;
+    end
+  end
+
+  assign digital_cnt_willOverflowIfInc = (digital_cnt_value == 2'b11);
+  assign digital_cnt_willOverflow = (digital_cnt_willOverflowIfInc && digital_cnt_willIncrement);
+  always @(*) begin
+    digital_cnt_valueNext = (digital_cnt_value + temp_digital_cnt_valueNext);
+    if(digital_cnt_willClear) begin
+      digital_cnt_valueNext = 2'b00;
+    end
+  end
+
+  assign itf_scale = 3'b000;
+  assign itf_color = 4'b0110;
+  assign itf_word = {3'b011,temp_itf_word};
   always @(*) begin
     wr_row_cnt_willIncrement = 1'b0;
     if(row_val_valid) begin
@@ -1664,7 +2643,8 @@ module display_controller (
 
   assign row_value = memory_spinal_port1;
   assign row_bits_next = (row_bits <<< 1);
-  assign gen_start = ((! row_val_valid) && row_val_valid_regNext);
+  assign data_ready = ((! row_val_valid) && row_val_valid_regNext);
+  assign gen_start = ((! wait_date_readout) && wait_date_readout_regNext);
   always @(*) begin
     ft_color = 4'b0010;
     if(row_bits[9]) begin
@@ -1674,65 +2654,11 @@ module display_controller (
 
   assign x_next = (x + 9'h009);
   assign y_next = (y + 8'h09);
-  always @(*) begin
-    itf_start = 1'b0;
-    draw_field_done = 1'b0;
-    fsm_wantStart = 1'b0;
-    rd_en = 1'b0;
-    load = 1'b0;
-    col_cnt_inc = 1'b0;
-    row_cnt_inc = 1'b0;
-    shift_en = 1'b0;
-    fsm_stateNext = fsm_stateReg;
-    case(fsm_stateReg)
-      FETCH : begin
-        rd_en = 1'b1;
-        fsm_stateNext = DATA_READY;
-      end
-      DATA_READY : begin
-        load = 1'b1;
-        fsm_stateNext = DRAW;
-      end
-      DRAW : begin
-        itf_start = 1'b1;
-        fsm_stateNext = WAIT_DONE;
-      end
-      WAIT_DONE : begin
-        if(itf_done) begin
-          if((row_cnt_willOverflowIfInc && col_cnt_willOverflowIfInc)) begin
-            row_cnt_inc = 1'b1;
-            col_cnt_inc = 1'b1;
-            draw_field_done = 1'b1;
-            fsm_stateNext = IDLE;
-          end else begin
-            col_cnt_inc = 1'b1;
-            if(col_cnt_willOverflowIfInc) begin
-              row_cnt_inc = 1'b1;
-              fsm_stateNext = FETCH;
-            end else begin
-              shift_en = 1'b1;
-              fsm_stateNext = DRAW;
-            end
-          end
-        end
-      end
-      default : begin
-        if(gen_start) begin
-          fsm_stateNext = FETCH;
-        end
-        fsm_wantStart = 1'b1;
-      end
-    endcase
-    if(fsm_wantKill) begin
-      fsm_stateNext = IDLE;
-    end
-  end
-
   assign itf_in_color = ft_color;
-  assign itf_width = 8'h08;
-  assign itf_height = 8'h08;
+  assign itf_width = 8'h07;
+  assign itf_height = 8'h07;
   assign itf_fill_pattern = 2'b00;
-  assign itf_pat_color = 4'b0000;
+  assign itf_pat_color = 4'b0010;
   assign fsm_wantExit = 1'b0;
   assign fsm_wantKill = 1'b0;
   always @(*) begin
@@ -1768,7 +2694,7 @@ module display_controller (
         stepup_fsm_stateNext = WAIT_DRAW_OPEN_DONE;
       end
       WAIT_DRAW_OPEN_DONE : begin
-        if(itf_done_1) begin
+        if(itf_done_2) begin
           cnt_willIncrement = 1'b1;
           if(temp_when) begin
             stepup_fsm_stateNext = WAIT_GAME_START;
@@ -1787,7 +2713,7 @@ module display_controller (
         stepup_fsm_stateNext = WAIT_DRAW_STRING_DONE;
       end
       WAIT_DRAW_STRING_DONE : begin
-        if(itf_done_1) begin
+        if(itf_done_2) begin
           cnt_willIncrement = 1'b1;
           if(temp_when_1) begin
             stepup_fsm_stateNext = WAIT_DRAW_SCORE;
@@ -1807,7 +2733,7 @@ module display_controller (
         stepup_fsm_stateNext = WAIT_DRAW_WALL_DONE;
       end
       WAIT_DRAW_WALL_DONE : begin
-        if(itf_done_2) begin
+        if(itf_done_3) begin
           cnt_willIncrement_1 = 1'b1;
           if(cnt_willOverflow_1) begin
             stepup_fsm_stateNext = DRAW_SCORE;
@@ -1837,7 +2763,7 @@ module display_controller (
   assign cnt_willClear = 1'b0;
   assign cnt_willOverflowIfInc = (cnt_value == 4'b1010);
   assign cnt_willOverflow = (cnt_willOverflowIfInc && cnt_willIncrement);
-  assign itf_word = rom_spinal_port0;
+  assign itf_word_1 = rom_spinal_port0;
   assign cnt_willClear_1 = 1'b0;
   assign cnt_willOverflowIfInc_1 = (cnt_value_1 == 2'b11);
   assign cnt_willOverflow_1 = (cnt_willOverflowIfInc_1 && cnt_willIncrement_1);
@@ -1856,10 +2782,10 @@ module display_controller (
   assign itf_in_color_1 = blockInfo[36 : 33];
   assign itf_pat_color_1 = blockInfo[40 : 37];
   assign itf_fill_pattern_1 = blockInfo[42 : 41];
-  assign itf_scale = stepup_scale;
-  assign itf_color = stepup_color;
-  assign itf_start_1 = stepup_start_char_draw;
-  assign itf_start_2 = stepup_start_block_draw;
+  assign itf_scale_1 = stepup_scale;
+  assign itf_color_1 = stepup_color;
+  assign itf_start_2 = stepup_start_char_draw;
+  assign itf_start_3 = stepup_start_block_draw;
   assign stepup_fsm_wantExit = 1'b0;
   assign stepup_fsm_wantKill = 1'b0;
   always @(*) begin
@@ -1869,19 +2795,20 @@ module display_controller (
     end
   end
 
-  assign draw_char_start = itf_start_1;
-  assign draw_char_word = itf_word;
-  assign draw_char_scale = itf_scale;
-  assign draw_char_color = itf_color;
-  assign itf_done_1 = draw_char_done;
-  assign draw_block_start = (itf_start || itf_start_2);
-  assign draw_block_width = (itf_start ? itf_width : itf_width_1);
-  assign draw_block_height = (itf_start ? itf_height : itf_height_1);
-  assign draw_block_in_color = (itf_start ? itf_in_color : itf_in_color_1);
-  assign draw_block_pat_color = itf_pat_color_1;
-  assign draw_block_fill_pattern = (itf_start ? itf_fill_pattern : itf_fill_pattern_1);
-  assign itf_done = draw_block_done;
-  assign itf_done_2 = draw_block_done;
+  assign draw_char_start = (itf_start_2 || itf_start);
+  assign draw_char_scale = (itf_start_2 ? itf_scale_1 : itf_scale);
+  assign draw_char_color = (itf_start_2 ? itf_color_1 : itf_color);
+  assign draw_char_word = (itf_start_2 ? itf_word_1 : itf_word);
+  assign itf_done_2 = draw_char_done;
+  assign itf_done = draw_char_done;
+  assign draw_block_start = (itf_start_1 || itf_start_3);
+  assign draw_block_width = (itf_start_1 ? itf_width : itf_width_1);
+  assign draw_block_height = (itf_start_1 ? itf_height : itf_height_1);
+  assign draw_block_in_color = (itf_start_1 ? itf_in_color : itf_in_color_1);
+  assign draw_block_pat_color = (itf_start_1 ? itf_pat_color : itf_pat_color_1);
+  assign draw_block_fill_pattern = (itf_start_1 ? itf_fill_pattern : itf_fill_pattern_1);
+  assign itf_done_1 = draw_block_done;
+  assign itf_done_3 = draw_block_done;
   assign draw_x_orig = (x | stepup_x);
   assign draw_y_orig = (y | stepup_y);
   assign fsm_onExit_IDLE = ((fsm_stateNext != IDLE) && (fsm_stateReg == IDLE));
@@ -1889,11 +2816,19 @@ module display_controller (
   assign fsm_onExit_DATA_READY = ((fsm_stateNext != DATA_READY) && (fsm_stateReg == DATA_READY));
   assign fsm_onExit_DRAW = ((fsm_stateNext != DRAW) && (fsm_stateReg == DRAW));
   assign fsm_onExit_WAIT_DONE = ((fsm_stateNext != WAIT_DONE) && (fsm_stateReg == WAIT_DONE));
+  assign fsm_onExit_PRE_DRAW_SCORE = ((fsm_stateNext != PRE_DRAW_SCORE) && (fsm_stateReg == PRE_DRAW_SCORE));
+  assign fsm_onExit_DRAW_DIGIT = ((fsm_stateNext != DRAW_DIGIT) && (fsm_stateReg == DRAW_DIGIT));
+  assign fsm_onExit_WAIT_DRAW_DIGIT_DONE = ((fsm_stateNext != WAIT_DRAW_DIGIT_DONE) && (fsm_stateReg == WAIT_DRAW_DIGIT_DONE));
+  assign fsm_onExit_POST_DRAW_SCORE = ((fsm_stateNext != POST_DRAW_SCORE) && (fsm_stateReg == POST_DRAW_SCORE));
   assign fsm_onEntry_IDLE = ((fsm_stateNext == IDLE) && (fsm_stateReg != IDLE));
   assign fsm_onEntry_FETCH = ((fsm_stateNext == FETCH) && (fsm_stateReg != FETCH));
   assign fsm_onEntry_DATA_READY = ((fsm_stateNext == DATA_READY) && (fsm_stateReg != DATA_READY));
   assign fsm_onEntry_DRAW = ((fsm_stateNext == DRAW) && (fsm_stateReg != DRAW));
   assign fsm_onEntry_WAIT_DONE = ((fsm_stateNext == WAIT_DONE) && (fsm_stateReg != WAIT_DONE));
+  assign fsm_onEntry_PRE_DRAW_SCORE = ((fsm_stateNext == PRE_DRAW_SCORE) && (fsm_stateReg != PRE_DRAW_SCORE));
+  assign fsm_onEntry_DRAW_DIGIT = ((fsm_stateNext == DRAW_DIGIT) && (fsm_stateReg != DRAW_DIGIT));
+  assign fsm_onEntry_WAIT_DRAW_DIGIT_DONE = ((fsm_stateNext == WAIT_DRAW_DIGIT_DONE) && (fsm_stateReg != WAIT_DRAW_DIGIT_DONE));
+  assign fsm_onEntry_POST_DRAW_SCORE = ((fsm_stateNext == POST_DRAW_SCORE) && (fsm_stateReg != POST_DRAW_SCORE));
   assign stepup_fsm_onExit_SETUP_IDLE = ((stepup_fsm_stateNext != SETUP_IDLE) && (stepup_fsm_stateReg == SETUP_IDLE));
   assign stepup_fsm_onExit_CLEAN_SCREEN = ((stepup_fsm_stateNext != CLEAN_SCREEN) && (stepup_fsm_stateReg == CLEAN_SCREEN));
   assign stepup_fsm_onExit_START_DRAW_OPEN = ((stepup_fsm_stateNext != START_DRAW_OPEN) && (stepup_fsm_stateReg == START_DRAW_OPEN));
@@ -1921,10 +2856,14 @@ module display_controller (
   assign stepup_fsm_debug = stepup_fsm_stateReg;
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
+      score <= 16'h0;
+      digital_cnt_value <= 2'b00;
       wr_row_cnt_value <= 5'h0;
       col_cnt_value <= 4'b0000;
       row_cnt_value <= 5'h0;
       row_val_valid_regNext <= 1'b0;
+      wait_date_readout <= 1'b0;
+      wait_date_readout_regNext <= 1'b0;
       x <= 9'h0;
       y <= 8'h0;
       cnt_value <= 4'b0000;
@@ -1935,12 +2874,24 @@ module display_controller (
       fsm_stateReg <= IDLE;
       stepup_fsm_stateReg <= SETUP_IDLE;
     end else begin
+      if(bcd_inst_data_out_dec_valid) begin
+        score <= bcd_inst_data_out_dec_payload;
+      end
+      digital_cnt_value <= digital_cnt_valueNext;
       wr_row_cnt_value <= wr_row_cnt_valueNext;
       col_cnt_value <= col_cnt_valueNext;
       row_cnt_value <= row_cnt_valueNext;
       row_val_valid_regNext <= row_val_valid;
+      if(data_ready) begin
+        wait_date_readout <= 1'b1;
+      end else begin
+        if(draw_openning_start) begin
+          wait_date_readout <= 1'b0;
+        end
+      end
+      wait_date_readout_regNext <= wait_date_readout;
       if(gen_start) begin
-        x <= 9'h03b;
+        x <= 9'h02b;
         y <= 8'h14;
       end
       if(draw_field_done) begin
@@ -1948,7 +2899,7 @@ module display_controller (
         y <= 8'h0;
       end else begin
         if(col_cnt_willOverflow) begin
-          x <= 9'h03b;
+          x <= 9'h02b;
         end else begin
           if(col_cnt_inc) begin
             x <= x_next;
@@ -1961,6 +2912,31 @@ module display_controller (
       cnt_value <= cnt_valueNext;
       cnt_value_1 <= cnt_valueNext_1;
       fsm_stateReg <= fsm_stateNext;
+      case(fsm_stateReg)
+        FETCH : begin
+        end
+        DATA_READY : begin
+        end
+        DRAW : begin
+        end
+        WAIT_DONE : begin
+        end
+        PRE_DRAW_SCORE : begin
+          x <= 9'h0d6;
+          y <= 8'h50;
+        end
+        DRAW_DIGIT : begin
+        end
+        WAIT_DRAW_DIGIT_DONE : begin
+        end
+        POST_DRAW_SCORE : begin
+        end
+        default : begin
+        end
+      endcase
+      if(fsm_onExit_WAIT_DRAW_DIGIT_DONE) begin
+        x <= (x + 9'h00c);
+      end
       stepup_fsm_stateReg <= stepup_fsm_stateNext;
       case(stepup_fsm_stateReg)
         CLEAN_SCREEN : begin
@@ -1977,7 +2953,7 @@ module display_controller (
         START_DRAW_OPEN : begin
         end
         WAIT_DRAW_OPEN_DONE : begin
-          if(itf_done_1) begin
+          if(itf_done_2) begin
             if(!temp_when) begin
               stepup_x <= (stepup_x + 9'h02e);
             end
@@ -1991,7 +2967,7 @@ module display_controller (
         START_DRAW_STRING : begin
         end
         WAIT_DRAW_STRING_DONE : begin
-          if(itf_done_1) begin
+          if(itf_done_2) begin
             if(!temp_when_1) begin
               stepup_x <= (stepup_x + 9'h00c);
             end
@@ -2077,24 +3053,24 @@ module fb_addr_gen (
   input  wire          core_rst
 );
 
-  wire       [10:0]   temp_v_next_in_fb;
-  wire       [9:0]    temp_v_next_in_fb_1;
-  wire       [10:0]   temp_v_next_in_fb_2;
+  wire       [11:0]   temp_v_next_in_fb;
+  wire       [10:0]   temp_v_next_in_fb_1;
+  wire       [11:0]   temp_v_next_in_fb_2;
   wire       [16:0]   temp_addr;
   wire       [16:0]   temp_addr_1;
   reg        [8:0]    x_reg;
   reg        [7:0]    y_reg;
   wire       [7:0]    v_next;
-  wire       [10:0]   v_next_in_fb;
+  wire       [11:0]   v_next_in_fb;
   reg        [8:0]    h_reg;
-  reg        [10:0]   v_reg;
+  reg        [11:0]   v_reg;
   reg        [16:0]   addr;
 
-  assign temp_v_next_in_fb_1 = ({2'd0,v_next} <<< 2'd2);
+  assign temp_v_next_in_fb_1 = ({3'd0,v_next} <<< 2'd3);
   assign temp_v_next_in_fb = {1'd0, temp_v_next_in_fb_1};
-  assign temp_v_next_in_fb_2 = {3'd0, v_next};
+  assign temp_v_next_in_fb_2 = {4'd0, v_next};
   assign temp_addr = {8'd0, h_reg};
-  assign temp_addr_1 = ({6'd0,v_reg} <<< 3'd6);
+  assign temp_addr_1 = ({5'd0,v_reg} <<< 3'd5);
   assign v_next = (y_reg + v_cnt);
   assign v_next_in_fb = (temp_v_next_in_fb + temp_v_next_in_fb_2);
   assign out_addr = addr;
@@ -2103,7 +3079,7 @@ module fb_addr_gen (
       x_reg <= 9'h0;
       y_reg <= 8'h0;
       h_reg <= 9'h0;
-      v_reg <= 11'h0;
+      v_reg <= 12'h0;
       addr <= 17'h0;
     end else begin
       if(start) begin
@@ -2146,6 +3122,7 @@ module draw_block_engine (
   reg        [7:0]    width_reg;
   reg        [7:0]    height_reg;
   reg        [1:0]    fill_pattern_reg;
+  reg        [3:0]    pat_color_1;
   reg                 addr_comp_active;
   reg                 h_cnt_willIncrement;
   wire                h_cnt_willClear;
@@ -2166,12 +3143,10 @@ module draw_block_engine (
   reg                 border_en;
   reg                 fill_en;
   reg                 no_pattern;
+  reg        [3:0]    in_color_1d;
+  reg        [3:0]    pat_color_1d;
   reg                 active_2d;
-  reg        [3:0]    in_color_1_delay_1;
   reg        [3:0]    out_color_1;
-  reg        [3:0]    pat_color_delay_1;
-  reg        [3:0]    pat_color_delay_2;
-  reg        [3:0]    pat_color_delay_3;
 
   assign temp_h_cnt_valueNext_1 = h_cnt_willIncrement;
   assign temp_h_cnt_valueNext = {7'd0, temp_h_cnt_valueNext_1};
@@ -2230,16 +3205,21 @@ module draw_block_engine (
     if(start) begin
       in_color_1 <= in_color;
     end
+    if(start) begin
+      pat_color_1 <= pat_color;
+    end
     if(1'b0) begin
       h_cnt_isDone <= h_cnt_willOverflow;
     end
     if(1'b0) begin
       v_cnt_isDone <= v_cnt_willOverflow;
     end
-    in_color_1_delay_1 <= in_color_1;
-    out_color_1 <= in_color_1_delay_1;
+    in_color_1d <= in_color_1;
+    pat_color_1d <= pat_color_1;
     if(((border_en || fill_en) && (! no_pattern))) begin
-      out_color_1 <= pat_color_delay_3;
+      out_color_1 <= pat_color_1d;
+    end else begin
+      out_color_1 <= in_color_1d;
     end
   end
 
@@ -2293,12 +3273,6 @@ module draw_block_engine (
     end
   end
 
-  always @(posedge core_clk) begin
-    pat_color_delay_1 <= pat_color;
-    pat_color_delay_2 <= pat_color_delay_1;
-    pat_color_delay_3 <= pat_color_delay_2;
-  end
-
 
 endmodule
 
@@ -2329,6 +3303,8 @@ module draw_char_engine (
   wire       [0:0]    temp_y_cnt_valueNext_1;
   wire       [7:0]    temp_when;
   reg        [6:0]    word_reg;
+  reg        [2:0]    scale_reg;
+  reg        [3:0]    color_reg;
   reg                 rom_rd_en;
   reg                 x_scale_cnt_willIncrement;
   wire                x_scale_cnt_willClear;
@@ -2363,7 +3339,7 @@ module draw_char_engine (
   reg        [7:0]    v_cnt_1;
   reg        [3:0]    char_color;
   reg        [2:0]    pix_idx;
-  reg        [3:0]    color_delay_1;
+  reg        [3:0]    color_reg_delay_1;
   reg                 rom_rd_en_delay_1;
   reg                 rom_rd_en_delay_2;
   reg                 rom_rd_en_regNext;
@@ -2393,7 +3369,7 @@ module draw_char_engine (
   end
 
   assign x_scale_cnt_willClear = 1'b0;
-  assign x_scale_cnt_willOverflowIfInc = (x_scale_cnt_value == scale);
+  assign x_scale_cnt_willOverflowIfInc = (x_scale_cnt_value == scale_reg);
   assign x_scale_cnt_willOverflow = (x_scale_cnt_willOverflowIfInc && x_scale_cnt_willIncrement);
   always @(*) begin
     if(x_scale_cnt_willOverflow) begin
@@ -2432,7 +3408,7 @@ module draw_char_engine (
   end
 
   assign y_scale_cnt_willClear = 1'b0;
-  assign y_scale_cnt_willOverflowIfInc = (y_scale_cnt_value == scale);
+  assign y_scale_cnt_willOverflowIfInc = (y_scale_cnt_value == scale_reg);
   assign y_scale_cnt_willOverflow = (y_scale_cnt_willOverflowIfInc && y_scale_cnt_willIncrement);
   always @(*) begin
     if(y_scale_cnt_willOverflow) begin
@@ -2474,6 +3450,8 @@ module draw_char_engine (
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
       word_reg <= 7'h0;
+      scale_reg <= 3'b000;
+      color_reg <= 4'b0000;
       rom_rd_en <= 1'b0;
       x_scale_cnt_value <= 3'b000;
       x_cnt_value <= 3'b000;
@@ -2488,6 +3466,12 @@ module draw_char_engine (
     end else begin
       if(start) begin
         word_reg <= word;
+      end
+      if(start) begin
+        scale_reg <= scale;
+      end
+      if(start) begin
+        color_reg <= color;
       end
       x_scale_cnt_value <= x_scale_cnt_valueNext;
       x_cnt_value <= x_cnt_valueNext;
@@ -2518,7 +3502,7 @@ module draw_char_engine (
       end
       pix_idx <= x_cnt_value;
       if(temp_when[pix_idx]) begin
-        char_color <= color_delay_1;
+        char_color <= color_reg_delay_1;
       end else begin
         char_color <= 4'b0010;
       end
@@ -2538,7 +3522,7 @@ module draw_char_engine (
   end
 
   always @(posedge core_clk) begin
-    color_delay_1 <= color;
+    color_reg_delay_1 <= color_reg;
   end
 
 
@@ -2571,7 +3555,7 @@ module bram_2p (
   wire       [16:0]   wr_addr_1;
   wire       [3:0]    wr_data_1;
   wire                wr_en_1;
-  (* ram_style = "block" *) reg [3:0] memory [0:76799];
+  (* ram_style = "block" *) reg [3:0] memory [0:69119];
 
   assign temp_full_addr_valueNext_1 = full_addr_willIncrement;
   assign temp_full_addr_valueNext = {16'd0, temp_full_addr_valueNext_1};
@@ -2598,7 +3582,7 @@ module bram_2p (
   end
 
   assign full_addr_willClear = 1'b0;
-  assign full_addr_willOverflowIfInc = (full_addr_value == 17'h12bff);
+  assign full_addr_willOverflowIfInc = (full_addr_value == 17'h10dff);
   assign full_addr_willOverflow = (full_addr_willOverflowIfInc && full_addr_willIncrement);
   always @(*) begin
     if(full_addr_willOverflow) begin
@@ -2656,6 +3640,7 @@ module controller (
   output reg           move_out_rotate,
   output reg           move_out_down,
   output reg           lock,
+  (* keep *) output wire          debug_place_new,
   input  wire          core_clk,
   input  wire          core_rst
 );
@@ -2672,10 +3657,11 @@ module controller (
   localparam LOCK = 4'd10;
   localparam LOCKDOWN = 4'd11;
   localparam CLEAN = 4'd12;
+  localparam WAIT_TIME = 4'd13;
 
-  wire       [24:0]   temp_drop_timeout_counter_valueNext;
+  wire       [17:0]   temp_drop_timeout_counter_valueNext;
   wire       [0:0]    temp_drop_timeout_counter_valueNext_1;
-  wire       [24:0]   temp_lock_timeout_counter_valueNext;
+  wire       [15:0]   temp_lock_timeout_counter_valueNext;
   wire       [0:0]    temp_lock_timeout_counter_valueNext_1;
   wire       [9:0]    temp_temp_motion_voted_2;
   wire       [9:0]    temp_temp_motion_voted_2_1;
@@ -2685,16 +3671,16 @@ module controller (
   reg                 drop_timeout_stateRise;
   wire                drop_timeout_counter_willIncrement;
   reg                 drop_timeout_counter_willClear;
-  reg        [24:0]   drop_timeout_counter_valueNext;
-  reg        [24:0]   drop_timeout_counter_value;
+  reg        [17:0]   drop_timeout_counter_valueNext;
+  reg        [17:0]   drop_timeout_counter_value;
   wire                drop_timeout_counter_willOverflowIfInc;
   wire                drop_timeout_counter_willOverflow;
   reg                 lock_timeout_state;
   reg                 lock_timeout_stateRise;
   wire                lock_timeout_counter_willIncrement;
   reg                 lock_timeout_counter_willClear;
-  reg        [24:0]   lock_timeout_counter_valueNext;
-  reg        [24:0]   lock_timeout_counter_value;
+  reg        [15:0]   lock_timeout_counter_valueNext;
+  reg        [15:0]   lock_timeout_counter_value;
   wire                lock_timeout_counter_willOverflowIfInc;
   wire                lock_timeout_counter_willOverflow;
   reg        [4:0]    motion_request;
@@ -2713,6 +3699,12 @@ module controller (
   wire       [9:0]    temp_motion_voted_1;
   wire       [9:0]    temp_motion_voted_2;
   wire       [4:0]    motion_voted;
+  reg                 debug_place_new_cnt_willIncrement;
+  wire                debug_place_new_cnt_willClear;
+  reg        [0:0]    debug_place_new_cnt_valueNext;
+  reg        [0:0]    debug_place_new_cnt_value;
+  wire                debug_place_new_cnt_willOverflowIfInc;
+  wire                debug_place_new_cnt_willOverflow;
   wire                fsm_wantExit;
   reg                 fsm_wantStart;
   wire                fsm_wantKill;
@@ -2731,6 +3723,7 @@ module controller (
   wire                fsm_onExit_LOCK;
   wire                fsm_onExit_LOCKDOWN;
   wire                fsm_onExit_CLEAN;
+  wire                fsm_onExit_WAIT_TIME;
   wire                fsm_onEntry_IDLE;
   wire                fsm_onEntry_GAME_START;
   wire                fsm_onEntry_RANDOM_GEN;
@@ -2744,6 +3737,7 @@ module controller (
   wire                fsm_onEntry_LOCK;
   wire                fsm_onEntry_LOCKDOWN;
   wire                fsm_onEntry_CLEAN;
+  wire                fsm_onEntry_WAIT_TIME;
   `ifndef SYNTHESIS
   reg [135:0] fsm_stateReg_string;
   reg [135:0] fsm_stateNext_string;
@@ -2752,9 +3746,9 @@ module controller (
 
   assign temp_when = (! collision_status_payload);
   assign temp_drop_timeout_counter_valueNext_1 = drop_timeout_counter_willIncrement;
-  assign temp_drop_timeout_counter_valueNext = {24'd0, temp_drop_timeout_counter_valueNext_1};
+  assign temp_drop_timeout_counter_valueNext = {17'd0, temp_drop_timeout_counter_valueNext_1};
   assign temp_lock_timeout_counter_valueNext_1 = lock_timeout_counter_willIncrement;
-  assign temp_lock_timeout_counter_valueNext = {24'd0, temp_lock_timeout_counter_valueNext_1};
+  assign temp_lock_timeout_counter_valueNext = {15'd0, temp_lock_timeout_counter_valueNext_1};
   assign temp_temp_motion_voted_2 = (temp_motion_voted_1 - temp_temp_motion_voted_2_1);
   assign temp_temp_motion_voted_2_2 = priority_1;
   assign temp_temp_motion_voted_2_1 = {5'd0, temp_temp_motion_voted_2_2};
@@ -2774,6 +3768,7 @@ module controller (
       LOCK : fsm_stateReg_string = "LOCK             ";
       LOCKDOWN : fsm_stateReg_string = "LOCKDOWN         ";
       CLEAN : fsm_stateReg_string = "CLEAN            ";
+      WAIT_TIME : fsm_stateReg_string = "WAIT_TIME        ";
       default : fsm_stateReg_string = "?????????????????";
     endcase
   end
@@ -2792,6 +3787,7 @@ module controller (
       LOCK : fsm_stateNext_string = "LOCK             ";
       LOCKDOWN : fsm_stateNext_string = "LOCKDOWN         ";
       CLEAN : fsm_stateNext_string = "CLEAN            ";
+      WAIT_TIME : fsm_stateNext_string = "WAIT_TIME        ";
       default : fsm_stateNext_string = "?????????????????";
     endcase
   end
@@ -2803,6 +3799,12 @@ module controller (
     if(drop_timeout_counter_willOverflow) begin
       drop_timeout_stateRise = (! drop_timeout_state);
     end
+    lock_timeout_stateRise = 1'b0;
+    lock_timeout_counter_willClear = 1'b0;
+    if(lock_timeout_counter_willOverflow) begin
+      lock_timeout_stateRise = (! lock_timeout_state);
+    end
+    debug_place_new_cnt_willIncrement = 1'b0;
     fsm_wantStart = 1'b0;
     gen_piece_en = 1'b0;
     move_out_left = 1'b0;
@@ -2908,6 +3910,13 @@ module controller (
       end
       CLEAN : begin
         if(playfiedl_in_idle) begin
+          lock_timeout_counter_willClear = 1'b1;
+          lock_timeout_stateRise = 1'b0;
+          fsm_stateNext = WAIT_TIME;
+        end
+      end
+      WAIT_TIME : begin
+        if(lock_timeout_state) begin
           fsm_stateNext = RANDOM_GEN;
         end
       end
@@ -2921,48 +3930,41 @@ module controller (
     if(fsm_onExit_PLACE) begin
       drop_timeout_counter_willClear = 1'b1;
       drop_timeout_stateRise = 1'b0;
+      debug_place_new_cnt_willIncrement = 1'b1;
+    end
+    if(fsm_onEntry_LOCKDOWN) begin
+      lock_timeout_counter_willClear = 1'b1;
+      lock_timeout_stateRise = 1'b0;
     end
     if(fsm_wantKill) begin
       fsm_stateNext = IDLE;
     end
   end
 
-  assign drop_timeout_counter_willOverflowIfInc = (drop_timeout_counter_value == 25'h168decf);
+  assign drop_timeout_counter_willOverflowIfInc = (drop_timeout_counter_value == 18'h30d3f);
   assign drop_timeout_counter_willOverflow = (drop_timeout_counter_willOverflowIfInc && drop_timeout_counter_willIncrement);
   always @(*) begin
     if(drop_timeout_counter_willOverflow) begin
-      drop_timeout_counter_valueNext = 25'h0;
+      drop_timeout_counter_valueNext = 18'h0;
     end else begin
       drop_timeout_counter_valueNext = (drop_timeout_counter_value + temp_drop_timeout_counter_valueNext);
     end
     if(drop_timeout_counter_willClear) begin
-      drop_timeout_counter_valueNext = 25'h0;
+      drop_timeout_counter_valueNext = 18'h0;
     end
   end
 
   assign drop_timeout_counter_willIncrement = 1'b1;
-  always @(*) begin
-    lock_timeout_stateRise = 1'b0;
-    lock_timeout_counter_willClear = 1'b0;
-    if(lock_timeout_counter_willOverflow) begin
-      lock_timeout_stateRise = (! lock_timeout_state);
-    end
-    if(fsm_onEntry_LOCKDOWN) begin
-      lock_timeout_counter_willClear = 1'b1;
-      lock_timeout_stateRise = 1'b0;
-    end
-  end
-
-  assign lock_timeout_counter_willOverflowIfInc = (lock_timeout_counter_value == 25'h17d783f);
+  assign lock_timeout_counter_willOverflowIfInc = (lock_timeout_counter_value == 16'hc34f);
   assign lock_timeout_counter_willOverflow = (lock_timeout_counter_willOverflowIfInc && lock_timeout_counter_willIncrement);
   always @(*) begin
     if(lock_timeout_counter_willOverflow) begin
-      lock_timeout_counter_valueNext = 25'h0;
+      lock_timeout_counter_valueNext = 16'h0;
     end else begin
       lock_timeout_counter_valueNext = (lock_timeout_counter_value + temp_lock_timeout_counter_valueNext);
     end
     if(lock_timeout_counter_willClear) begin
-      lock_timeout_counter_valueNext = 25'h0;
+      lock_timeout_counter_valueNext = 16'h0;
     end
   end
 
@@ -2977,6 +3979,17 @@ module controller (
   assign move_left_1 = motion_voted[2];
   assign move_right_1 = motion_voted[3];
   assign rotate_1 = motion_voted[4];
+  assign debug_place_new_cnt_willClear = 1'b0;
+  assign debug_place_new_cnt_willOverflowIfInc = (debug_place_new_cnt_value == 1'b1);
+  assign debug_place_new_cnt_willOverflow = (debug_place_new_cnt_willOverflowIfInc && debug_place_new_cnt_willIncrement);
+  always @(*) begin
+    debug_place_new_cnt_valueNext = (debug_place_new_cnt_value + debug_place_new_cnt_willIncrement);
+    if(debug_place_new_cnt_willClear) begin
+      debug_place_new_cnt_valueNext = 1'b0;
+    end
+  end
+
+  assign debug_place_new = debug_place_new_cnt_willOverflow;
   assign fsm_wantExit = 1'b0;
   assign fsm_wantKill = 1'b0;
   always @(*) begin
@@ -3005,6 +4018,7 @@ module controller (
   assign fsm_onExit_LOCK = ((fsm_stateNext != LOCK) && (fsm_stateReg == LOCK));
   assign fsm_onExit_LOCKDOWN = ((fsm_stateNext != LOCKDOWN) && (fsm_stateReg == LOCKDOWN));
   assign fsm_onExit_CLEAN = ((fsm_stateNext != CLEAN) && (fsm_stateReg == CLEAN));
+  assign fsm_onExit_WAIT_TIME = ((fsm_stateNext != WAIT_TIME) && (fsm_stateReg == WAIT_TIME));
   assign fsm_onEntry_IDLE = ((fsm_stateNext == IDLE) && (fsm_stateReg != IDLE));
   assign fsm_onEntry_GAME_START = ((fsm_stateNext == GAME_START) && (fsm_stateReg != GAME_START));
   assign fsm_onEntry_RANDOM_GEN = ((fsm_stateNext == RANDOM_GEN) && (fsm_stateReg != RANDOM_GEN));
@@ -3018,18 +4032,20 @@ module controller (
   assign fsm_onEntry_LOCK = ((fsm_stateNext == LOCK) && (fsm_stateReg != LOCK));
   assign fsm_onEntry_LOCKDOWN = ((fsm_stateNext == LOCKDOWN) && (fsm_stateReg != LOCKDOWN));
   assign fsm_onEntry_CLEAN = ((fsm_stateNext == CLEAN) && (fsm_stateReg != CLEAN));
+  assign fsm_onEntry_WAIT_TIME = ((fsm_stateNext == WAIT_TIME) && (fsm_stateReg != WAIT_TIME));
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
       drop_timeout_state <= 1'b0;
-      drop_timeout_counter_value <= 25'h0;
+      drop_timeout_counter_value <= 18'h0;
       lock_timeout_state <= 1'b0;
-      lock_timeout_counter_value <= 25'h0;
+      lock_timeout_counter_value <= 16'h0;
       motion_request <= 5'h0;
       drop_regNext <= 1'b0;
       move_down_regNext <= 1'b0;
       move_left_regNext <= 1'b0;
       move_right_regNext <= 1'b0;
       rotate_regNext <= 1'b0;
+      debug_place_new_cnt_value <= 1'b0;
       fsm_stateReg <= IDLE;
     end else begin
       drop_timeout_counter_value <= drop_timeout_counter_valueNext;
@@ -3040,26 +4056,47 @@ module controller (
       if(lock_timeout_counter_willOverflow) begin
         lock_timeout_state <= 1'b1;
       end
+      if((game_start || game_restart)) begin
+        motion_request[0] <= 1'b0;
+      end else begin
+        if((drop && (! drop_regNext))) begin
+          motion_request[0] <= 1'b1;
+        end
+      end
       drop_regNext <= drop;
-      if((drop && (! drop_regNext))) begin
-        motion_request[0] <= 1'b1;
+      if((game_start || game_restart)) begin
+        motion_request[1] <= 1'b0;
+      end else begin
+        if((move_down && (! move_down_regNext))) begin
+          motion_request[1] <= 1'b1;
+        end
       end
       move_down_regNext <= move_down;
-      if((move_down && (! move_down_regNext))) begin
-        motion_request[1] <= 1'b1;
+      if((game_start || game_restart)) begin
+        motion_request[2] <= 1'b0;
+      end else begin
+        if((move_left && (! move_left_regNext))) begin
+          motion_request[2] <= 1'b1;
+        end
       end
       move_left_regNext <= move_left;
-      if((move_left && (! move_left_regNext))) begin
-        motion_request[2] <= 1'b1;
+      if((game_start || game_restart)) begin
+        motion_request[3] <= 1'b0;
+      end else begin
+        if((move_right && (! move_right_regNext))) begin
+          motion_request[3] <= 1'b1;
+        end
       end
       move_right_regNext <= move_right;
-      if((move_right && (! move_right_regNext))) begin
-        motion_request[3] <= 1'b1;
+      if((game_start || game_restart)) begin
+        motion_request[4] <= 1'b0;
+      end else begin
+        if((rotate && (! rotate_regNext))) begin
+          motion_request[4] <= 1'b1;
+        end
       end
       rotate_regNext <= rotate;
-      if((rotate && (! rotate_regNext))) begin
-        motion_request[4] <= 1'b1;
-      end
+      debug_place_new_cnt_value <= debug_place_new_cnt_valueNext;
       fsm_stateReg <= fsm_stateNext;
       case(fsm_stateReg)
         GAME_START : begin
@@ -3095,6 +4132,11 @@ module controller (
         LOCKDOWN : begin
         end
         CLEAN : begin
+          if(playfiedl_in_idle) begin
+            lock_timeout_state <= 1'b0;
+          end
+        end
+        WAIT_TIME : begin
         end
         default : begin
         end
@@ -3127,6 +4169,8 @@ module playfield (
   input  wire          game_restart,
   output wire          row_val_valid,
   output reg  [9:0]    row_val_payload,
+  output wire          score_val_valid,
+  output wire [9:0]    score_val_payload,
   output wire          motion_is_allowed,
   output wire          fsm_is_idle,
   input  wire          core_clk,
@@ -3199,6 +4243,7 @@ module playfield (
   wire       [2:0]    temp_playfield_count_29;
   wire       [0:0]    temp_playfield_count_30;
   wire       [21:0]   temp_playfield_lowestOne;
+  wire       [9:0]    temp_playfield_total_score;
   reg        [9:0]    temp_flow_readout;
   wire                temp_locker_region_port;
   reg        [9:0]    temp_checker_region_0;
@@ -3280,6 +4325,7 @@ module playfield (
   wire                playfield_reset;
   reg                 playfield_freeze;
   reg                 playfield_clear;
+  reg                 playfield_update_score;
   wire       [4:0]    playfield_access_row_base;
   wire                playfield_read_req_port_valid;
   wire       [4:0]    playfield_read_req_port_payload;
@@ -3328,6 +4374,11 @@ module playfield (
   wire                playfield_isRowFull;
   wire       [21:0]   playfield_lowestOne;
   wire       [21:0]   playfield_rows_to_clear;
+  reg        [9:0]    playfield_total_score;
+  reg                 playfield_update_score_delay_1;
+  reg                 playfield_lock_score;
+  reg                 playfield_lock_score_1d;
+  reg                 game_restart_regNext;
   reg        [4:0]    flow_row;
   wire                flow_read_req;
   wire                flow_addr_access_port_valid;
@@ -3565,6 +4616,7 @@ module playfield (
   assign temp_playfield_count_30 = playfield_ones[21];
   assign temp_playfield_count_29 = {2'd0, temp_playfield_count_30};
   assign temp_playfield_lowestOne = (playfield_ones - 22'h000001);
+  assign temp_playfield_total_score = {5'd0, playfield_count};
   assign temp_locker_region_port = (locker_addr_access_port_valid && locker_data_in_port_valid);
   assign temp_playfield_count_11 = {playfield_ones[2],{playfield_ones[1],playfield_ones[0]}};
   assign temp_playfield_count_13 = {playfield_ones[5],{playfield_ones[4],playfield_ones[3]}};
@@ -3842,6 +4894,7 @@ module playfield (
     checker_left_shift = 1'b0;
     playfield_freeze = 1'b0;
     playfield_clear = 1'b0;
+    playfield_update_score = 1'b0;
     flow_update = 1'b0;
     collision_checker_start = 1'b0;
     output_en = 1'b0;
@@ -3981,6 +5034,7 @@ module playfield (
         end
       end
       CLEAR_REGION : begin
+        playfield_update_score = 1'b1;
         main_fsm_stateNext = CHECK_ROW_FULL;
       end
       CHECK_ROW_FULL : begin
@@ -4171,6 +5225,8 @@ module playfield (
   assign playfield_isRowFull = (|playfield_ones);
   assign playfield_lowestOne = (playfield_ones & (~ temp_playfield_lowestOne));
   assign playfield_rows_to_clear = (playfield_lowestOne - 22'h000001);
+  assign score_val_valid = (playfield_lock_score_1d || ((! game_restart) && game_restart_regNext));
+  assign score_val_payload = playfield_total_score;
   assign flow_read_req = 1'b0;
   always @(*) begin
     flow_row_occuppied[0] = (|flow_region_0);
@@ -4382,6 +5438,10 @@ module playfield (
       playfield_region_21 <= 10'h0;
       playfield_ones <= 22'h0;
       playfield_count <= 5'h0;
+      playfield_total_score <= 10'h0;
+      playfield_update_score_delay_1 <= 1'b0;
+      playfield_lock_score <= 1'b0;
+      playfield_lock_score_1d <= 1'b0;
       flow_row <= 5'h0;
       flow_region_0 <= 10'h0;
       flow_region_1 <= 10'h0;
@@ -4650,6 +5710,16 @@ module playfield (
       end
       if(playfield_clear) begin
         playfield_region_0 <= 10'h0;
+      end
+      playfield_update_score_delay_1 <= playfield_update_score;
+      playfield_lock_score <= playfield_update_score_delay_1;
+      playfield_lock_score_1d <= playfield_lock_score;
+      if(game_restart) begin
+        playfield_total_score <= 10'h0;
+      end else begin
+        if(playfield_lock_score) begin
+          playfield_total_score <= (playfield_total_score + temp_playfield_total_score);
+        end
       end
       if(flow_update) begin
         flow_region_0 <= checker_region_0;
@@ -5109,6 +6179,7 @@ module playfield (
         playfield_readout <= playfield_region_21;
       end
     end
+    game_restart_regNext <= game_restart;
     flow_readout <= temp_flow_readout;
     collision_checker_collision_bits_payload <= (|(collision_checker_src_0_payload & collision_checker_src_1_payload));
     playfield_dataout_stage_payload <= playfield_dataout_payload;
@@ -5399,6 +6470,209 @@ module seven_bag_rng (
       default : begin
       end
     endcase
+  end
+
+
+endmodule
+
+module BufferCC_4 (
+  input  wire          io_dataIn,
+  output wire          io_dataOut,
+  input  wire          core_clk,
+  input  wire          core_rst
+);
+
+  (* async_reg = "true" , altera_attribute = "-name ADV_NETLIST_OPT_ALLOWED NEVER_ALLOW" *) reg                 buffers_0;
+  (* async_reg = "true" *) reg                 buffers_1;
+
+  assign io_dataOut = buffers_1;
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      buffers_0 <= 1'b0;
+      buffers_1 <= 1'b0;
+    end else begin
+      buffers_0 <= io_dataIn;
+      buffers_1 <= buffers_0;
+    end
+  end
+
+
+endmodule
+
+module bcd (
+  input  wire          data_in_bin_valid,
+  input  wire [9:0]    data_in_bin_payload,
+  output wire          data_out_dec_valid,
+  output wire [15:0]   data_out_dec_payload,
+  input  wire          core_clk,
+  input  wire          core_rst
+);
+  localparam BOOT = 3'd0;
+  localparam IDLE = 3'd1;
+  localparam ADD3_CHECK = 3'd2;
+  localparam SHIFT = 3'd3;
+  localparam DONE = 3'd4;
+
+  wire       [9:0]    temp_shiftRegister_5;
+  wire       [3:0]    temp_temp_shiftRegister;
+  wire       [3:0]    temp_temp_shiftRegister_1;
+  wire       [3:0]    temp_temp_shiftRegister_2;
+  wire       [3:0]    temp_temp_shiftRegister_3;
+  reg        [25:0]   shiftRegister;
+  reg        [3:0]    shiftCounter;
+  reg                 isProcessing;
+  wire                fsm_wantExit;
+  reg                 fsm_wantStart;
+  wire                fsm_wantKill;
+  reg        [2:0]    fsm_stateReg;
+  reg        [2:0]    fsm_stateNext;
+  reg        [25:0]   temp_shiftRegister;
+  wire       [3:0]    temp_shiftRegister_1;
+  wire       [3:0]    temp_shiftRegister_2;
+  wire       [3:0]    temp_shiftRegister_3;
+  wire       [3:0]    temp_shiftRegister_4;
+  wire                fsm_onExit_BOOT;
+  wire                fsm_onExit_IDLE;
+  wire                fsm_onExit_ADD3_CHECK;
+  wire                fsm_onExit_SHIFT;
+  wire                fsm_onExit_DONE;
+  wire                fsm_onEntry_BOOT;
+  wire                fsm_onEntry_IDLE;
+  wire                fsm_onEntry_ADD3_CHECK;
+  wire                fsm_onEntry_SHIFT;
+  wire                fsm_onEntry_DONE;
+  `ifndef SYNTHESIS
+  reg [79:0] fsm_stateReg_string;
+  reg [79:0] fsm_stateNext_string;
+  `endif
+
+
+  assign temp_shiftRegister_5 = data_in_bin_payload;
+  assign temp_temp_shiftRegister = (temp_shiftRegister_1 + 4'b0011);
+  assign temp_temp_shiftRegister_1 = (temp_shiftRegister_2 + 4'b0011);
+  assign temp_temp_shiftRegister_2 = (temp_shiftRegister_3 + 4'b0011);
+  assign temp_temp_shiftRegister_3 = (temp_shiftRegister_4 + 4'b0011);
+  `ifndef SYNTHESIS
+  always @(*) begin
+    case(fsm_stateReg)
+      BOOT : fsm_stateReg_string = "BOOT      ";
+      IDLE : fsm_stateReg_string = "IDLE      ";
+      ADD3_CHECK : fsm_stateReg_string = "ADD3_CHECK";
+      SHIFT : fsm_stateReg_string = "SHIFT     ";
+      DONE : fsm_stateReg_string = "DONE      ";
+      default : fsm_stateReg_string = "??????????";
+    endcase
+  end
+  always @(*) begin
+    case(fsm_stateNext)
+      BOOT : fsm_stateNext_string = "BOOT      ";
+      IDLE : fsm_stateNext_string = "IDLE      ";
+      ADD3_CHECK : fsm_stateNext_string = "ADD3_CHECK";
+      SHIFT : fsm_stateNext_string = "SHIFT     ";
+      DONE : fsm_stateNext_string = "DONE      ";
+      default : fsm_stateNext_string = "??????????";
+    endcase
+  end
+  `endif
+
+  assign fsm_wantExit = 1'b0;
+  always @(*) begin
+    fsm_wantStart = 1'b0;
+    fsm_stateNext = fsm_stateReg;
+    case(fsm_stateReg)
+      IDLE : begin
+        if(data_in_bin_valid) begin
+          fsm_stateNext = ADD3_CHECK;
+        end
+      end
+      ADD3_CHECK : begin
+        fsm_stateNext = SHIFT;
+      end
+      SHIFT : begin
+        if((shiftCounter == 4'b1001)) begin
+          fsm_stateNext = DONE;
+        end else begin
+          fsm_stateNext = ADD3_CHECK;
+        end
+      end
+      DONE : begin
+        fsm_stateNext = IDLE;
+      end
+      default : begin
+        fsm_wantStart = 1'b1;
+      end
+    endcase
+    if(fsm_wantStart) begin
+      fsm_stateNext = IDLE;
+    end
+    if(fsm_wantKill) begin
+      fsm_stateNext = BOOT;
+    end
+  end
+
+  assign fsm_wantKill = 1'b0;
+  assign data_out_dec_valid = (fsm_stateReg == DONE);
+  assign data_out_dec_payload = shiftRegister[25 : 10];
+  always @(*) begin
+    temp_shiftRegister = shiftRegister;
+    if((4'b0101 <= temp_shiftRegister_1)) begin
+      temp_shiftRegister[13 : 10] = temp_temp_shiftRegister;
+    end
+    if((4'b0101 <= temp_shiftRegister_2)) begin
+      temp_shiftRegister[17 : 14] = temp_temp_shiftRegister_1;
+    end
+    if((4'b0101 <= temp_shiftRegister_3)) begin
+      temp_shiftRegister[21 : 18] = temp_temp_shiftRegister_2;
+    end
+    if((4'b0101 <= temp_shiftRegister_4)) begin
+      temp_shiftRegister[25 : 22] = temp_temp_shiftRegister_3;
+    end
+  end
+
+  assign temp_shiftRegister_1 = shiftRegister[13 : 10];
+  assign temp_shiftRegister_2 = shiftRegister[17 : 14];
+  assign temp_shiftRegister_3 = shiftRegister[21 : 18];
+  assign temp_shiftRegister_4 = shiftRegister[25 : 22];
+  assign fsm_onExit_BOOT = ((fsm_stateNext != BOOT) && (fsm_stateReg == BOOT));
+  assign fsm_onExit_IDLE = ((fsm_stateNext != IDLE) && (fsm_stateReg == IDLE));
+  assign fsm_onExit_ADD3_CHECK = ((fsm_stateNext != ADD3_CHECK) && (fsm_stateReg == ADD3_CHECK));
+  assign fsm_onExit_SHIFT = ((fsm_stateNext != SHIFT) && (fsm_stateReg == SHIFT));
+  assign fsm_onExit_DONE = ((fsm_stateNext != DONE) && (fsm_stateReg == DONE));
+  assign fsm_onEntry_BOOT = ((fsm_stateNext == BOOT) && (fsm_stateReg != BOOT));
+  assign fsm_onEntry_IDLE = ((fsm_stateNext == IDLE) && (fsm_stateReg != IDLE));
+  assign fsm_onEntry_ADD3_CHECK = ((fsm_stateNext == ADD3_CHECK) && (fsm_stateReg != ADD3_CHECK));
+  assign fsm_onEntry_SHIFT = ((fsm_stateNext == SHIFT) && (fsm_stateReg != SHIFT));
+  assign fsm_onEntry_DONE = ((fsm_stateNext == DONE) && (fsm_stateReg != DONE));
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      shiftRegister <= 26'h0;
+      shiftCounter <= 4'b0000;
+      isProcessing <= 1'b0;
+      fsm_stateReg <= BOOT;
+    end else begin
+      fsm_stateReg <= fsm_stateNext;
+      case(fsm_stateReg)
+        IDLE : begin
+          if(data_in_bin_valid) begin
+            shiftRegister <= {16'd0, temp_shiftRegister_5};
+            shiftCounter <= 4'b0000;
+            isProcessing <= 1'b1;
+          end
+        end
+        ADD3_CHECK : begin
+          shiftRegister <= temp_shiftRegister;
+        end
+        SHIFT : begin
+          shiftRegister <= (shiftRegister <<< 1);
+          shiftCounter <= (shiftCounter + 4'b0001);
+        end
+        DONE : begin
+          isProcessing <= 1'b0;
+        end
+        default : begin
+        end
+      endcase
+    end
   end
 
 

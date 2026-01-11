@@ -151,11 +151,12 @@ object PS2ScanCodes {
 case  class KdPs2Config( )  {
   import PS2ScanCodes._
   val keyMap = mutable.LinkedHashMap[String, Int](
-    "up" -> KEY_W,
+    "start" -> KEY_W,
     "down" -> KEY_S,
     "left" -> KEY_A,
     "right" -> KEY_D,
-    "space" -> KEY_SPACE
+    "rotate" ->  KEY_SPACE ,
+    "drop" -> KEY_ENTER
   )
 
   def keysValidNum =  keyMap.size // exclude break
@@ -175,15 +176,18 @@ class kd_ps2 ( config : KdPs2Config ) extends Component  {
   noIoPrefix()
   import PS2ScanCodes._
 
-  //********* Instantiate Sub ***************//
+  // ====================================================
+  //          Instantiate Sub
+  // ====================================================
+
   val ps2_inst = new ps2_host_rxtx()
 
   import ps2_inst.io._
 
+  // ====================================================
+  //          Connection
+  // ====================================================
 
-  //********* Connection ********************//
-//  io.ps2_clk := ps2.clk
-//  io.ps2_data := ps2.data
   io.ps2_clk <> ps2.clk
   io.ps2_data <> ps2.data
 
@@ -194,7 +198,9 @@ class kd_ps2 ( config : KdPs2Config ) extends Component  {
   ps2.wr_data := 0
 
 
-  //********* FSM ********************//
+  // ====================================================
+  //          FSM
+  // ====================================================
   val is_key_received = Bool()
   var is_key_2nd_recevied = Bool()
 

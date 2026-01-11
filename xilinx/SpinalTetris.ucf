@@ -50,8 +50,8 @@ NET "PS2_DATA"     LOC = "V11"  | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = SLO
 ##############################################################################
 # Serial Ports (RS232)
 ##############################################################################
-#NET "RS232_DCE_RXD" LOC = "E16"  |IOSTANDARD = LVCMOS33 ;
-#NET "RS232_DCE_TXD" LOC = "F15"  |IOSTANDARD = LVCMOS33 |DRIVE = 8 |SLEW = SLOW ;
+NET "RS232_DCE_RXD" LOC = "E16"  |IOSTANDARD = LVCMOS33 ;
+NET "RS232_DCE_TXD" LOC = "F15"  |IOSTANDARD = LVCMOS33 |DRIVE = 8 |SLEW = SLOW ;
 #
 ##############################################################################
 # Video Output Port (VGA)

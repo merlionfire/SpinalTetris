@@ -22,6 +22,10 @@ class PcbIo() extends Bundle {
 
   val PS2_CLK = inout(Analog(Bool()))
   val PS2_DATA = inout(Analog(Bool()))
+
+  val RS232_DCE_RXD = in Bool()
+  val RS232_DCE_TXD = out Bool()
+
   // `ifdef UART` in Verilog can be handled with an optional bundle
   /*
   val UART = new Bundle {
@@ -122,7 +126,12 @@ class pcb extends  Component {
   // --------------------------------------------
   //val tetris_top_inst = new tetris_top(TetrisCoreConfig())
   val tetris_top_inst = new tetris_top(
-    TetrisCoreConfig( offset_x = 32, levelFallInCycle = 473 * 50000,  lockDownInCycle =500 * 50000  ),
+    TetrisCoreConfig(
+      offset_x = 32,
+      levelFallInCycle = 473 * 50000,
+      lockDownInCycle =  500 * 50000
+    ),
+    control_sel =  2 ,  /* Use UART as control input */
     rot_dir_swap = true
   ) // For Spartan 3A with limitd BRAM
   tetris_top_inst.addAttribute( "keep_hierarchy", "yes")
@@ -142,6 +151,8 @@ class pcb extends  Component {
   io.PS2_CLK  := tetris_top_inst.io.ps2_clk
   io.PS2_DATA := tetris_top_inst.io.ps2_data
 
+  tetris_top_inst.io.uart.rxd := io.RS232_DCE_RXD
+  io.RS232_DCE_TXD := tetris_top_inst.io.uart.txd
 }
 
 object PcbMain{

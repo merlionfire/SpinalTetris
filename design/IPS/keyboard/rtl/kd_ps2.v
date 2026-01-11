@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : kd_ps2
-// Git hash  : 34c2cbd61ef396d58c7ef66ab436c2b551c222a0
+// Git hash  : 8cdd7f1904d512b88dc8af743360db1708be332e
 
 `timescale 1ns/1ps
 
@@ -9,7 +9,7 @@ module kd_ps2 (
   inout  wire          ps2_data,
   output wire          rd_data_valid,
   output wire [7:0]    rd_data_payload,
-  output reg  [4:0]    keys_valid,
+  output reg  [5:0]    keys_valid,
   input  wire          reset,
   input  wire          clk
 );
@@ -31,9 +31,9 @@ module kd_ps2 (
   wire                rx_fsm_wantKill;
   wire                is_fsm_in_idle;
   wire                is_fsm_exit_wait_last;
-  wire                up_tick;
-  reg                 up_valid;
-  wire                up_tick_2nd;
+  wire                start_tick;
+  reg                 start_valid;
+  wire                start_tick_2nd;
   wire                down_tick;
   reg                 down_valid;
   wire                down_tick_2nd;
@@ -43,9 +43,12 @@ module kd_ps2 (
   wire                right_tick;
   reg                 right_valid;
   wire                right_tick_2nd;
-  wire                space_tick;
-  reg                 space_valid;
-  wire                space_tick_2nd;
+  wire                rotate_tick;
+  reg                 rotate_valid;
+  wire                rotate_tick_2nd;
+  wire                drop_tick;
+  reg                 drop_valid;
+  wire                drop_tick_2nd;
   reg        [1:0]    rx_fsm_stateReg;
   reg        [1:0]    rx_fsm_stateNext;
   wire                rx_fsm_onExit_IDLE;
@@ -130,14 +133,15 @@ module kd_ps2 (
   end
 
   assign rx_fsm_wantKill = 1'b0;
-  assign up_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1d));
-  assign up_tick_2nd = (up_tick && up_valid);
+  assign start_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1d));
+  assign start_tick_2nd = (start_tick && start_valid);
   always @(*) begin
-    keys_valid[0] = up_valid;
+    keys_valid[0] = start_valid;
     keys_valid[1] = down_valid;
     keys_valid[2] = left_valid;
     keys_valid[3] = right_valid;
-    keys_valid[4] = space_valid;
+    keys_valid[4] = rotate_valid;
+    keys_valid[5] = drop_valid;
   end
 
   assign down_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1b));
@@ -146,10 +150,12 @@ module kd_ps2 (
   assign left_tick_2nd = (left_tick && left_valid);
   assign right_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h23));
   assign right_tick_2nd = (right_tick && right_valid);
-  assign space_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h29));
-  assign space_tick_2nd = (space_tick && space_valid);
-  assign is_key_received = (|{space_tick,{right_tick,{left_tick,{down_tick,up_tick}}}});
-  assign is_key_2nd_recevied = (|{space_tick_2nd,{right_tick_2nd,{left_tick_2nd,{down_tick_2nd,up_tick_2nd}}}});
+  assign rotate_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h29));
+  assign rotate_tick_2nd = (rotate_tick && rotate_valid);
+  assign drop_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h5a));
+  assign drop_tick_2nd = (drop_tick && drop_valid);
+  assign is_key_received = (|{drop_tick,{rotate_tick,{right_tick,{left_tick,{down_tick,start_tick}}}}});
+  assign is_key_2nd_recevied = (|{drop_tick_2nd,{rotate_tick_2nd,{right_tick_2nd,{left_tick_2nd,{down_tick_2nd,start_tick_2nd}}}}});
   assign rx_fsm_onExit_IDLE = ((rx_fsm_stateNext != IDLE) && (rx_fsm_stateReg == IDLE));
   assign rx_fsm_onExit_WAIT_BREAK = ((rx_fsm_stateNext != WAIT_BREAK) && (rx_fsm_stateReg == WAIT_BREAK));
   assign rx_fsm_onExit_WAIT_LAST = ((rx_fsm_stateNext != WAIT_LAST) && (rx_fsm_stateReg == WAIT_LAST));
@@ -162,18 +168,19 @@ module kd_ps2 (
   assign is_fsm_exit_wait_last = ((rx_fsm_stateNext != WAIT_LAST) && (rx_fsm_stateReg == WAIT_LAST));
   always @(posedge clk or posedge reset) begin
     if(reset) begin
-      up_valid <= 1'b0;
+      start_valid <= 1'b0;
       down_valid <= 1'b0;
       left_valid <= 1'b0;
       right_valid <= 1'b0;
-      space_valid <= 1'b0;
+      rotate_valid <= 1'b0;
+      drop_valid <= 1'b0;
       rx_fsm_stateReg <= IDLE;
     end else begin
       if(is_fsm_in_idle) begin
-        up_valid <= up_tick;
+        start_valid <= start_tick;
       end
       if(is_fsm_exit_wait_last) begin
-        up_valid <= 1'b0;
+        start_valid <= 1'b0;
       end
       if(is_fsm_in_idle) begin
         down_valid <= down_tick;
@@ -194,10 +201,16 @@ module kd_ps2 (
         right_valid <= 1'b0;
       end
       if(is_fsm_in_idle) begin
-        space_valid <= space_tick;
+        rotate_valid <= rotate_tick;
       end
       if(is_fsm_exit_wait_last) begin
-        space_valid <= 1'b0;
+        rotate_valid <= 1'b0;
+      end
+      if(is_fsm_in_idle) begin
+        drop_valid <= drop_tick;
+      end
+      if(is_fsm_exit_wait_last) begin
+        drop_valid <= 1'b0;
       end
       rx_fsm_stateReg <= rx_fsm_stateNext;
     end

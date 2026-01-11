@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : pcb
-// Git hash  : d54b6a330ebf6d5323d8457a59bd98439303851f
+// Git hash  : 8cdd7f1904d512b88dc8af743360db1708be332e
 
 `timescale 1ns/1ps
 
@@ -16,6 +16,8 @@ module pcb (
   input  wire          ROT_CENTER,
   inout  wire          PS2_CLK,
   inout  wire          PS2_DATA,
+  input  wire          RS232_DCE_RXD,
+  output wire          RS232_DCE_TXD,
   output wire [3:0]    VGA_B,
   output wire [3:0]    VGA_G,
   output wire [3:0]    VGA_R,
@@ -35,6 +37,7 @@ module pcb (
   wire       [3:0]    picouser_inst_sws_out;
   wire       [3:0]    picouser_inst_rot_out;
   wire                tetris_top_inst_btns_rot_clr;
+  wire                tetris_top_inst_uart_txd;
   wire                tetris_top_inst_vga_vSync;
   wire                tetris_top_inst_vga_hSync;
   wire                tetris_top_inst_vga_colorEn;
@@ -114,6 +117,8 @@ module pcb (
     .btns_rot_clr   (tetris_top_inst_btns_rot_clr    ), //o
     .ps2_clk        (PS2_CLK                         ), //~
     .ps2_data       (PS2_DATA                        ), //~
+    .uart_txd       (tetris_top_inst_uart_txd        ), //o
+    .uart_rxd       (RS232_DCE_RXD                   ), //i
     .vga_vSync      (tetris_top_inst_vga_vSync       ), //o
     .vga_hSync      (tetris_top_inst_vga_hSync       ), //o
     .vga_colorEn    (tetris_top_inst_vga_colorEn     ), //o
@@ -149,6 +154,7 @@ module pcb (
   assign VGA_R = tetris_top_inst_vga_color_r;
   assign VGA_G = tetris_top_inst_vga_color_g;
   assign VGA_B = tetris_top_inst_vga_color_b;
+  assign RS232_DCE_TXD = tetris_top_inst_uart_txd;
 
 endmodule
 
@@ -168,6 +174,8 @@ module tetris_top (
   output wire          btns_rot_clr,
   inout  wire          ps2_clk,
   inout  wire          ps2_data,
+  output wire          uart_txd,
+  input  wire          uart_rxd,
   output wire          vga_vSync,
   output wire          vga_hSync,
   output wire          vga_colorEn,
@@ -185,22 +193,28 @@ module tetris_top (
   wire       [3:0]    tetris_core_inst_vga_color_b;
   wire                kd_ps2_inst_rd_data_valid;
   wire       [7:0]    kd_ps2_inst_rd_data_payload;
-  wire       [4:0]    kd_ps2_inst_keys_valid;
+  wire       [5:0]    kd_ps2_inst_keys_valid;
+  wire                uart_inst_io_uart_txd;
+  wire                uart_inst_io_game_start;
+  wire                uart_inst_io_move_left;
+  wire                uart_inst_io_move_right;
+  wire                uart_inst_io_move_down;
+  wire                uart_inst_io_rotate;
+  wire                uart_inst_io_drop;
   reg                 tetris_core_inst_ctrl_allowed_regNext;
-  reg                 temp_rotate;
-  reg                 btns_btn_south_regNext;
+  wire                temp_btns_rot_clr;
 
   tetris_core tetris_core_inst (
     .core_clk     (core_clk                         ), //i
     .core_rst     (core_rst                         ), //i
     .vga_clk      (vga_clk                          ), //i
     .vga_rst      (vga_rst                          ), //i
-    .game_start   (btns_btn_west                    ), //i
-    .move_left    (btns_rot_right                   ), //i
-    .move_right   (btns_rot_left                    ), //i
-    .move_down    (btns_rot_push                    ), //i
-    .rotate       (temp_rotate                      ), //i
-    .drop         (btns_btn_east                    ), //i
+    .game_start   (uart_inst_io_game_start          ), //i
+    .move_left    (uart_inst_io_move_left           ), //i
+    .move_right   (uart_inst_io_move_right          ), //i
+    .move_down    (uart_inst_io_move_down           ), //i
+    .rotate       (uart_inst_io_rotate              ), //i
+    .drop         (uart_inst_io_drop                ), //i
     .ctrl_allowed (tetris_core_inst_ctrl_allowed    ), //o
     .vga_vSync    (tetris_core_inst_vga_vSync       ), //o
     .vga_hSync    (tetris_core_inst_vga_hSync       ), //o
@@ -214,30 +228,142 @@ module tetris_top (
     .ps2_data        (ps2_data                        ), //~
     .rd_data_valid   (kd_ps2_inst_rd_data_valid       ), //o
     .rd_data_payload (kd_ps2_inst_rd_data_payload[7:0]), //o
-    .keys_valid      (kd_ps2_inst_keys_valid[4:0]     ), //o
+    .keys_valid      (kd_ps2_inst_keys_valid[5:0]     ), //o
     .core_rst        (core_rst                        ), //i
     .core_clk        (core_clk                        )  //i
   );
+  uart_controller uart_inst (
+    .io_uart_txd     (uart_inst_io_uart_txd  ), //o
+    .io_uart_rxd     (uart_rxd               ), //i
+    .io_controlReset (temp_btns_rot_clr      ), //i
+    .io_game_start   (uart_inst_io_game_start), //o
+    .io_move_left    (uart_inst_io_move_left ), //o
+    .io_move_right   (uart_inst_io_move_right), //o
+    .io_move_down    (uart_inst_io_move_down ), //o
+    .io_rotate       (uart_inst_io_rotate    ), //o
+    .io_drop         (uart_inst_io_drop      ), //o
+    .core_clk        (core_clk               ), //i
+    .core_rst        (core_rst               )  //i
+  );
+  assign uart_txd = uart_inst_io_uart_txd;
   assign vga_vSync = tetris_core_inst_vga_vSync;
   assign vga_hSync = tetris_core_inst_vga_hSync;
   assign vga_colorEn = tetris_core_inst_vga_colorEn;
   assign vga_color_r = tetris_core_inst_vga_color_r;
   assign vga_color_g = tetris_core_inst_vga_color_g;
   assign vga_color_b = tetris_core_inst_vga_color_b;
-  assign btns_rot_clr = (tetris_core_inst_ctrl_allowed && (! tetris_core_inst_ctrl_allowed_regNext));
+  assign temp_btns_rot_clr = (tetris_core_inst_ctrl_allowed && (! tetris_core_inst_ctrl_allowed_regNext));
+  assign btns_rot_clr = temp_btns_rot_clr;
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
       tetris_core_inst_ctrl_allowed_regNext <= 1'b0;
-      temp_rotate <= 1'b0;
-      btns_btn_south_regNext <= 1'b0;
     end else begin
       tetris_core_inst_ctrl_allowed_regNext <= tetris_core_inst_ctrl_allowed;
-      btns_btn_south_regNext <= btns_btn_south;
-      if((btns_btn_south && (! btns_btn_south_regNext))) begin
-        temp_rotate <= 1'b1;
-      end
-      if(btns_rot_clr) begin
-        temp_rotate <= 1'b0;
+    end
+  end
+
+
+endmodule
+
+module uart_controller (
+  output wire          io_uart_txd,
+  input  wire          io_uart_rxd,
+  input  wire          io_controlReset,
+  output wire          io_game_start,
+  output wire          io_move_left,
+  output wire          io_move_right,
+  output wire          io_move_down,
+  output wire          io_rotate,
+  output wire          io_drop,
+  input  wire          core_clk,
+  input  wire          core_rst
+);
+  localparam NONE = 2'd0;
+  localparam EVEN = 2'd1;
+  localparam ODD = 2'd2;
+  localparam ONE = 1'd0;
+  localparam TWO = 1'd1;
+
+  wire                uartCtrl_1_io_write_ready;
+  wire                uartCtrl_1_io_read_valid;
+  wire       [7:0]    uartCtrl_1_io_read_payload;
+  wire                uartCtrl_1_io_uart_txd;
+  wire                uartCtrl_1_io_readError;
+  wire                uartCtrl_1_io_readBreak;
+  reg                 game_start_reg;
+  reg                 move_left_reg;
+  reg                 move_right_reg;
+  reg                 move_down_reg;
+  reg                 rotate_reg;
+  reg                 drop_reg;
+
+  UartCtrl uartCtrl_1 (
+    .io_config_frame_dataLength (3'b111                         ), //i
+    .io_config_frame_stop       (ONE                            ), //i
+    .io_config_frame_parity     (NONE                           ), //i
+    .io_config_clockDivider     (20'h00145                      ), //i
+    .io_write_valid             (1'b0                           ), //i
+    .io_write_ready             (uartCtrl_1_io_write_ready      ), //o
+    .io_write_payload           (8'h0                           ), //i
+    .io_read_valid              (uartCtrl_1_io_read_valid       ), //o
+    .io_read_ready              (1'b1                           ), //i
+    .io_read_payload            (uartCtrl_1_io_read_payload[7:0]), //o
+    .io_uart_txd                (uartCtrl_1_io_uart_txd         ), //o
+    .io_uart_rxd                (io_uart_rxd                    ), //i
+    .io_readError               (uartCtrl_1_io_readError        ), //o
+    .io_writeBreak              (1'b0                           ), //i
+    .io_readBreak               (uartCtrl_1_io_readBreak        ), //o
+    .core_clk                   (core_clk                       ), //i
+    .core_rst                   (core_rst                       )  //i
+  );
+  assign io_uart_txd = uartCtrl_1_io_uart_txd;
+  assign io_game_start = game_start_reg;
+  assign io_move_left = move_left_reg;
+  assign io_move_right = move_right_reg;
+  assign io_move_down = move_down_reg;
+  assign io_rotate = rotate_reg;
+  assign io_drop = drop_reg;
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      game_start_reg <= 1'b0;
+      move_left_reg <= 1'b0;
+      move_right_reg <= 1'b0;
+      move_down_reg <= 1'b0;
+      rotate_reg <= 1'b0;
+      drop_reg <= 1'b0;
+    end else begin
+      if(io_controlReset) begin
+        game_start_reg <= 1'b0;
+        move_left_reg <= 1'b0;
+        move_right_reg <= 1'b0;
+        move_down_reg <= 1'b0;
+        rotate_reg <= 1'b0;
+        drop_reg <= 1'b0;
+      end else begin
+        if(uartCtrl_1_io_read_valid) begin
+          case(uartCtrl_1_io_read_payload)
+            8'h77 : begin
+              game_start_reg <= 1'b1;
+            end
+            8'h61 : begin
+              move_left_reg <= 1'b1;
+            end
+            8'h64 : begin
+              move_right_reg <= 1'b1;
+            end
+            8'h73 : begin
+              move_down_reg <= 1'b1;
+            end
+            8'h20 : begin
+              rotate_reg <= 1'b1;
+            end
+            8'h0d : begin
+              drop_reg <= 1'b1;
+            end
+            default : begin
+            end
+          endcase
+        end
       end
     end
   end
@@ -250,7 +376,7 @@ module kd_ps2 (
   inout  wire          ps2_data,
   output wire          rd_data_valid,
   output wire [7:0]    rd_data_payload,
-  output reg  [4:0]    keys_valid,
+  output reg  [5:0]    keys_valid,
   input  wire          core_rst,
   input  wire          core_clk
 );
@@ -272,9 +398,9 @@ module kd_ps2 (
   wire                rx_fsm_wantKill;
   wire                is_fsm_in_idle;
   wire                is_fsm_exit_wait_last;
-  wire                up_tick;
-  reg                 up_valid;
-  wire                up_tick_2nd;
+  wire                start_tick;
+  reg                 start_valid;
+  wire                start_tick_2nd;
   wire                down_tick;
   reg                 down_valid;
   wire                down_tick_2nd;
@@ -284,9 +410,12 @@ module kd_ps2 (
   wire                right_tick;
   reg                 right_valid;
   wire                right_tick_2nd;
-  wire                space_tick;
-  reg                 space_valid;
-  wire                space_tick_2nd;
+  wire                rotate_tick;
+  reg                 rotate_valid;
+  wire                rotate_tick_2nd;
+  wire                drop_tick;
+  reg                 drop_valid;
+  wire                drop_tick_2nd;
   reg        [1:0]    rx_fsm_stateReg;
   reg        [1:0]    rx_fsm_stateNext;
   wire                rx_fsm_onExit_IDLE;
@@ -371,14 +500,15 @@ module kd_ps2 (
   end
 
   assign rx_fsm_wantKill = 1'b0;
-  assign up_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1d));
-  assign up_tick_2nd = (up_tick && up_valid);
+  assign start_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1d));
+  assign start_tick_2nd = (start_tick && start_valid);
   always @(*) begin
-    keys_valid[0] = up_valid;
+    keys_valid[0] = start_valid;
     keys_valid[1] = down_valid;
     keys_valid[2] = left_valid;
     keys_valid[3] = right_valid;
-    keys_valid[4] = space_valid;
+    keys_valid[4] = rotate_valid;
+    keys_valid[5] = drop_valid;
   end
 
   assign down_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h1b));
@@ -387,10 +517,12 @@ module kd_ps2 (
   assign left_tick_2nd = (left_tick && left_valid);
   assign right_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h23));
   assign right_tick_2nd = (right_tick && right_valid);
-  assign space_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h29));
-  assign space_tick_2nd = (space_tick && space_valid);
-  assign is_key_received = (|{space_tick,{right_tick,{left_tick,{down_tick,up_tick}}}});
-  assign is_key_2nd_recevied = (|{space_tick_2nd,{right_tick_2nd,{left_tick_2nd,{down_tick_2nd,up_tick_2nd}}}});
+  assign rotate_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h29));
+  assign rotate_tick_2nd = (rotate_tick && rotate_valid);
+  assign drop_tick = (ps2_inst_ps2_rddata_valid && (ps2_inst_ps2_rd_data == 8'h5a));
+  assign drop_tick_2nd = (drop_tick && drop_valid);
+  assign is_key_received = (|{drop_tick,{rotate_tick,{right_tick,{left_tick,{down_tick,start_tick}}}}});
+  assign is_key_2nd_recevied = (|{drop_tick_2nd,{rotate_tick_2nd,{right_tick_2nd,{left_tick_2nd,{down_tick_2nd,start_tick_2nd}}}}});
   assign rx_fsm_onExit_IDLE = ((rx_fsm_stateNext != IDLE) && (rx_fsm_stateReg == IDLE));
   assign rx_fsm_onExit_WAIT_BREAK = ((rx_fsm_stateNext != WAIT_BREAK) && (rx_fsm_stateReg == WAIT_BREAK));
   assign rx_fsm_onExit_WAIT_LAST = ((rx_fsm_stateNext != WAIT_LAST) && (rx_fsm_stateReg == WAIT_LAST));
@@ -403,18 +535,19 @@ module kd_ps2 (
   assign is_fsm_exit_wait_last = ((rx_fsm_stateNext != WAIT_LAST) && (rx_fsm_stateReg == WAIT_LAST));
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
-      up_valid <= 1'b0;
+      start_valid <= 1'b0;
       down_valid <= 1'b0;
       left_valid <= 1'b0;
       right_valid <= 1'b0;
-      space_valid <= 1'b0;
+      rotate_valid <= 1'b0;
+      drop_valid <= 1'b0;
       rx_fsm_stateReg <= IDLE;
     end else begin
       if(is_fsm_in_idle) begin
-        up_valid <= up_tick;
+        start_valid <= start_tick;
       end
       if(is_fsm_exit_wait_last) begin
-        up_valid <= 1'b0;
+        start_valid <= 1'b0;
       end
       if(is_fsm_in_idle) begin
         down_valid <= down_tick;
@@ -435,10 +568,16 @@ module kd_ps2 (
         right_valid <= 1'b0;
       end
       if(is_fsm_in_idle) begin
-        space_valid <= space_tick;
+        rotate_valid <= rotate_tick;
       end
       if(is_fsm_exit_wait_last) begin
-        space_valid <= 1'b0;
+        rotate_valid <= 1'b0;
+      end
+      if(is_fsm_in_idle) begin
+        drop_valid <= drop_tick;
+      end
+      if(is_fsm_exit_wait_last) begin
+        drop_valid <= 1'b0;
       end
       rx_fsm_stateReg <= rx_fsm_stateNext;
     end
@@ -535,6 +674,130 @@ module tetris_core (
   assign vga_color_g = game_display_inst_vga_color_g;
   assign vga_color_b = game_display_inst_vga_color_b;
   assign ctrl_allowed = game_logic_inst_ctrl_allowed;
+
+endmodule
+
+module UartCtrl (
+  input  wire [2:0]    io_config_frame_dataLength,
+  input  wire [0:0]    io_config_frame_stop,
+  input  wire [1:0]    io_config_frame_parity,
+  input  wire [19:0]   io_config_clockDivider,
+  input  wire          io_write_valid,
+  output reg           io_write_ready,
+  input  wire [7:0]    io_write_payload,
+  output wire          io_read_valid,
+  input  wire          io_read_ready,
+  output wire [7:0]    io_read_payload,
+  output wire          io_uart_txd,
+  input  wire          io_uart_rxd,
+  output wire          io_readError,
+  input  wire          io_writeBreak,
+  output wire          io_readBreak,
+  input  wire          core_clk,
+  input  wire          core_rst
+);
+  localparam ONE = 1'd0;
+  localparam TWO = 1'd1;
+  localparam NONE = 2'd0;
+  localparam EVEN = 2'd1;
+  localparam ODD = 2'd2;
+
+  wire                tx_io_write_ready;
+  wire                tx_io_txd;
+  wire                rx_io_read_valid;
+  wire       [7:0]    rx_io_read_payload;
+  wire                rx_io_rts;
+  wire                rx_io_error;
+  wire                rx_io_break;
+  reg        [19:0]   clockDivider_counter;
+  wire                clockDivider_tick;
+  reg                 clockDivider_tickReg;
+  reg                 io_write_throwWhen_valid;
+  wire                io_write_throwWhen_ready;
+  wire       [7:0]    io_write_throwWhen_payload;
+  `ifndef SYNTHESIS
+  reg [23:0] io_config_frame_stop_string;
+  reg [31:0] io_config_frame_parity_string;
+  `endif
+
+
+  UartCtrlTx tx (
+    .io_configFrame_dataLength (io_config_frame_dataLength[2:0]), //i
+    .io_configFrame_stop       (io_config_frame_stop           ), //i
+    .io_configFrame_parity     (io_config_frame_parity[1:0]    ), //i
+    .io_samplingTick           (clockDivider_tickReg           ), //i
+    .io_write_valid            (io_write_throwWhen_valid       ), //i
+    .io_write_ready            (tx_io_write_ready              ), //o
+    .io_write_payload          (io_write_throwWhen_payload[7:0]), //i
+    .io_cts                    (1'b0                           ), //i
+    .io_txd                    (tx_io_txd                      ), //o
+    .io_break                  (io_writeBreak                  ), //i
+    .core_clk                  (core_clk                       ), //i
+    .core_rst                  (core_rst                       )  //i
+  );
+  UartCtrlRx rx (
+    .io_configFrame_dataLength (io_config_frame_dataLength[2:0]), //i
+    .io_configFrame_stop       (io_config_frame_stop           ), //i
+    .io_configFrame_parity     (io_config_frame_parity[1:0]    ), //i
+    .io_samplingTick           (clockDivider_tickReg           ), //i
+    .io_read_valid             (rx_io_read_valid               ), //o
+    .io_read_ready             (io_read_ready                  ), //i
+    .io_read_payload           (rx_io_read_payload[7:0]        ), //o
+    .io_rxd                    (io_uart_rxd                    ), //i
+    .io_rts                    (rx_io_rts                      ), //o
+    .io_error                  (rx_io_error                    ), //o
+    .io_break                  (rx_io_break                    ), //o
+    .core_clk                  (core_clk                       ), //i
+    .core_rst                  (core_rst                       )  //i
+  );
+  `ifndef SYNTHESIS
+  always @(*) begin
+    case(io_config_frame_stop)
+      ONE : io_config_frame_stop_string = "ONE";
+      TWO : io_config_frame_stop_string = "TWO";
+      default : io_config_frame_stop_string = "???";
+    endcase
+  end
+  always @(*) begin
+    case(io_config_frame_parity)
+      NONE : io_config_frame_parity_string = "NONE";
+      EVEN : io_config_frame_parity_string = "EVEN";
+      ODD : io_config_frame_parity_string = "ODD ";
+      default : io_config_frame_parity_string = "????";
+    endcase
+  end
+  `endif
+
+  assign clockDivider_tick = (clockDivider_counter == 20'h0);
+  always @(*) begin
+    io_write_throwWhen_valid = io_write_valid;
+    io_write_ready = io_write_throwWhen_ready;
+    if(rx_io_break) begin
+      io_write_throwWhen_valid = 1'b0;
+      io_write_ready = 1'b1;
+    end
+  end
+
+  assign io_write_throwWhen_payload = io_write_payload;
+  assign io_write_throwWhen_ready = tx_io_write_ready;
+  assign io_read_valid = rx_io_read_valid;
+  assign io_read_payload = rx_io_read_payload;
+  assign io_uart_txd = tx_io_txd;
+  assign io_readError = rx_io_error;
+  assign io_readBreak = rx_io_break;
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      clockDivider_counter <= 20'h0;
+      clockDivider_tickReg <= 1'b0;
+    end else begin
+      clockDivider_tickReg <= clockDivider_tick;
+      clockDivider_counter <= (clockDivider_counter - 20'h00001);
+      if(clockDivider_tick) begin
+        clockDivider_counter <= io_config_clockDivider;
+      end
+    end
+  end
+
 
 endmodule
 
@@ -1180,6 +1443,509 @@ module logic_top (
 
   always @(posedge core_clk) begin
     playfield_inst_status_stage_payload <= playfield_inst_status_payload;
+  end
+
+
+endmodule
+
+module UartCtrlRx (
+  input  wire [2:0]    io_configFrame_dataLength,
+  input  wire [0:0]    io_configFrame_stop,
+  input  wire [1:0]    io_configFrame_parity,
+  input  wire          io_samplingTick,
+  output wire          io_read_valid,
+  input  wire          io_read_ready,
+  output wire [7:0]    io_read_payload,
+  input  wire          io_rxd,
+  output wire          io_rts,
+  output reg           io_error,
+  output wire          io_break,
+  input  wire          core_clk,
+  input  wire          core_rst
+);
+  localparam ONE = 1'd0;
+  localparam TWO = 1'd1;
+  localparam NONE = 2'd0;
+  localparam EVEN = 2'd1;
+  localparam ODD = 2'd2;
+  localparam IDLE = 3'd0;
+  localparam START = 3'd1;
+  localparam DATA = 3'd2;
+  localparam PARITY = 3'd3;
+  localparam STOP = 3'd4;
+
+  wire                io_rxd_buffercc_io_dataOut;
+  wire                temp_sampler_value;
+  wire                temp_sampler_value_1;
+  wire                temp_sampler_value_2;
+  wire                temp_sampler_value_3;
+  wire                temp_sampler_value_4;
+  wire                temp_sampler_value_5;
+  wire                temp_sampler_value_6;
+  wire                temp_when;
+  wire                temp_when_1;
+  wire                temp_when_2;
+  wire                temp_when_3;
+  wire       [2:0]    temp_when_4;
+  wire       [0:0]    temp_when_5;
+  reg                 temp_io_rts;
+  wire                sampler_synchroniser;
+  wire                sampler_samples_0;
+  reg                 sampler_samples_1;
+  reg                 sampler_samples_2;
+  reg                 sampler_samples_3;
+  reg                 sampler_samples_4;
+  reg                 sampler_value;
+  reg                 sampler_tick;
+  reg        [2:0]    bitTimer_counter;
+  reg                 bitTimer_tick;
+  reg        [2:0]    bitCounter_value;
+  reg        [6:0]    break_counter;
+  wire                break_valid;
+  reg        [2:0]    stateMachine_state;
+  reg                 stateMachine_parity;
+  reg        [7:0]    stateMachine_shifter;
+  reg                 stateMachine_validReg;
+  `ifndef SYNTHESIS
+  reg [23:0] io_configFrame_stop_string;
+  reg [31:0] io_configFrame_parity_string;
+  reg [47:0] stateMachine_state_string;
+  `endif
+
+
+  assign temp_when_2 = (stateMachine_parity == sampler_value);
+  assign temp_when_3 = (! sampler_value);
+  assign temp_when = ((sampler_tick && (! sampler_value)) && (! break_valid));
+  assign temp_when_1 = (bitCounter_value == io_configFrame_dataLength);
+  assign temp_when_5 = ((io_configFrame_stop == ONE) ? 1'b0 : 1'b1);
+  assign temp_when_4 = {2'd0, temp_when_5};
+  assign temp_sampler_value = ((((1'b0 || ((temp_sampler_value_1 && sampler_samples_1) && sampler_samples_2)) || (((temp_sampler_value_2 && sampler_samples_0) && sampler_samples_1) && sampler_samples_3)) || (((1'b1 && sampler_samples_0) && sampler_samples_2) && sampler_samples_3)) || (((1'b1 && sampler_samples_1) && sampler_samples_2) && sampler_samples_3));
+  assign temp_sampler_value_3 = (((1'b1 && sampler_samples_0) && sampler_samples_1) && sampler_samples_4);
+  assign temp_sampler_value_4 = ((1'b1 && sampler_samples_0) && sampler_samples_2);
+  assign temp_sampler_value_5 = (1'b1 && sampler_samples_1);
+  assign temp_sampler_value_6 = 1'b1;
+  assign temp_sampler_value_1 = (1'b1 && sampler_samples_0);
+  assign temp_sampler_value_2 = 1'b1;
+  (* keep_hierarchy = "TRUE" *) BufferCC_4 io_rxd_buffercc (
+    .io_dataIn  (io_rxd                    ), //i
+    .io_dataOut (io_rxd_buffercc_io_dataOut), //o
+    .core_clk   (core_clk                  ), //i
+    .core_rst   (core_rst                  )  //i
+  );
+  `ifndef SYNTHESIS
+  always @(*) begin
+    case(io_configFrame_stop)
+      ONE : io_configFrame_stop_string = "ONE";
+      TWO : io_configFrame_stop_string = "TWO";
+      default : io_configFrame_stop_string = "???";
+    endcase
+  end
+  always @(*) begin
+    case(io_configFrame_parity)
+      NONE : io_configFrame_parity_string = "NONE";
+      EVEN : io_configFrame_parity_string = "EVEN";
+      ODD : io_configFrame_parity_string = "ODD ";
+      default : io_configFrame_parity_string = "????";
+    endcase
+  end
+  always @(*) begin
+    case(stateMachine_state)
+      IDLE : stateMachine_state_string = "IDLE  ";
+      START : stateMachine_state_string = "START ";
+      DATA : stateMachine_state_string = "DATA  ";
+      PARITY : stateMachine_state_string = "PARITY";
+      STOP : stateMachine_state_string = "STOP  ";
+      default : stateMachine_state_string = "??????";
+    endcase
+  end
+  `endif
+
+  always @(*) begin
+    io_error = 1'b0;
+    case(stateMachine_state)
+      IDLE : begin
+      end
+      START : begin
+      end
+      DATA : begin
+      end
+      PARITY : begin
+        if(bitTimer_tick) begin
+          if(!temp_when_2) begin
+            io_error = 1'b1;
+          end
+        end
+      end
+      default : begin
+        if(bitTimer_tick) begin
+          if(temp_when_3) begin
+            io_error = 1'b1;
+          end
+        end
+      end
+    endcase
+  end
+
+  assign io_rts = temp_io_rts;
+  assign sampler_synchroniser = io_rxd_buffercc_io_dataOut;
+  assign sampler_samples_0 = sampler_synchroniser;
+  always @(*) begin
+    bitTimer_tick = 1'b0;
+    if(sampler_tick) begin
+      if((bitTimer_counter == 3'b000)) begin
+        bitTimer_tick = 1'b1;
+      end
+    end
+  end
+
+  assign break_valid = (break_counter == 7'h68);
+  assign io_break = break_valid;
+  assign io_read_valid = stateMachine_validReg;
+  assign io_read_payload = stateMachine_shifter;
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      temp_io_rts <= 1'b0;
+      sampler_samples_1 <= 1'b1;
+      sampler_samples_2 <= 1'b1;
+      sampler_samples_3 <= 1'b1;
+      sampler_samples_4 <= 1'b1;
+      sampler_value <= 1'b1;
+      sampler_tick <= 1'b0;
+      break_counter <= 7'h0;
+      stateMachine_state <= IDLE;
+      stateMachine_validReg <= 1'b0;
+    end else begin
+      temp_io_rts <= (! io_read_ready);
+      if(io_samplingTick) begin
+        sampler_samples_1 <= sampler_samples_0;
+      end
+      if(io_samplingTick) begin
+        sampler_samples_2 <= sampler_samples_1;
+      end
+      if(io_samplingTick) begin
+        sampler_samples_3 <= sampler_samples_2;
+      end
+      if(io_samplingTick) begin
+        sampler_samples_4 <= sampler_samples_3;
+      end
+      sampler_value <= ((((((temp_sampler_value || temp_sampler_value_3) || (temp_sampler_value_4 && sampler_samples_4)) || ((temp_sampler_value_5 && sampler_samples_2) && sampler_samples_4)) || (((temp_sampler_value_6 && sampler_samples_0) && sampler_samples_3) && sampler_samples_4)) || (((1'b1 && sampler_samples_1) && sampler_samples_3) && sampler_samples_4)) || (((1'b1 && sampler_samples_2) && sampler_samples_3) && sampler_samples_4));
+      sampler_tick <= io_samplingTick;
+      if(sampler_value) begin
+        break_counter <= 7'h0;
+      end else begin
+        if((io_samplingTick && (! break_valid))) begin
+          break_counter <= (break_counter + 7'h01);
+        end
+      end
+      stateMachine_validReg <= 1'b0;
+      case(stateMachine_state)
+        IDLE : begin
+          if(temp_when) begin
+            stateMachine_state <= START;
+          end
+        end
+        START : begin
+          if(bitTimer_tick) begin
+            stateMachine_state <= DATA;
+            if((sampler_value == 1'b1)) begin
+              stateMachine_state <= IDLE;
+            end
+          end
+        end
+        DATA : begin
+          if(bitTimer_tick) begin
+            if(temp_when_1) begin
+              if((io_configFrame_parity == NONE)) begin
+                stateMachine_state <= STOP;
+                stateMachine_validReg <= 1'b1;
+              end else begin
+                stateMachine_state <= PARITY;
+              end
+            end
+          end
+        end
+        PARITY : begin
+          if(bitTimer_tick) begin
+            if(temp_when_2) begin
+              stateMachine_state <= STOP;
+              stateMachine_validReg <= 1'b1;
+            end else begin
+              stateMachine_state <= IDLE;
+            end
+          end
+        end
+        default : begin
+          if(bitTimer_tick) begin
+            if(temp_when_3) begin
+              stateMachine_state <= IDLE;
+            end else begin
+              if((bitCounter_value == temp_when_4)) begin
+                stateMachine_state <= IDLE;
+              end
+            end
+          end
+        end
+      endcase
+    end
+  end
+
+  always @(posedge core_clk) begin
+    if(sampler_tick) begin
+      bitTimer_counter <= (bitTimer_counter - 3'b001);
+    end
+    if(bitTimer_tick) begin
+      bitCounter_value <= (bitCounter_value + 3'b001);
+    end
+    if(bitTimer_tick) begin
+      stateMachine_parity <= (stateMachine_parity ^ sampler_value);
+    end
+    case(stateMachine_state)
+      IDLE : begin
+        if(temp_when) begin
+          bitTimer_counter <= 3'b010;
+        end
+      end
+      START : begin
+        if(bitTimer_tick) begin
+          bitCounter_value <= 3'b000;
+          stateMachine_parity <= (io_configFrame_parity == ODD);
+        end
+      end
+      DATA : begin
+        if(bitTimer_tick) begin
+          stateMachine_shifter[bitCounter_value] <= sampler_value;
+          if(temp_when_1) begin
+            bitCounter_value <= 3'b000;
+          end
+        end
+      end
+      PARITY : begin
+        if(bitTimer_tick) begin
+          bitCounter_value <= 3'b000;
+        end
+      end
+      default : begin
+      end
+    endcase
+  end
+
+
+endmodule
+
+module UartCtrlTx (
+  input  wire [2:0]    io_configFrame_dataLength,
+  input  wire [0:0]    io_configFrame_stop,
+  input  wire [1:0]    io_configFrame_parity,
+  input  wire          io_samplingTick,
+  input  wire          io_write_valid,
+  output reg           io_write_ready,
+  input  wire [7:0]    io_write_payload,
+  input  wire          io_cts,
+  output wire          io_txd,
+  input  wire          io_break,
+  input  wire          core_clk,
+  input  wire          core_rst
+);
+  localparam ONE = 1'd0;
+  localparam TWO = 1'd1;
+  localparam NONE = 2'd0;
+  localparam EVEN = 2'd1;
+  localparam ODD = 2'd2;
+  localparam IDLE = 3'd0;
+  localparam START = 3'd1;
+  localparam DATA = 3'd2;
+  localparam PARITY = 3'd3;
+  localparam STOP = 3'd4;
+
+  wire       [2:0]    temp_clockDivider_counter_valueNext;
+  wire       [0:0]    temp_clockDivider_counter_valueNext_1;
+  wire                temp_when;
+  wire       [2:0]    temp_when_1;
+  wire       [0:0]    temp_when_2;
+  reg                 clockDivider_counter_willIncrement;
+  wire                clockDivider_counter_willClear;
+  reg        [2:0]    clockDivider_counter_valueNext;
+  reg        [2:0]    clockDivider_counter_value;
+  wire                clockDivider_counter_willOverflowIfInc;
+  wire                clockDivider_counter_willOverflow;
+  reg        [2:0]    tickCounter_value;
+  reg        [2:0]    stateMachine_state;
+  reg                 stateMachine_parity;
+  reg                 stateMachine_txd;
+  wire       [2:0]    temp_stateMachine_state;
+  reg                 temp_io_txd;
+  `ifndef SYNTHESIS
+  reg [23:0] io_configFrame_stop_string;
+  reg [31:0] io_configFrame_parity_string;
+  reg [47:0] stateMachine_state_string;
+  reg [47:0] temp_stateMachine_state_string;
+  `endif
+
+
+  assign temp_when = (tickCounter_value == io_configFrame_dataLength);
+  assign temp_clockDivider_counter_valueNext_1 = clockDivider_counter_willIncrement;
+  assign temp_clockDivider_counter_valueNext = {2'd0, temp_clockDivider_counter_valueNext_1};
+  assign temp_when_2 = ((io_configFrame_stop == ONE) ? 1'b0 : 1'b1);
+  assign temp_when_1 = {2'd0, temp_when_2};
+  `ifndef SYNTHESIS
+  always @(*) begin
+    case(io_configFrame_stop)
+      ONE : io_configFrame_stop_string = "ONE";
+      TWO : io_configFrame_stop_string = "TWO";
+      default : io_configFrame_stop_string = "???";
+    endcase
+  end
+  always @(*) begin
+    case(io_configFrame_parity)
+      NONE : io_configFrame_parity_string = "NONE";
+      EVEN : io_configFrame_parity_string = "EVEN";
+      ODD : io_configFrame_parity_string = "ODD ";
+      default : io_configFrame_parity_string = "????";
+    endcase
+  end
+  always @(*) begin
+    case(stateMachine_state)
+      IDLE : stateMachine_state_string = "IDLE  ";
+      START : stateMachine_state_string = "START ";
+      DATA : stateMachine_state_string = "DATA  ";
+      PARITY : stateMachine_state_string = "PARITY";
+      STOP : stateMachine_state_string = "STOP  ";
+      default : stateMachine_state_string = "??????";
+    endcase
+  end
+  always @(*) begin
+    case(temp_stateMachine_state)
+      IDLE : temp_stateMachine_state_string = "IDLE  ";
+      START : temp_stateMachine_state_string = "START ";
+      DATA : temp_stateMachine_state_string = "DATA  ";
+      PARITY : temp_stateMachine_state_string = "PARITY";
+      STOP : temp_stateMachine_state_string = "STOP  ";
+      default : temp_stateMachine_state_string = "??????";
+    endcase
+  end
+  `endif
+
+  always @(*) begin
+    clockDivider_counter_willIncrement = 1'b0;
+    if(io_samplingTick) begin
+      clockDivider_counter_willIncrement = 1'b1;
+    end
+  end
+
+  assign clockDivider_counter_willClear = 1'b0;
+  assign clockDivider_counter_willOverflowIfInc = (clockDivider_counter_value == 3'b111);
+  assign clockDivider_counter_willOverflow = (clockDivider_counter_willOverflowIfInc && clockDivider_counter_willIncrement);
+  always @(*) begin
+    clockDivider_counter_valueNext = (clockDivider_counter_value + temp_clockDivider_counter_valueNext);
+    if(clockDivider_counter_willClear) begin
+      clockDivider_counter_valueNext = 3'b000;
+    end
+  end
+
+  always @(*) begin
+    stateMachine_txd = 1'b1;
+    io_write_ready = io_break;
+    case(stateMachine_state)
+      IDLE : begin
+      end
+      START : begin
+        stateMachine_txd = 1'b0;
+      end
+      DATA : begin
+        stateMachine_txd = io_write_payload[tickCounter_value];
+        if(clockDivider_counter_willOverflow) begin
+          if(temp_when) begin
+            io_write_ready = 1'b1;
+          end
+        end
+      end
+      PARITY : begin
+        stateMachine_txd = stateMachine_parity;
+      end
+      default : begin
+      end
+    endcase
+  end
+
+  assign temp_stateMachine_state = (io_write_valid ? START : IDLE);
+  assign io_txd = temp_io_txd;
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      clockDivider_counter_value <= 3'b000;
+      stateMachine_state <= IDLE;
+      temp_io_txd <= 1'b1;
+    end else begin
+      clockDivider_counter_value <= clockDivider_counter_valueNext;
+      case(stateMachine_state)
+        IDLE : begin
+          if(((io_write_valid && (! io_cts)) && clockDivider_counter_willOverflow)) begin
+            stateMachine_state <= START;
+          end
+        end
+        START : begin
+          if(clockDivider_counter_willOverflow) begin
+            stateMachine_state <= DATA;
+          end
+        end
+        DATA : begin
+          if(clockDivider_counter_willOverflow) begin
+            if(temp_when) begin
+              if((io_configFrame_parity == NONE)) begin
+                stateMachine_state <= STOP;
+              end else begin
+                stateMachine_state <= PARITY;
+              end
+            end
+          end
+        end
+        PARITY : begin
+          if(clockDivider_counter_willOverflow) begin
+            stateMachine_state <= STOP;
+          end
+        end
+        default : begin
+          if(clockDivider_counter_willOverflow) begin
+            if((tickCounter_value == temp_when_1)) begin
+              stateMachine_state <= temp_stateMachine_state;
+            end
+          end
+        end
+      endcase
+      temp_io_txd <= (stateMachine_txd && (! io_break));
+    end
+  end
+
+  always @(posedge core_clk) begin
+    if(clockDivider_counter_willOverflow) begin
+      tickCounter_value <= (tickCounter_value + 3'b001);
+    end
+    if(clockDivider_counter_willOverflow) begin
+      stateMachine_parity <= (stateMachine_parity ^ stateMachine_txd);
+    end
+    case(stateMachine_state)
+      IDLE : begin
+      end
+      START : begin
+        if(clockDivider_counter_willOverflow) begin
+          stateMachine_parity <= (io_configFrame_parity == ODD);
+          tickCounter_value <= 3'b000;
+        end
+      end
+      DATA : begin
+        if(clockDivider_counter_willOverflow) begin
+          if(temp_when) begin
+            tickCounter_value <= 3'b000;
+          end
+        end
+      end
+      PARITY : begin
+        if(clockDivider_counter_willOverflow) begin
+          tickCounter_value <= 3'b000;
+        end
+      end
+      default : begin
+      end
+    endcase
   end
 
 
@@ -5858,6 +6624,30 @@ module seven_bag_rng (
       default : begin
       end
     endcase
+  end
+
+
+endmodule
+
+module BufferCC_4 (
+  input  wire          io_dataIn,
+  output wire          io_dataOut,
+  input  wire          core_clk,
+  input  wire          core_rst
+);
+
+  (* async_reg = "true" , altera_attribute = "-name ADV_NETLIST_OPT_ALLOWED NEVER_ALLOW" *) reg                 buffers_0;
+  (* async_reg = "true" *) reg                 buffers_1;
+
+  assign io_dataOut = buffers_1;
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      buffers_0 <= 1'b0;
+      buffers_1 <= 1'b0;
+    end else begin
+      buffers_0 <= io_dataIn;
+      buffers_1 <= buffers_0;
+    end
   end
 
 

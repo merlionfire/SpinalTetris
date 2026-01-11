@@ -169,3 +169,4 @@ out/
 # SVN
 **/.svn/
 
+/design/SSC/tetris_core/verif/vga_frames/

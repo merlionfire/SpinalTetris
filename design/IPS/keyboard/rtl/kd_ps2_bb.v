@@ -21,11 +21,11 @@ module ps2_host_rxtx  (
    wire  ps2_data_out_en,  ps2_data_out, ps2_data_in, ps2_data_in_clean; 
    wire  ps2_rx_en;
 
-   assign   ps2_clk     = ps2_clk_out ? 1'bz :  1'b0 ;  
+   //assign   ps2_clk     = ps2_clk_out ? 1'bz :  1'b0 ;  
    assign   ps2_clk_in  = ps2_clk ; 
 
-   assign   ps2_data     = ps2_data_out_en ? ps2_data_out  :  1'bz ;  
-   assign   ps2_data_in  = ps2_data; 
+   //assign   ps2_data     = ps2_data_out_en ? ps2_data_out  :  1'bz ;  
+   assign   ps2_data_in   = ps2_data; 
 
    assign   ps2_rx_en    = ps2_tx_ready; 
 `ifdef SIM
@@ -39,6 +39,7 @@ module ps2_host_rxtx  (
    );
 `endif
 
+/*
 `ifdef 0
    assign       ps2_tx_done = 1'b0;
    assign       ps2_tx_ready = 1'b0 ;
@@ -46,7 +47,7 @@ module ps2_host_rxtx  (
    assign       ps2_rd_data = 8'h00;
    assign       wireps2_rx_ready  = 1'b0 ;
 `else
-
+*/
 
 
 //   ps2_host_tx #(.NUM_OF_BITS_FOR_100US (9 ) )  ps2_host_tx_inst (
@@ -75,7 +76,7 @@ module ps2_host_rxtx  (
       .ps2_rx_ready ( ps2_rx_ready  )    
    );
 
-`endif
+//`endif
 endmodule    
 
 module ps2_host_tx (
