@@ -16,8 +16,8 @@ import scala.util.Random
 
 class lineBufferTest extends AnyFunSuite {
 
-  //var compiler : String = "verilator"
-  var compiler : String = "vcs"
+  var compiler : String = "verilator"
+  //var compiler : String = "vcs"
 
   var compiled: SimCompiled[linebuffer[Bits]] = null
 

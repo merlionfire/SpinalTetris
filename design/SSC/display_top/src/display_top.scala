@@ -43,9 +43,15 @@ case class DisplayTopConfig(
   val yBitsWidth: Int = log2Up(yWidth)
   val timingsWidth = xBitsWidth max yBitsWidth
 
-  val COLOR_NUM = 16
+  val colorSystem = ColorSystemConfig(
+    paletteName = "Teleport",
+    colorNum = 16,
+    colorW = 12
+  )
+
+  val COLOR_NUM = colorSystem.colorNum
   val COLOR_WIDTH = 4
-  val IDX_W= log2Up(COLOR_NUM)
+  val IDX_W = colorSystem.idxW
   val FB_SCALE = 1 << 1
 
   val screenCrop = screenCropConfig(
@@ -63,7 +69,7 @@ case class DisplayTopConfig(
 
   val FB_PIXELS = FB_WIDTH * FB_HEIGHT
   val FB_ADDRWIDTH =  log2Up(FB_PIXELS)
-  val FB_WORDWIDTH = log2Up(COLOR_NUM)
+  val FB_WORDWIDTH = IDX_W
   val FB_X_ADDRWIDTH = log2Up(FB_WIDTH)
   val FB_Y_ADDRWIDTH = log2Up(FB_HEIGHT)
 
@@ -106,11 +112,7 @@ case class DisplayTopConfig(
     FB_Y_ADDRWIDTH = FB_Y_ADDRWIDTH,
   )
 
-  val cpConfig = ColorPalettesConfig(
-    colorNum = COLOR_NUM,
-    colorW = 12,
-    paletteName =  "Teleport"
-  )
+  val cpConfig = ColorPalettesConfig(colorSystem)
 
   val charTileConfig = CharTileConfig(
     CHAR_NUM = 128,
@@ -130,8 +132,8 @@ case class DisplayTopConfig(
   val displayControllerConfig = DisplayControllerConfig(
     FB_X_ADDRWIDTH = log2Up(FB_WIDTH),
     FB_Y_ADDRWIDTH = log2Up(FB_HEIGHT),
-    IDX_W = 4,
-    bg_color_idx = 2,
+    IDX_W = IDX_W,
+    bg_color_idx = BG_COLOR_IDX,
     playFieldConfig = pfConfig
   )
 

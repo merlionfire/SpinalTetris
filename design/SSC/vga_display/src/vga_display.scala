@@ -1,6 +1,7 @@
 package SSC.vga_display
 
 
+import config.ColorSystemConfig
 import spinal.core._
 import spinal.lib.graphic._
 import spinal.lib.graphic.vga._
@@ -28,9 +29,20 @@ case class VgaDisplayConfig(
   val yBitsWidth: Int = log2Up(yWidth)
   val timingsWidth = xBitsWidth max yBitsWidth
 
-  val COLOR_NUM = 16
+  val spriteColorSystem = ColorSystemConfig(
+    paletteName = "Teleport",
+    colorNum = 16,
+    colorW = 12
+  )
+  val lineBufferColorSystem = ColorSystemConfig(
+    paletteName = "Sepia",
+    colorNum = spriteColorSystem.colorNum,
+    colorW = spriteColorSystem.colorW
+  )
+
+  val COLOR_NUM = spriteColorSystem.colorNum
   val COLOR_WIDTH = 4
-  val IDX_W= log2Up(COLOR_NUM)
+  val IDX_W = spriteColorSystem.idxW
   //val FB_SCALE = 1 << 1
   val FB_SCALE = 1 << 2
 
@@ -38,7 +50,7 @@ case class VgaDisplayConfig(
   val FB_HEIGHT = yWidth / FB_SCALE
   val FB_PIXELS = FB_WIDTH * FB_HEIGHT
   val FB_ADDRWIDTH =  log2Up(FB_PIXELS)
-  val FB_WORDWIDTH = log2Up(COLOR_NUM)
+  val FB_WORDWIDTH = IDX_W
   val FB_X_ADDRWIDTH = log2Up(FB_WIDTH)
   val FB_Y_ADDRWIDTH = log2Up(FB_HEIGHT)
 
@@ -81,17 +93,9 @@ case class VgaDisplayConfig(
   )
 
 
-  val lbcpConfig = ColorPalettesConfig(
-    colorNum = COLOR_NUM,
-    colorW = 12,
-    paletteName = "Sepia"
-  )
+  val lbcpConfig = ColorPalettesConfig(lineBufferColorSystem)
 
-  val cpConfig = ColorPalettesConfig(
-    colorNum = COLOR_NUM,
-    colorW = 12,
-    paletteName = "Teleport"
-  )
+  val cpConfig = ColorPalettesConfig(spriteColorSystem)
 
   val charTileConfig = CharTileConfig(
     CHAR_NUM = 128,
