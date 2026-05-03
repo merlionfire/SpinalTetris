@@ -107,10 +107,9 @@ case class DisplayTopConfig(
   )
 
   val cpConfig = ColorPalettesConfig(
-    COLOR_NUM = COLOR_NUM,
-    COLOR_W = 12,
-    Palettes_name =  "Teleport",
-    bg_color_idx = BG_COLOR_IDX
+    colorNum = COLOR_NUM,
+    colorW = 12,
+    paletteName =  "Teleport"
   )
 
   val charTileConfig = CharTileConfig(
@@ -275,7 +274,7 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
 
     val vga_sync = vga_sync_gen(rgbConfig, timingsWidth = timingsWidth + 1)
 
-    val lbcp = new color_palettes(cpConfig)
+    val lbcp = new ColorPalette(cpConfig)
 
     val lb = new linebuffer(
       Bits(FB_WORDWIDTH bit),

@@ -82,17 +82,15 @@ case class VgaDisplayConfig(
 
 
   val lbcpConfig = ColorPalettesConfig(
-    COLOR_NUM = COLOR_NUM,
-    COLOR_W = 12,
-    Palettes_name = "Sepia",
-    bg_color_idx = 2
+    colorNum = COLOR_NUM,
+    colorW = 12,
+    paletteName = "Sepia"
   )
 
   val cpConfig = ColorPalettesConfig(
-    COLOR_NUM = COLOR_NUM,
-    COLOR_W = 12,
-    Palettes_name = "Teleport",
-    bg_color_idx = 2
+    colorNum = COLOR_NUM,
+    colorW = 12,
+    paletteName = "Teleport"
   )
 
   val charTileConfig = CharTileConfig(
@@ -188,10 +186,10 @@ class vga_display( config :  VgaDisplayConfig  ) extends Component {
     val vga_sync = vga_sync_gen(rgbConfig, timingsWidth = timingsWidth + 1)
     val rb = new racing_beam(rgbConfig, racingBeamConfig)
     val sp = new sprite(spriteConfig)
-    val cp = new color_palettes(cpConfig)
+    val cp = new ColorPalette(cpConfig)
     val ascii = new char_tile(rgbConfig, charTileConfig)
 
-    val lbcp = new color_palettes(lbcpConfig)
+    val lbcp = new ColorPalette(lbcpConfig)
 
     val lb = new linebuffer(
       Bits(FB_WORDWIDTH bit),
