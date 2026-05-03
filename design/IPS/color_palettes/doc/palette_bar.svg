@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="672" height="314" viewBox="0 0 672 314">
+<rect x="0" y="0" width="100%" height="100%" fill="#111"/>
+<text x="20" y="14" fill="#f0f0f0" font-family="monospace" font-size="12">ColorPaletteCatalog bars</text>
+<text x="20" y="56" fill="#f0f0f0" font-family="monospace" font-size="14">Greyscale</text>
+<rect x="140" y="40" width="32" height="24" fill="#000" stroke="#222" stroke-width="1"/>
+<rect x="172" y="40" width="32" height="24" fill="#111" stroke="#222" stroke-width="1"/>
+<rect x="204" y="40" width="32" height="24" fill="#222" stroke="#222" stroke-width="1"/>
+<rect x="236" y="40" width="32" height="24" fill="#333" stroke="#222" stroke-width="1"/>
+<rect x="268" y="40" width="32" height="24" fill="#444" stroke="#222" stroke-width="1"/>
+<rect x="300" y="40" width="32" height="24" fill="#555" stroke="#222" stroke-width="1"/>
+<rect x="332" y="40" width="32" height="24" fill="#666" stroke="#222" stroke-width="1"/>
+<rect x="364" y="40" width="32" height="24" fill="#777" stroke="#222" stroke-width="1"/>
+<rect x="396" y="40" width="32" height="24" fill="#888" stroke="#222" stroke-width="1"/>
+<rect x="428" y="40" width="32" height="24" fill="#999" stroke="#222" stroke-width="1"/>
+<rect x="460" y="40" width="32" height="24" fill="#AAA" stroke="#222" stroke-width="1"/>
+<rect x="492" y="40" width="32" height="24" fill="#BBB" stroke="#222" stroke-width="1"/>
+<rect x="524" y="40" width="32" height="24" fill="#CCC" stroke="#222" stroke-width="1"/>
+<rect x="556" y="40" width="32" height="24" fill="#DDD" stroke="#222" stroke-width="1"/>
+<rect x="588" y="40" width="32" height="24" fill="#EEE" stroke="#222" stroke-width="1"/>
+<rect x="620" y="40" width="32" height="24" fill="#FFF" stroke="#222" stroke-width="1"/>
+<text x="20" y="94" fill="#f0f0f0" font-family="monospace" font-size="14">Sepia</text>
+<rect x="140" y="78" width="32" height="24" fill="#000" stroke="#222" stroke-width="1"/>
+<rect x="172" y="78" width="32" height="24" fill="#100" stroke="#222" stroke-width="1"/>
+<rect x="204" y="78" width="32" height="24" fill="#210" stroke="#222" stroke-width="1"/>
+<rect x="236" y="78" width="32" height="24" fill="#321" stroke="#222" stroke-width="1"/>
+<rect x="268" y="78" width="32" height="24" fill="#432" stroke="#222" stroke-width="1"/>
+<rect x="300" y="78" width="32" height="24" fill="#543" stroke="#222" stroke-width="1"/>
+<rect x="332" y="78" width="32" height="24" fill="#654" stroke="#222" stroke-width="1"/>
+<rect x="364" y="78" width="32" height="24" fill="#765" stroke="#222" stroke-width="1"/>
+<rect x="396" y="78" width="32" height="24" fill="#876" stroke="#222" stroke-width="1"/>
+<rect x="428" y="78" width="32" height="24" fill="#987" stroke="#222" stroke-width="1"/>
+<rect x="460" y="78" width="32" height="24" fill="#A98" stroke="#222" stroke-width="1"/>
+<rect x="492" y="78" width="32" height="24" fill="#BA9" stroke="#222" stroke-width="1"/>
+<rect x="524" y="78" width="32" height="24" fill="#CBA" stroke="#222" stroke-width="1"/>
+<rect x="556" y="78" width="32" height="24" fill="#DCB" stroke="#222" stroke-width="1"/>
+<rect x="588" y="78" width="32" height="24" fill="#EDC" stroke="#222" stroke-width="1"/>
+<rect x="620" y="78" width="32" height="24" fill="#FED" stroke="#222" stroke-width="1"/>
+<text x="20" y="132" fill="#f0f0f0" font-family="monospace" font-size="14">Teleport</text>
+<rect x="140" y="116" width="32" height="24" fill="#825" stroke="#222" stroke-width="1"/>
+<rect x="172" y="116" width="32" height="24" fill="#B15" stroke="#222" stroke-width="1"/>
+<rect x="204" y="116" width="32" height="24" fill="#F05" stroke="#222" stroke-width="1"/>
+<rect x="236" y="116" width="32" height="24" fill="#F52" stroke="#222" stroke-width="1"/>
+<rect x="268" y="116" width="32" height="24" fill="#FA0" stroke="#222" stroke-width="1"/>
+<rect x="300" y="116" width="32" height="24" fill="#FC1" stroke="#222" stroke-width="1"/>
+<rect x="332" y="116" width="32" height="24" fill="#FF2" stroke="#222" stroke-width="1"/>
+<rect x="364" y="116" width="32" height="24" fill="#7E2" stroke="#222" stroke-width="1"/>
+<rect x="396" y="116" width="32" height="24" fill="#0E3" stroke="#222" stroke-width="1"/>
+<rect x="428" y="116" width="32" height="24" fill="#0B4" stroke="#222" stroke-width="1"/>
+<rect x="460" y="116" width="32" height="24" fill="#085" stroke="#222" stroke-width="1"/>
+<rect x="492" y="116" width="32" height="24" fill="#19A" stroke="#222" stroke-width="1"/>
+<rect x="524" y="116" width="32" height="24" fill="#3BF" stroke="#222" stroke-width="1"/>
+<rect x="556" y="116" width="32" height="24" fill="#59C" stroke="#222" stroke-width="1"/>
+<rect x="588" y="116" width="32" height="24" fill="#87A" stroke="#222" stroke-width="1"/>
+<rect x="620" y="116" width="32" height="24" fill="#847" stroke="#222" stroke-width="1"/>
+<text x="20" y="170" fill="#f0f0f0" font-family="monospace" font-size="14">Sweetie</text>
+<rect x="140" y="154" width="32" height="24" fill="#223" stroke="#222" stroke-width="1"/>
+<rect x="172" y="154" width="32" height="24" fill="#626" stroke="#222" stroke-width="1"/>
+<rect x="204" y="154" width="32" height="24" fill="#B45" stroke="#222" stroke-width="1"/>
+<rect x="236" y="154" width="32" height="24" fill="#F85" stroke="#222" stroke-width="1"/>
+<rect x="268" y="154" width="32" height="24" fill="#FD7" stroke="#222" stroke-width="1"/>
+<rect x="300" y="154" width="32" height="24" fill="#AF7" stroke="#222" stroke-width="1"/>
+<rect x="332" y="154" width="32" height="24" fill="#4B6" stroke="#222" stroke-width="1"/>
+<rect x="364" y="154" width="32" height="24" fill="#278" stroke="#222" stroke-width="1"/>
+<rect x="396" y="154" width="32" height="24" fill="#337" stroke="#222" stroke-width="1"/>
+<rect x="428" y="154" width="32" height="24" fill="#46D" stroke="#222" stroke-width="1"/>
+<rect x="460" y="154" width="32" height="24" fill="#4AF" stroke="#222" stroke-width="1"/>
+<rect x="492" y="154" width="32" height="24" fill="#7FF" stroke="#222" stroke-width="1"/>
+<rect x="524" y="154" width="32" height="24" fill="#FFF" stroke="#222" stroke-width="1"/>
+<rect x="556" y="154" width="32" height="24" fill="#9BC" stroke="#222" stroke-width="1"/>
+<rect x="588" y="154" width="32" height="24" fill="#578" stroke="#222" stroke-width="1"/>
+<rect x="620" y="154" width="32" height="24" fill="#345" stroke="#222" stroke-width="1"/>
+<text x="20" y="208" fill="#f0f0f0" font-family="monospace" font-size="14">PICO-8</text>
+<rect x="140" y="192" width="32" height="24" fill="#000" stroke="#222" stroke-width="1"/>
+<rect x="172" y="192" width="32" height="24" fill="#235" stroke="#222" stroke-width="1"/>
+<rect x="204" y="192" width="32" height="24" fill="#825" stroke="#222" stroke-width="1"/>
+<rect x="236" y="192" width="32" height="24" fill="#085" stroke="#222" stroke-width="1"/>
+<rect x="268" y="192" width="32" height="24" fill="#B53" stroke="#222" stroke-width="1"/>
+<rect x="300" y="192" width="32" height="24" fill="#655" stroke="#222" stroke-width="1"/>
+<rect x="332" y="192" width="32" height="24" fill="#CCC" stroke="#222" stroke-width="1"/>
+<rect x="364" y="192" width="32" height="24" fill="#FFF" stroke="#222" stroke-width="1"/>
+<rect x="396" y="192" width="32" height="24" fill="#F05" stroke="#222" stroke-width="1"/>
+<rect x="428" y="192" width="32" height="24" fill="#FA0" stroke="#222" stroke-width="1"/>
+<rect x="460" y="192" width="32" height="24" fill="#FF2" stroke="#222" stroke-width="1"/>
+<rect x="492" y="192" width="32" height="24" fill="#0E3" stroke="#222" stroke-width="1"/>
+<rect x="524" y="192" width="32" height="24" fill="#3BF" stroke="#222" stroke-width="1"/>
+<rect x="556" y="192" width="32" height="24" fill="#87A" stroke="#222" stroke-width="1"/>
+<rect x="588" y="192" width="32" height="24" fill="#F7B" stroke="#222" stroke-width="1"/>
+<rect x="620" y="192" width="32" height="24" fill="#FCA" stroke="#222" stroke-width="1"/>
+<text x="20" y="246" fill="#f0f0f0" font-family="monospace" font-size="14">Fading</text>
+<rect x="140" y="230" width="32" height="24" fill="#DDA" stroke="#222" stroke-width="1"/>
+<rect x="172" y="230" width="32" height="24" fill="#CB8" stroke="#222" stroke-width="1"/>
+<rect x="204" y="230" width="32" height="24" fill="#C86" stroke="#222" stroke-width="1"/>
+<rect x="236" y="230" width="32" height="24" fill="#A55" stroke="#222" stroke-width="1"/>
+<rect x="268" y="230" width="32" height="24" fill="#745" stroke="#222" stroke-width="1"/>
+<rect x="300" y="230" width="32" height="24" fill="#544" stroke="#222" stroke-width="1"/>
+<rect x="332" y="230" width="32" height="24" fill="#556" stroke="#222" stroke-width="1"/>
+<rect x="364" y="230" width="32" height="24" fill="#687" stroke="#222" stroke-width="1"/>
+<rect x="396" y="230" width="32" height="24" fill="#9A8" stroke="#222" stroke-width="1"/>
+<rect x="428" y="230" width="32" height="24" fill="#655" stroke="#222" stroke-width="1"/>
+<rect x="460" y="230" width="32" height="24" fill="#988" stroke="#222" stroke-width="1"/>
+<rect x="492" y="230" width="32" height="24" fill="#BA9" stroke="#222" stroke-width="1"/>
+<rect x="524" y="230" width="32" height="24" fill="#886" stroke="#222" stroke-width="1"/>
+<rect x="556" y="230" width="32" height="24" fill="#BA6" stroke="#222" stroke-width="1"/>
+<rect x="588" y="230" width="32" height="24" fill="#876" stroke="#222" stroke-width="1"/>
+<rect x="620" y="230" width="32" height="24" fill="#B96" stroke="#222" stroke-width="1"/>
+<text x="20" y="296" fill="#cccccc" font-family="monospace" font-size="12">Each row is 16 entries from ColorPaletteCatalog; each block is one 12-bit RGB color (#RGB).</text>
+</svg>

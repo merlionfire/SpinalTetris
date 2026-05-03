@@ -1,6 +1,6 @@
-// Generator : SpinalHDL v1.12.2    git head : f25edbcee624ef41548345cfb91c42060e33313f
+// Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : linebuffer
-// Git hash  : 1966d2c2753e3d447f4de5f4d933de13c0cb6e6b
+// Git hash  : 01335b58a83ea585387474b2fea2371459fd1911
 
 `timescale 1ns/1ps
 
@@ -29,8 +29,8 @@ module linebuffer (
   wire                rd_data_valid;
   wire       [3:0]    rd_data_payload;
   wire       [3:0]    rd_rd_data;
-  reg                 rd_valid_regNext;
-  reg [3:0] ram [0:31];
+  reg                 rd_enable_regNext;
+  (* ram_style = "distributed" *) reg [3:0] ram [0:31];
 
   always @(posedge wr_clk) begin
     if(wr_in_valid) begin
@@ -63,7 +63,7 @@ module linebuffer (
   assign rd_valid = (1'b1 && rd_enable);
   assign rd_inc_enable = (rd_scale_cnt_willOverflowIfInc && rd_enable);
   assign rd_rd_data = ram_spinal_port1;
-  assign rd_data_valid = rd_valid_regNext;
+  assign rd_data_valid = rd_enable_regNext;
   assign rd_data_payload = rd_rd_data;
   assign rd_out_valid = rd_data_valid;
   assign rd_out_payload = rd_data_payload;
@@ -85,7 +85,7 @@ module linebuffer (
     if(rd_reset) begin
       rd_addr <= 5'h0;
       rd_enable <= 1'b0;
-      rd_valid_regNext <= 1'b0;
+      rd_enable_regNext <= 1'b0;
     end else begin
       if(rd_start) begin
         rd_enable <= 1'b1;
@@ -101,7 +101,7 @@ module linebuffer (
           rd_addr <= (rd_addr + 5'h01);
         end
       end
-      rd_valid_regNext <= rd_valid;
+      rd_enable_regNext <= rd_enable;
     end
   end
 

@@ -278,7 +278,7 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
 
     val lbcp = new ColorPalette(cpConfig)
 
-    val lb = new linebuffer(
+    val lb = new LineBuffer(
       Bits(FB_WORDWIDTH bit),
       FB_WIDTH,
       FB_SCALE,
@@ -301,12 +301,12 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
       lb.io.rd_start := offset_cnt.willOverflow
     }
 
-    // write to linebuffer colorP interface
+    // write to LineBuffer colorP interface
     lbcp.io.rd_en := lb.io.rd_out.valid
     lbcp.io.addr := lb.io.rd_out.payload.asUInt
 
 
-    // linebuffer ColorP readout
+    // LineBuffer ColorP readout
     val lb_color = lbcp.io.color
 
     val delayNum = lb.delay_num + lbcp.delay_num

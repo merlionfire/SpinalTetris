@@ -42,7 +42,7 @@ object  runSimConfig {
         .workspacePath(runDir+"/vcs")
         .withVCS(flags)
         .withFSDBWave.waveFilePrefix("verdi")
-//        .withWaveDepth(1)
+        .withWaveDepth(0)
     } else {
       throw new IllegalArgumentException(
         s"Unsupported simulator compiler: '$compiler'. Only 'verilator' and 'vcs' are supported."

@@ -4,16 +4,21 @@ import spinal.core._
 import spinal.lib._
 import utils.PathUtils
 
-class linebuffer[T<: Data]  ( val dataType: HardType[T],
-                              val depth: Int,
-                              val rd_scale : Int  = 1 ,
-                              val wrClock: ClockDomain = null ,
-                              val rdClock: ClockDomain = null ) extends Component {
+class LineBuffer[T<: Data](val dataType: HardType[T],
+                           val depth: Int,
+                           val rd_scale : Int  = 1,
+                           val wrClock: ClockDomain = null,
+                           val rdClock: ClockDomain = null ) extends Component {
 
-  //assert(isPow2(depth) & depth >=2,  "The depth of the linebuffer must be a power of 2 and equal or bigger than 2")
-  assert( isPow2(rd_scale), "rd_scae must be a power of 2" )
+  definitionName = s"linebuffer"
 
-  // One clock dealy
+  require(depth >= 2, "depth must be >= 2")
+  require(isPow2(depth), "depth must be a power of 2")
+  require(rd_scale >= 1, "rd_scale must be >= 1")
+  require(wrClock != null, "wrClock must not be null")
+  require(rdClock != null, "rdClock must not be null")
+
+  // One clock delay
   //   rd_stat  _| |__________
   //            _ _|          |_____
   //            _ _ xxxxxxxxxx _____
@@ -96,7 +101,7 @@ class linebuffer[T<: Data]  ( val dataType: HardType[T],
   println( "[INFO] sync read delay  = " + delay_num )
 }
 
-object lineBufferMain{
+object LineBufferMain{
   def main(args: Array[String]) {
     SpinalConfig(
       targetDirectory = PathUtils.getRtlOutputPath(getClass).toString,
@@ -106,7 +111,7 @@ object lineBufferMain{
       anonymSignalPrefix = "temp",
       mergeAsyncProcess = true
     ).generateVerilog(
-      gen = new linebuffer(
+      gen = new LineBuffer(
         Bits(4 bit),
         32,
         1,

@@ -195,7 +195,7 @@ class vga_display( config :  VgaDisplayConfig  ) extends Component {
 
     val lbcp = new ColorPalette(lbcpConfig)
 
-    val lb = new linebuffer(
+    val lb = new LineBuffer(
       Bits(FB_WORDWIDTH bit),
       FB_WIDTH,
       FB_SCALE,
