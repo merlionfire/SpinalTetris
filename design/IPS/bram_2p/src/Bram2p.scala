@@ -118,6 +118,46 @@ class Bram2p(config :Bram2pConfig ) extends Component {
     severity = FAILURE
   )
 
+  // ── Pattern 1: private nested BlackBox class ──────────────────────────────
+  private class WriteWhileClearAssert extends BlackBox {
+    val io = new Bundle {
+      val clk      = in Bool()
+      val rst      = in Bool()
+      val vld      = in Bool()   // external_write_during_clear
+    }
+    noIoPrefix()
+    mapCurrentClockDomain(clock = io.clk, reset = io.rst)
+
+    setInlineVerilog(
+      s"""module WriteWhileClearAssert
+         |(
+         |  input wire clk,
+         |  input wire rst,
+         |  input wire vld
+         |);
+         |`ifdef SIM
+         |  // SVA: vld must never be high
+         |  chk_no_write_during_clear : assert property (
+         |    @(posedge clk) disable iff (rst)
+         |    !vld
+         |  ) else $$error("Bram2p: external write requested while clear is active");
+         |`endif
+         |endmodule
+         |""".stripMargin
+    )
+  }
+
+  // ── Pattern 2: companion object holds factory, keeps it out of public API ──
+  object WriteWhileClearAssert {
+    def apply(vld: Bool): Unit = {
+      val bb = new WriteWhileClearAssert
+      bb.io.vld := vld
+    }
+  }
+
+  // Instantiate — single call, no leakage outside Bram2p
+  WriteWhileClearAssert(external_write_during_clear)
+
 }
 
 object Bram2pMain{

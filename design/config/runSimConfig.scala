@@ -31,7 +31,7 @@ object  runSimConfig {
 
     } else if (compiler == "vcs" ) {
       val flags = VCSFlags(
-        compileFlags = List("-verilog +v2k -ntb +define+SIM -assert failonly "), /* Useless, skip this step in dev publish */
+        compileFlags = List("-verilog +v2k -ntb +define+SIM +define+FORMAL -assert failonly "), /* Useless, skip this step in dev publish */
         //elaborateFlags = List("-V -lca +define+VCS_NO_INTEGER_RACE -debug_access+nomemcbk -no_optimize "), /* Useless, skip this step in dev publish */
         elaborateFlags = List("-V"), /* Useless, skip this step in dev publish */
         // +vcs+flush+all :  Increases the frequency of dumping both the compilation and simulation log files.
