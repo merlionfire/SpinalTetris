@@ -196,7 +196,7 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
   val core = new ClockingArea(coreClockDomain) {
 
     // Sync-write and Sync-read
-    val fb = new bram_2p(fbConfig)
+    val fb = new Bram2p(fbConfig)
 
     val draw_char_engine = new draw_char_engine(drawCharEngConfig)
 
@@ -386,10 +386,7 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
     core.fb.io.rd.addr := fb_fetch_addr
 
     // 2. Write to Line buffer interface
-    val lb_wr = Flow(Bits(FB_WORDWIDTH bit))
-    lb_wr.valid := RegNext(fb_fetch_en, False)
-    lb_wr.payload := core.fb.io.rd.data
-    vga.lb.io.wr_in << lb_wr
+    vga.lb.io.wr_in << core.fb.io.rd.data
 
     // 3. Start to draw opening figure
     core.draw_controller.io.draw_openning_start := sof

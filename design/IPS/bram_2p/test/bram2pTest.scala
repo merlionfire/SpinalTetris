@@ -11,10 +11,10 @@ import spinal.core.log2Up
 
 class bram2pTest extends AnyFunSuite {
 
-  val compiler : String = "verilator"
-  //val compiler: String = "vcs"
+  //val compiler : String = "verilator"
+  val compiler: String = "vcs"
 
-  var compiled: SimCompiled[bram_2p] = null
+  var compiled: SimCompiled[Bram2p] = null
 
   val FB_SCALE = 1 << 1
   val FB_WIDTH = 640 / FB_SCALE
@@ -35,7 +35,7 @@ class bram2pTest extends AnyFunSuite {
     .withTimeScale(1 ns)
     .withTimePrecision(10 ps)
     .compile {
-      val c = new bram_2p(fbConfig)
+      val c = new Bram2p(fbConfig)
       c
     }
 
@@ -53,6 +53,8 @@ class bram2pTest extends AnyFunSuite {
       dut.io.wr.en #= false
       dut.io.wr.addr.randomize()
       dut.io.wr.data.randomize()
+      dut.io.rd.en #= false
+      dut.io.rd.addr.randomize()
       dut.clockDomain.waitSampling(20)
 
       //--------------------------------------------------------------------
@@ -70,27 +72,24 @@ class bram2pTest extends AnyFunSuite {
       //          Read each item and checker if it is background color index
       //--------------------------------------------------------------------
       println(s"@${simTime()} Start read content of memory and checker if it is 2 ")
-      var rd_data_valid = false
       val readContentThread = fork {
         dut.io.rd.en #= true
         for (addr <- 0 until FB_PIXELS) {
           dut.io.rd.addr #= addr
           dut.clockDomain.waitSampling()
-          rd_data_valid = true
         }
         dut.io.rd.addr.randomize()
         dut.io.rd.en #= false
         dut.clockDomain.waitSampling()
-        rd_data_valid = false
 
       }
 
       var idx = 0
       dut.clockDomain.onFallingEdges {
-        if ( rd_data_valid ) {
-          val data = dut.io.rd.data.toInt
+        if (dut.io.rd.data.valid.toBoolean) {
+          val data = dut.io.rd.data.payload.toInt
           if (data != default_value) {
-            println(s"@${simTime()} [ERROR] Mem[${idx}] = ${dut.io.rd.data.toInt} is unexpected ( ${default_value} )")
+            println(s"@${simTime()} [ERROR] Mem[${idx}] = ${dut.io.rd.data.payload.toInt} is unexpected ( ${default_value} )")
             simFailure("Simulation Failed because incorrected written data ")
           }
           idx = idx + 1

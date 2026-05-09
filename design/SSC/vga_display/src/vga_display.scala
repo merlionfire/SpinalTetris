@@ -155,7 +155,7 @@ class vga_display( config :  VgaDisplayConfig  ) extends Component {
     //-------------------------------------------------------
 
 
-    val fb = new bram_2p( fbConfig )
+    val fb = new Bram2p( fbConfig )
     val draw_char_engine = new draw_char_engine(drawCharEngConfig)
     val fb_addr_gen_inst = new fb_addr_gen(fbAddrGenConfig)
 
@@ -354,14 +354,11 @@ class vga_display( config :  VgaDisplayConfig  ) extends Component {
       fb_fetch_addr.clear()
     }
 
-    val lb_wr = Flow(Bits(FB_WORDWIDTH bit))
-    lb_wr.valid := RegNext(fb_fetch_en, False)
-    lb_wr.payload := core.fb.io.rd.data
 
     core.fb.io.rd.en := fb_fetch_en
     core.fb.io.rd.addr := fb_fetch_addr
 
-    lb_wr >> vga.lb.io.wr_in
+    vga.lb.io.wr_in << core.fb.io.rd.data
   }
 
 
