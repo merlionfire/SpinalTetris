@@ -97,7 +97,7 @@ class TetrisCoreTest extends AnyFunSuite
     .addRtl(s"${xilinxPath}/unisims/${memory_model}")
     .compile {
       val c = new tetris_core(config, sim = true )  /* Test = true is ONLY for standalone DUT test */
-      c.game_display_inst.vga.pixel_debug.simPublic()
+      c.game_display_inst.vgaArea.pixel_debug.simPublic()
       c.game_logic_inst.controller_inst.io.gen_piece_en.simPublic()
       c
     }
@@ -112,7 +112,7 @@ class TetrisCoreTest extends AnyFunSuite
       val PlaceTestPatternList = testPattern  /* Pattern group selection */
         .collect{ case (1, pattern) => pattern }
 
-      FlowMonitor(dut.game_display_inst.vga.pixel_debug, dut.vgaClockDomain) { payload =>
+      FlowMonitor(dut.game_display_inst.vgaArea.pixel_debug, dut.vgaClockDomain) { payload =>
         obsFrames.addPixel(payload.r.toInt,  payload.g.toInt,  payload.b.toInt )
       }
 

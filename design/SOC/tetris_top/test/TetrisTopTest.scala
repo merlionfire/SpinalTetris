@@ -61,7 +61,7 @@ class TetrisTopTest extends AnyFunSuite {
     .compile {
       val c = new tetris_top(config)
       c.tetris_core_inst.game_display_inst.io.sof.simPublic()
-      c.tetris_core_inst.game_display_inst.vga.pixel_debug.simPublic()
+      c.tetris_core_inst.game_display_inst.vgaArea.pixel_debug.simPublic()
       c
     }
 
@@ -161,7 +161,7 @@ class TetrisTopTest extends AnyFunSuite {
        * - It is for increasing id once a new block is created.
        * ********************************************************* */
 
-      FlowMonitor(dut.tetris_core_inst.game_display_inst.vga.pixel_debug, vgaClocking) { payload =>
+      FlowMonitor(dut.tetris_core_inst.game_display_inst.vgaArea.pixel_debug, vgaClocking) { payload =>
 
         obs_vga.enqueue((payload.r.toInt, payload.g.toInt, payload.b.toInt))
       }
@@ -244,7 +244,7 @@ class TetrisTopTest extends AnyFunSuite {
        * - It is for increasing id once a new block is created.
        * ********************************************************* */
 
-      FlowMonitor(dut.tetris_core_inst.game_display_inst.vga.pixel_debug, vgaClocking) { payload =>
+      FlowMonitor(dut.tetris_core_inst.game_display_inst.vgaArea.pixel_debug, vgaClocking) { payload =>
 
         obs_vga.enqueue((payload.r.toInt, payload.g.toInt, payload.b.toInt))
       }

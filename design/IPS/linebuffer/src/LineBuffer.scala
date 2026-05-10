@@ -13,7 +13,6 @@ class LineBuffer[T<: Data](val dataType: HardType[T],
   definitionName = s"linebuffer"
 
   require(depth >= 2, "depth must be >= 2")
-  require(isPow2(depth), "depth must be a power of 2")
   require(rd_scale >= 1, "rd_scale must be >= 1")
   require(wrClock != null, "wrClock must not be null")
   require(rdClock != null, "rdClock must not be null")

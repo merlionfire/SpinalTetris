@@ -150,7 +150,7 @@ class bram2pTest extends AnyFunSuite {
         ()
       } else {
         val remaining = pattern.length - address
-        val useBurst = remaining > 1 && random.nextBoolean()
+        val useBurst = remaining > 1 && random.nextBoolean() // Last word must be single write, otherwise randomly choose burst or single
         val burstLength = if (useBurst) math.min(random.nextInt(maxBurstLength) + 1, remaining) else 1
         val mode = if (burstLength == 1) "single" else s"burst($burstLength)"
 
@@ -170,7 +170,7 @@ class bram2pTest extends AnyFunSuite {
         }
 
         idleWriteInterface(dut, cycles = 0)
-        activityLog += s"@${simTime()}ns $mode write covered addresses ${address}..${address + burstLength - 1}"
+        activityLog += s"@${simTime()}ps $mode write covered addresses ${address}..${address + burstLength - 1}"
 
         val nextAddress = address + burstLength
         if (nextAddress < pattern.length) {

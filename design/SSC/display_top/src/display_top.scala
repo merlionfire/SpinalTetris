@@ -27,10 +27,7 @@ import IPS.draw_block_engine._
 //import IPS.piece_draw_engine._
 import IPS.display_controller._
 
-case class screenCropConfig(x: Int, y: Int, width: Int, height: Int) {
-  def x_right: Int = x + width - 1
-  def y_bottom: Int = y + height - 1
-}
+case class ScreenCropConfig(x: Int, y: Int, width: Int, height: Int)
 
 case class DisplayTopConfig(
                              xWidth : Int = 640,
@@ -54,7 +51,7 @@ case class DisplayTopConfig(
   val IDX_W = colorSystem.idxW
   val FB_SCALE = 1 << 1
 
-  val screenCrop = screenCropConfig(
+  val screenCrop = ScreenCropConfig(
     offset_x,
     offset_y,
     xWidth - 2 * offset_x, yWidth - 2 * offset_y
@@ -140,6 +137,7 @@ case class DisplayTopConfig(
 }
 
 
+// Keep the legacy class name to avoid changing the generated top-level RTL module name.
 class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends Component {
 
   import config._
@@ -193,144 +191,170 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
   )
 
 
-  val core = new ClockingArea(coreClockDomain) {
+  val coreArea = new ClockingArea(coreClockDomain) {
 
-    // Sync-write and Sync-read
-    val fb = new Bram2p(fbConfig)
+    // Shared storage and draw engines in the game/core clock domain.
+    val frameBuffer = new Bram2p(fbConfig) setName("frame_buffer")
+    val drawCharEngine = new draw_char_engine(drawCharEngConfig) setName("draw_char_engine")
+    val drawBlockEngine = new draw_block_engine(drawBlockEngConfig ) setName("draw_block_engine")
+    val frameBufferAddrGen = new fb_addr_gen(fbAddrGenConfig) setName("frame_buffer_addr_gen")
+    val drawController = new display_controller(displayControllerConfig) setName("draw_controller")
 
-    val draw_char_engine = new draw_char_engine(drawCharEngConfig)
+    // In debug mode the testbench drives the primitive engines directly, so the normal
+    // game-start handshake is intentionally held low.
+    drawController.io.game_start := { if (test) False else io.game_start }
+    drawController.io.game_restart := io.game_restart
+    drawController.io.row_val := io.row_val
+    drawController.io.score_val := io.score_val
 
-    val draw_block_engine = new draw_block_engine(drawBlockEngConfig )
+    io.draw_field_done := drawController.io.draw_field_done
 
-    //val piece_draw_gen = new piece_draw_engine(pieceDrawEngConfig)
+    // Select either controller-generated requests or debug overrides once, then wire the
+    // engines explicitly. This avoids fragile string-based lookup logic and makes the
+    // command ownership obvious at each connection point.
+    private val drawCharStart = if (test) io.debug.draw_char_start else drawController.io.draw_char.start
+    private val drawCharWord = if (test) io.debug.draw_char_word else drawController.io.draw_char.word
+    private val drawCharScale = if (test) io.debug.draw_char_scale else drawController.io.draw_char.scale
+    private val drawCharColor = if (test) io.debug.draw_char_color else drawController.io.draw_char.color
 
-    val fb_addr_gen_inst = new fb_addr_gen(fbAddrGenConfig)
+    private val drawBlockStart = if (test) io.debug.draw_block_start else drawController.io.draw_block.start
+    private val drawBlockWidth = if (test) io.debug.draw_block_width else drawController.io.draw_block.width
+    private val drawBlockHeight = if (test) io.debug.draw_block_height else drawController.io.draw_block.height
+    private val drawBlockInColor = if (test) io.debug.draw_block_in_color else drawController.io.draw_block.in_color
+    private val drawBlockPatternColor = if (test) io.debug.draw_block_pat_color else drawController.io.draw_block.pat_color
+    private val drawBlockFillPattern = if (test) io.debug.draw_block_fill_pattern else drawController.io.draw_block.fill_pattern
 
+    private val drawOriginX = if (test) io.debug.draw_x_orig else drawController.io.draw_x_orig
+    private val drawOriginY = if (test) io.debug.draw_y_orig else drawController.io.draw_y_orig
 
-    val draw_controller = new display_controller(displayControllerConfig)
-    draw_controller.io.game_start := { if (test) False else io.game_start } // If in debug mode, stepup process is disable
+    drawCharEngine.io.start := drawCharStart
+    drawCharEngine.io.word := drawCharWord
+    drawCharEngine.io.scale := drawCharScale
+    drawCharEngine.io.color := drawCharColor
 
-    def muxAndConnectIOByName( bundles : ( Bundle, Bundle)) (l: List[String] )(prefix : String) = {
-      val source_io = bundles._1
-      val target_io = bundles._2
+    drawBlockEngine.io.start := drawBlockStart
+    drawBlockEngine.io.width := drawBlockWidth
+    drawBlockEngine.io.height := drawBlockHeight
+    drawBlockEngine.io.in_color := drawBlockInColor
+    drawBlockEngine.io.pat_color := drawBlockPatternColor
+    drawBlockEngine.io.fill_pattern := drawBlockFillPattern
 
-      target_io.elements
-        .filter( element  => l.contains(element._1))
-        .foreach { case (name, data ) => data := { if (test) io.debug.find( s"${prefix}_${name}") else source_io.find(name) } }
-    }
+    drawController.io.draw_char.done := drawCharEngine.io.done
+    drawController.io.draw_block.done := drawBlockEngine.io.done
 
-    muxAndConnectIOByName( draw_controller.io.draw_char  -> draw_char_engine.io )( List( "start", "word", "scale", "color"))("draw_char")
-    muxAndConnectIOByName( draw_controller.io.draw_block -> draw_block_engine.io )( List( "start", "width", "height", "in_color", "pat_color", "fill_pattern"  ))("draw_block")
-    draw_controller.io.draw_char.done := draw_char_engine.io.done
-    draw_controller.io.draw_block.done := draw_block_engine.io.done
-    draw_controller.io.game_restart := io.game_restart
+    // Only one draw engine is expected to own the framebuffer write address at a time.
+    // The running mask selects which engine's local pixel counters feed the address generator.
+    private val activeDrawEngineMask = drawCharEngine.io.is_running ## drawBlockEngine.io.is_running
+    private val drawEnginesOverlap = drawCharEngine.io.is_running && drawBlockEngine.io.is_running
 
-    // piece_draw_engine interface
-    draw_controller.io.row_val := io.row_val
-    draw_controller.io.score_val := io.score_val
+    assert(
+      !drawEnginesOverlap,
+      "display_top.core: char and block draw engines must not run simultaneously",
+      severity = FAILURE
+    )
 
-    io.draw_field_done := draw_controller.io.draw_field_done
+    frameBufferAddrGen.io.x := drawOriginX
+    frameBufferAddrGen.io.y := drawOriginY
+    frameBufferAddrGen.io.start := drawCharStart || drawBlockStart
 
-
-    val mux_sel =  draw_char_engine.io.is_running ## draw_block_engine.io.is_running
-    fb_addr_gen_inst.io.x :=  { if ( test ) io.debug.draw_x_orig   else draw_controller.io.draw_x_orig }
-    fb_addr_gen_inst.io.y :=  { if ( test ) io.debug.draw_y_orig   else draw_controller.io.draw_y_orig }
-    fb_addr_gen_inst.io.start := {
-      if (test) io.debug.draw_char_start | io.debug.draw_block_start
-      else draw_controller.io.draw_char.start | draw_controller.io.draw_block.start
-    }
-
-
-    fb_addr_gen_inst.io.h_cnt := mux_sel.mux(
-      B"01" -> draw_block_engine.io.h_cnt,
-      B"10" -> draw_char_engine.io.h_cnt,
+    frameBufferAddrGen.io.h_cnt := activeDrawEngineMask.mux(
+      B"01" -> drawBlockEngine.io.h_cnt,
+      B"10" -> drawCharEngine.io.h_cnt,
       default -> U(0,FB_X_ADDRWIDTH bits)
     )
 
-    fb_addr_gen_inst.io.v_cnt  := mux_sel.mux(
-      1 -> draw_block_engine.io.v_cnt,
-      2 -> draw_char_engine.io.v_cnt,
+    frameBufferAddrGen.io.v_cnt  := activeDrawEngineMask.mux(
+      B"01" -> drawBlockEngine.io.v_cnt,
+      B"10" -> drawCharEngine.io.v_cnt,
       default -> U(0,FB_Y_ADDRWIDTH bits)
     )
 
-    fb.io.wr.en := draw_char_engine.io.out_valid || draw_block_engine.io.out_valid
-    fb.io.wr.addr := fb_addr_gen_inst.io.out_addr
-
-    when ( draw_char_engine.io.out_valid ) {
-      fb.io.wr.data := draw_char_engine.io.out_color.asBits
-    } .otherwise {
-      fb.io.wr.data := draw_block_engine.io.out_color.asBits
+    // Character writes get priority if both valid signals rise together. The overlap assert
+    // above makes that case a design error, while the priority keeps the hardware assignment
+    // deterministic for debug/simulation.
+    frameBuffer.io.wr.en := drawCharEngine.io.out_valid || drawBlockEngine.io.out_valid
+    frameBuffer.io.wr.addr := frameBufferAddrGen.io.out_addr
+    frameBuffer.io.wr.data := drawBlockEngine.io.out_color.asBits
+    when ( drawCharEngine.io.out_valid ) {
+      frameBuffer.io.wr.data := drawCharEngine.io.out_color.asBits
     }
 
-    fb.io.clear_start := draw_controller.io.bf_clear_start
-    draw_controller.io.bf_clear_done := fb.io.clear_done
+    frameBuffer.io.clear_start := drawController.io.bf_clear_start
+    drawController.io.bf_clear_done := frameBuffer.io.clear_done
 
-
-    io.draw_done := RegNext( (draw_char_engine.io.done ||  draw_block_engine.io.done), init=False )
-    io.screen_is_ready := draw_controller.io.screen_is_ready
+    io.draw_done := RegNext(drawCharEngine.io.done || drawBlockEngine.io.done, init=False)
+    io.screen_is_ready := drawController.io.screen_is_ready
 
 
   }.setName("")
 
-  val vga = new ClockingArea(vgaClockDomain) {
+  val vgaArea = new ClockingArea(vgaClockDomain) {
 
-    val vga_sync = vga_sync_gen(rgbConfig, timingsWidth = timingsWidth + 1)
+    val vgaSync = vga_sync_gen(rgbConfig, timingsWidth = timingsWidth + 1) setName("vga_sync")
 
-    val lbcp = new ColorPalette(cpConfig)
+    val lineBufferPalette = new ColorPalette(cpConfig) setName("line_buffer_palette")
 
-    val lb = new LineBuffer(
+    val lineBuffer = new LineBuffer(
       Bits(FB_WORDWIDTH bit),
       FB_WIDTH,
       FB_SCALE,
       coreClockDomain,
       ClockDomain.current
-    )
+    ) setName("line_buffer")
 
-    val fb_scale_cnt = Counter(stateCount = (FB_SCALE), vga_sync.io.colorEn.fall(False) )
+    private val fbScaleCounter = Counter(stateCount = (FB_SCALE), vgaSync.io.colorEn.fall(False) )
 
-    val lb_load_valid = ( fb_scale_cnt === U(0) )  && vga_sync.io.vColorEn
+    // The VGA domain emits line/frame events as toggles. Crossing a toggle through BufferCC
+    // is safer than crossing a one-cycle pulse because the core clock can recover the event by
+    // edge detection even when the two domains are asynchronous.
+    private val lineFetchAllowed = ( fbScaleCounter === U(0) )  && vgaSync.io.vColorEn
+    private val lineFetchPulse = vgaSync.io.sos && lineFetchAllowed
+    val line_fetch_toggle = RegInit(False)
+    val frame_start_toggle = RegInit(False)
 
-
-    // Initiate line buffer readout
-    if ( screenCrop.x == 0) {
-      lb.io.rd_start := vga_sync.io.sol
-    } else {
-      val offset_cnt_en = RegInit(False)
-      val offset_cnt = Counter( screenCrop.x, offset_cnt_en )
-      offset_cnt_en.setWhen( vga_sync.io.sol).clearWhen(offset_cnt.willOverflowIfInc)
-      lb.io.rd_start := offset_cnt.willOverflow
+    when(lineFetchPulse) {
+      line_fetch_toggle := !line_fetch_toggle
     }
 
-    // write to LineBuffer colorP interface
-    lbcp.io.rd_en := lb.io.rd_out.valid
-    lbcp.io.addr := lb.io.rd_out.payload.asUInt
+    when(vgaSync.io.sof) {
+      frame_start_toggle := !frame_start_toggle
+    }
 
 
-    // LineBuffer ColorP readout
-    val lb_color = lbcp.io.color
+    // Start shifting pixels from the line buffer when the visible line begins. If the display
+    // is cropped horizontally, wait until the left margin is skipped before enabling readout.
+    if ( screenCrop.x == 0) {
+      lineBuffer.io.rd_start := vgaSync.io.sol
+    } else {
+      val cropOffsetCounterEnable = RegInit(False)
+      val cropOffsetCounter = Counter( screenCrop.x, cropOffsetCounterEnable )
+      cropOffsetCounterEnable.setWhen(vgaSync.io.sol).clearWhen(cropOffsetCounter.willOverflowIfInc)
+      lineBuffer.io.rd_start := cropOffsetCounter.willOverflow
+    }
 
-    val delayNum = lb.delay_num + lbcp.delay_num
+    lineBufferPalette.io.rd_en := lineBuffer.io.rd_out.valid
+    lineBufferPalette.io.addr := lineBuffer.io.rd_out.payload.asUInt
 
 
-    io.vga.hSync := Delay(vga_sync.io.hSync, delayNum)
-    io.vga.vSync := Delay(vga_sync.io.vSync, delayNum)
-    io.vga.colorEn := Delay(vga_sync.io.colorEn, delayNum)
+    private val paletteColor = lineBufferPalette.io.color
+
+    private val videoPipelineDelay = lineBuffer.delay_num + lineBufferPalette.delay_num
 
 
-    /*
-        when (  lb.io.rd_out.valid )   {
-          io.vga.color <= lb_color.payload
-        }.otherwise {
-          io.vga.color <= 0
-        }
-    */
-    val is_bg_color = RegNext(lb.io.rd_out.payload.asUInt === U(BG_COLOR_IDX), init=False)
+    io.vga.hSync := Delay(vgaSync.io.hSync, videoPipelineDelay)
+    io.vga.vSync := Delay(vgaSync.io.vSync, videoPipelineDelay)
+    io.vga.colorEn := Delay(vgaSync.io.colorEn, videoPipelineDelay)
 
-    when (  lb_color.valid  )   {
-      when ( is_bg_color ) {
+
+    // The palette returns RGB a few cycles after the line-buffer index. Delay the background
+    // comparison by one cycle so the background substitution stays aligned with the palette data.
+    private val isBackgroundIndex = RegNext(lineBuffer.io.rd_out.payload.asUInt === U(BG_COLOR_IDX), init=False)
+
+    when (  paletteColor.valid  )   {
+      when ( isBackgroundIndex ) {
         io.vga.color <= BACKGROUND_COLOR
       } otherwise  {
-        io.vga.color <= lb_color.payload
+        io.vga.color <= paletteColor.payload
       }
     }.otherwise {
       io.vga.color <= 0
@@ -341,58 +365,70 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
     pixel_debug.payload := io.vga.color
 
 
-    vga_sync.io.softReset := BufferCC( io.softRest, False )
+    vgaSync.io.softReset := BufferCC( io.softRest, False )
 
 
-    val delayNumExpected = LatencyAnalysis(vga_sync.io.colorEn, io.vga.colorEn)
-    println(f"[INFO] vga_sync.io.colorEn -> io.vga.colorEn  = ${delayNumExpected} ( Expected ) / ${delayNum} ( Calc ) ")
+    private val expectedPipelineDelay = LatencyAnalysis(vgaSync.io.colorEn, io.vga.colorEn)
+    println(f"[INFO] @[elab] vgaSync.io.colorEn -> io.vga.colorEn = ${expectedPipelineDelay} (Expected) / ${videoPipelineDelay} (Calc)")
 
 
   }.setName("")
 
 
-  val dma = new ClockingArea(coreClockDomain ) {
+  private val dmaArea = new ClockingArea(coreClockDomain ) {
 
 
-    val sos = BufferCC(vga.vga_sync.io.sos, False).rise(False)
-    val sof = BufferCC(vga.vga_sync.io.sof, False)
-    val row_valid = BufferCC(vga.lb_load_valid, False )
+    // Recover the toggle-based events from the VGA clock domain. A change on the synchronized
+    // toggle means exactly one request pulse in the core clock domain.
+    private val lineFetchToggleCore = BufferCC(vgaArea.line_fetch_toggle, False)
+    private val frameStartToggleCore = BufferCC(vgaArea.frame_start_toggle, False)
+    private val lineFetchStart = lineFetchToggleCore =/= RegNext(lineFetchToggleCore, init = False)
+    val frameStart = frameStartToggleCore =/= RegNext(frameStartToggleCore, init = False)
 
-    // Frame buffer <-> Line buffer
+    // Stream one framebuffer row into the line buffer after each recovered line-fetch event.
+    private val frameBufferFetchActive = Reg(Bool()) init(False)
 
-    // 1. Read from frameBuffer interface
-    val fb_fetch_en = Reg(Bool()) init(False)
+    private val lineFetchPixelCounter = Counter(stateCount = FB_WIDTH, frameBufferFetchActive)
+    private val frameBufferReadAddr = Counter(stateCount = FB_PIXELS, frameBufferFetchActive)
+    private val lineFetchWhileBusy = lineFetchStart && frameBufferFetchActive
 
-    val fb_fetch_en_cnt = Counter(stateCount = FB_WIDTH,fb_fetch_en)
-    val fb_fetch_addr = Counter(stateCount = FB_PIXELS, fb_fetch_en )
+    // This should never happen in a healthy pipeline: each line-fetch request must wait until
+    // the previous row burst has fully drained into the line buffer.
+    assert(
+      !lineFetchWhileBusy,
+      "display_top.dma: new line fetch started before the previous framebuffer burst completed",
+      severity = FAILURE
+    )
 
 
-    when ( row_valid ) {
-      when(sos) {
-        fb_fetch_en := True
-      }
-
-      when(fb_fetch_en_cnt.willOverflowIfInc) {
-        fb_fetch_en := False
-        fb_fetch_en_cnt.clear()
-      }
+    when(lineFetchStart) {
+      frameBufferFetchActive := True
     }
 
-    when ( sof ) {
-      fb_fetch_addr.clear()
+    when(lineFetchPixelCounter.willOverflowIfInc) {
+      frameBufferFetchActive := False
+      lineFetchPixelCounter.clear()
     }
 
-    core.fb.io.rd.en := fb_fetch_en
-    core.fb.io.rd.addr := fb_fetch_addr
+    when ( frameStart ) {
+      frameBufferReadAddr.clear()
+    }
 
-    // 2. Write to Line buffer interface
-    vga.lb.io.wr_in << core.fb.io.rd.data
+    coreArea.frameBuffer.io.rd.en := frameBufferFetchActive
+    coreArea.frameBuffer.io.rd.addr := frameBufferReadAddr
 
-    // 3. Start to draw opening figure
-    core.draw_controller.io.draw_openning_start := sof
+    vgaArea.lineBuffer.io.wr_in << coreArea.frameBuffer.io.rd.data
+
+    // The same recovered frame-start pulse resets the framebuffer reader and kicks the opening
+    // draw sequence so the splash/update happens on the first row of each new frame.
+    if ( test ) {
+      coreArea.drawController.io.draw_openning_start := False // Freeze FSM when testing each draw engine in isolation.
+    } else {
+      coreArea.drawController.io.draw_openning_start := frameStart
+    }
   }
 
-  io.sof := dma.sof
+  io.sof := dmaArea.frameStart
 
 
 }
@@ -400,7 +436,7 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
 
 
 object displayTopMain{
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     SpinalConfig(
       targetDirectory = PathUtils.getRtlOutputPath(getClass,middlePath = "design/SSC").toString,
       verbose = true,
