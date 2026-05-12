@@ -68,7 +68,7 @@ class DisplayTopTest extends AnyFunSuite {
       val c = new display_top( config,debugMode)
       c.vgaArea.pixel_debug.simPublic()
       c.vgaArea.vgaSync.io.sof.simPublic()
-      c.coreArea.drawController.setup_fsm.fsm_debug.simPublic()
+      c.coreArea.drawController.setupRenderer.fsmDebug.simPublic()
       c
     }
 
@@ -598,14 +598,14 @@ class DisplayTopTest extends AnyFunSuite {
       dut.coreClockDomain.waitSampling()
 
       // Customize code
-      dut.coreClockDomain.waitSamplingWhere(dut.coreArea.drawController.setup_fsm.fsm_debug.toInt == 4    )  /* WAIT_GAME_START */
+      dut.coreClockDomain.waitSamplingWhere(dut.coreArea.drawController.setupRenderer.fsmDebug.toInt == 4    )  /* WAIT_GAME_START */
 
       dut.coreClockDomain.waitSampling(10)
       dut.io.game_start #= true
       dut.coreClockDomain.waitSampling(10)
       dut.io.game_start #= false
       // Customize code
-      dut.coreClockDomain.waitSamplingWhere(dut.coreArea.drawController.setup_fsm.fsm_debug.toInt == 11   ) /* DRAW_SCORE */
+      dut.coreClockDomain.waitSamplingWhere(dut.coreArea.drawController.setupRenderer.fsmDebug.toInt == 9   ) /* DRAW_SCORE */
 
       // Testing Piece draw
 
@@ -691,7 +691,7 @@ class DisplayTopTest extends AnyFunSuite {
 
       dut.vgaClockDomain.waitSampling(10)
       // Customize code
-      dut.coreClockDomain.waitSamplingWhere(dut.coreArea.drawController.setup_fsm.fsm_debug.toInt == 4    )  /* WAIT_GAME_START */
+      dut.coreClockDomain.waitSamplingWhere(dut.coreArea.drawController.setupRenderer.fsmDebug.toInt == 4    )  /* WAIT_GAME_START */
 
       dut.coreClockDomain.waitSamplingWhere(dut.io.sof.toBoolean)
       dut.io.game_start #= true

@@ -1,14 +1,14 @@
 package IPS.display_controller
 
-import IPS.string_draw_engine.StringDrawEngConfig
 import spinal.core._
 import spinal.lib._
 import spinal.lib.fsm._
 import config._
 import utils.PathUtils
-
-import scala.collection.mutable
 import IPS.bcd._
+
+import scala.collection.immutable.ListMap
+import scala.language.postfixOps
 
 case class DisplayControllerConfig(
                                  IDX_W : Int = 4,
@@ -18,7 +18,7 @@ case class DisplayControllerConfig(
                                  playFieldConfig : TetrisPlayFeildConfig,
                                  scoreBitsWidth : Int = 10
                                ) {
-  case class charInfo(
+  case class CharInfo(
                        x_orig : Int,
                        y_orig : Int,
                        width  : Int,
@@ -27,560 +27,527 @@ case class DisplayControllerConfig(
                      )
 
   import playFieldConfig._
-  val stringList = mutable.LinkedHashMap(
-    // Content -> x,_orig, y_orig, width(include margin) , scale, in_color
-    "Tetris"  -> charInfo(24,  66, 46, 2,  6 ),
-    "Score"   -> charInfo(210, 23, 12, 0,  6 )
+
+  val stringList: ListMap[String, CharInfo] = ListMap(
+    // Content -> x_orig, y_orig, width(include margin), scale, color
+    "Tetris" -> CharInfo(24, 66, 46, 2, 6),
+    "Score"  -> CharInfo(210, 23, 12, 0, 6)
   )
 
-
-  val keyLengths = stringList.keys.map(_.length).toList
-
-  //val offset = keyLengths.scanLeft(0)(_ + _).dropRight(1)
-  val offset =  stringList.keys zip ( keyLengths.scanLeft(0)(_ + _).dropRight(1) )  toMap
-
+  val keyLengths: List[Int] = stringList.keys.map(_.length).toList
+  val offset: Map[String, Int] = stringList.keys.zip(keyLengths.scanLeft(0)(_ + _).dropRight(1)).toMap  // offset = Map( "Tetris" -> 0, "Score" -> 6)
 
   val score_orig_x = 214
   val score_orig_y = 80
-
   val score_scale = 0
   val score_fg_color = 6
-
   val score_width = 12
 
-//  val wallInfoLsit = List(
-//    //x, y , width, height, in_color, pattern_colorm, fill_pattern
-//    List(x_orig, y_orig, wall_width, wall_height, 0, 15, 3),   /* Left Wall */
-//    List(getRightWallOrig._1, getRightWallOrig._2, wall_width, wall_height, 0, 15, 3), /*Right Wall */
-//    List(getBaseOrig._1, getBaseOrig._2, base_width, base_height, 0, 15, 3), /* Base */
-//    List(190, 10, 2, 222, 15, 14 , 0 )  /* Split */
-//  )
-
-  // width and height is minus by 1 is to match the max value of width and height counter value
-  val wallInfoLsit = List(
-    //x, y , width, height, in_color, pattern_colorm, fill_pattern
-    List(x_orig, y_orig, wall_width-1, wall_height-1, 0, 15, 3),   /* Left Wall */
-    List(getRightWallOrig._1, getRightWallOrig._2, wall_width-1, wall_height-1, 0, 15, 3), /*Right Wall */
-    List(getBaseOrig._1, getBaseOrig._2, base_width-1, base_height-1, 0, 15, 3), /* Base */
-    List(190, 10, 2, 222, 15, 14 , 0 )  /* Split */
+  // width and height are stored as N-1 because draw_block_engine expects inclusive end counts.
+  val wallInfoList: List[List[Int]] = List(
+    List(x_orig, y_orig, wall_width - 1, wall_height - 1, 0, 15, 3),
+    List(getRightWallOrig._1, getRightWallOrig._2, wall_width - 1, wall_height - 1, 0, 15, 3),
+    List(getBaseOrig._1, getBaseOrig._2, base_width - 1, base_height - 1, 0, 15, 3),
+    List(190, 10, 2, 222, 15, 14, 0)
   )
 
-
-
-
-
-  def wallRomInit( bitLengths : List[Int] ) = wallInfoLsit.map { row =>  /* First word is stored at the least position */
-    val (packedWord, _) = (row zip bitLengths).foldLeft(BigInt(0), 0) { case ((accWord, currentShift), (value, bitLength)) =>
-      println(f"[DEBUG] value = 0x${value}%x , currentShift = ${currentShift}%d, accWord = 0x${accWord}%x")
-      val shiftedValue = BigInt(value) << currentShift
-      (accWord | shiftedValue, currentShift + bitLength)
-    }
-    println(f"0x${packedWord}%x ")
-    packedWord
+  def wallRomInit(bitLengths: List[Int]): List[BigInt] = wallInfoList.map { row =>
+    (row zip bitLengths).foldLeft((BigInt(0), 0)) {
+      case ((accWord, currentShift), (value, bitLength)) =>
+        (accWord | (BigInt(value) << currentShift), currentShift + bitLength)
+    }._1
   }
 }
 
 
-class draw_char_if( colorBitsWidth : Int) extends Bundle with IMasterSlave {
-  val start = Bool()
-  val word  = UInt (7 bit)
-  val scale = UInt (3 bits)
-  val color = UInt ( colorBitsWidth bits)
-  val done  = Bool ()
-
+class draw_char_if(colorBitsWidth: Int) extends Bundle with IMasterSlave {
+  val start: Bool = Bool()
+  val word: UInt = UInt(7 bit)
+  val scale: UInt = UInt(3 bits)
+  val color: UInt = UInt(colorBitsWidth bits)
+  val done: Bool = Bool()
 
   override def asMaster(): Unit = {
-    out(start, word, scale, color )
+    out(start, word, scale, color)
     in(done)
   }
 
   override def asSlave(): Unit = {
-    in(start, word, scale, color )
+    in(start, word, scale, color)
     out(done)
   }
 }
 
-class draw_block_if( colorBitsWidth : Int) extends Bundle with IMasterSlave {
-  val start = Bool() default False
-  val width  = UInt (8 bits) default 0
-  val height = UInt (8 bits) default 0
-  val in_color =  UInt (colorBitsWidth bits) default 0
-  val pat_color =  UInt (colorBitsWidth bits) default 0
-  val fill_pattern = UInt (2 bits) default 0
-  val done = Bool() default( False )
+class draw_block_if(colorBitsWidth: Int) extends Bundle with IMasterSlave {
+  val start: Bool = Bool() default False
+  val width: UInt = UInt(8 bits) default 0
+  val height: UInt = UInt(8 bits) default 0
+  val in_color: UInt = UInt(colorBitsWidth bits) default 0
+  val pat_color: UInt = UInt(colorBitsWidth bits) default 0
+  val fill_pattern: UInt = UInt(2 bits) default 0
+  val done: Bool = Bool() default False
 
   override def asMaster(): Unit = {
-    out(start, width, height, in_color, pat_color, fill_pattern  )
+    out(start, width, height, in_color, pat_color, fill_pattern)
     in(done)
   }
 
   override def asSlave(): Unit = {
-    in(start, width,height, in_color, pat_color, fill_pattern  )
+    in(start, width, height, in_color, pat_color, fill_pattern)
     out(done)
   }
-
-  def getList = List( width, height, in_color,pat_color, fill_pattern )
 }
 
 
+case class DisplayCharCommand(colorBitsWidth: Int, xWidth: Int, yWidth: Int) extends Bundle {
+  val start: Bool = Bool()
+  val x_orig: UInt = UInt(xWidth bits)
+  val y_orig: UInt = UInt(yWidth bits)
+  val word: UInt = UInt(7 bit)
+  val scale: UInt = UInt(3 bits)
+  val color: UInt = UInt(colorBitsWidth bits)
+}
+
+case class DisplayBlockCommand(colorBitsWidth: Int, xWidth: Int, yWidth: Int) extends Bundle {
+  val start: Bool = Bool()
+  val x_orig: UInt = UInt(xWidth bits)
+  val y_orig: UInt = UInt(yWidth bits)
+  val width: UInt = UInt(8 bits)
+  val height: UInt = UInt(8 bits)
+  val in_color: UInt = UInt(colorBitsWidth bits)
+  val pat_color: UInt = UInt(colorBitsWidth bits)
+  val fill_pattern: UInt = UInt(2 bits)
+
+  def payloadFields: List[UInt] = List(x_orig, y_orig, width, height, in_color, pat_color, fill_pattern)
+}
+
+private object BlockFillPattern {
+  val SOLID = 0
+}
 
 
-class display_controller ( config : DisplayControllerConfig )  extends Component  {
+class display_controller(config: DisplayControllerConfig) extends Component {
 
   import config._
   import config.playFieldConfig._
 
-  val io = new Bundle {
-    val game_restart  = in Bool()
-    val draw_openning_start = in Bool()
-    val game_start = in Bool()
-    val row_val =  slave Flow( Bits(colBlocksNum bits) )
-    val score_val = slave Flow (UInt( scoreBitsWidth bits))
-    val screen_is_ready = out Bool()
+  val io: Bundle {
+    val game_restart: Bool
+    val draw_openning_start: Bool
+    val game_start: Bool
+    val row_val: Flow[Bits]
+    val score_val: Flow[UInt]
+    val screen_is_ready: Bool
+    val draw_char: draw_char_if
+    val draw_block: draw_block_if
+    val draw_x_orig: UInt
+    val draw_y_orig: UInt
+    val draw_field_done: Bool
+    val bf_clear_start: Bool
+    val bf_clear_done: Bool
+  } = new Bundle {
+    val game_restart: Bool = in(Bool())
+    val draw_openning_start: Bool = in(Bool())
+    val game_start: Bool = in(Bool())
+    val row_val: Flow[Bits] = slave(Flow(Bits(colBlocksNum bits)))
+    val score_val: Flow[UInt] = slave(Flow(UInt(scoreBitsWidth bits)))
+    val screen_is_ready: Bool = out(Bool())
 
-    val draw_char = master( new draw_char_if(IDX_W))
-    val draw_block = master( new draw_block_if(IDX_W))
+    val draw_char: draw_char_if = master(new draw_char_if(IDX_W))
+    val draw_block: draw_block_if = master(new draw_block_if(IDX_W))
 
-    val draw_x_orig = out UInt (FB_X_ADDRWIDTH bits) default 0
-    val draw_y_orig = out UInt (FB_Y_ADDRWIDTH bits) default 0
+    val draw_x_orig: UInt = out(UInt(FB_X_ADDRWIDTH bits)) default 0
+    val draw_y_orig: UInt = out(UInt(FB_Y_ADDRWIDTH bits)) default 0
 
-    val draw_field_done = out Bool()
-    val bf_clear_start = out Bool()
-    val bf_clear_done = in Bool()
+    val draw_field_done: Bool = out(Bool())
+    val bf_clear_start: Bool = out(Bool())
+    val bf_clear_done: Bool = in(Bool())
   }
 
   noIoPrefix()
 
+  private def clearCharCommand(cmd: DisplayCharCommand): Unit = {
+    cmd.start := False
+    cmd.x_orig := 0
+    cmd.y_orig := 0
+    cmd.word := 0
+    cmd.scale := 0
+    cmd.color := 0
+  }
 
-  val update_score = new Area {
+  private def clearBlockCommand(cmd: DisplayBlockCommand): Unit = {
+    cmd.start := False
+    cmd.x_orig := 0
+    cmd.y_orig := 0
+    cmd.width := 0
+    cmd.height := 0
+    cmd.in_color := 0
+    cmd.pat_color := 0
+    cmd.fill_pattern := 0
+  }
 
-    val bcd_inst = new bcd(binaryWidth = scoreBitsWidth )
+  private def driveTextCommand(
+      cmd: DisplayCharCommand,
+      xOrig: UInt,
+      yOrig: UInt,
+      scale: UInt,
+      color: UInt,
+      word: UInt
+  ): Unit = {
+    //clearCharCommand(cmd)
+    cmd.start := True
+    cmd.x_orig := xOrig
+    cmd.y_orig := yOrig
+    cmd.scale := scale
+    cmd.color := color
+    cmd.word := word
+  }
 
-    bcd_inst.io.data_in_bin << io.score_val
+  io.screen_is_ready := False
+  io.draw_field_done := False
+  io.bf_clear_start := False
 
-    val score = RegNextWhen( bcd_inst.io.data_out_dec.payload, bcd_inst.io.data_out_dec.valid, init=B(0))
+  private val runtimeRenderEnable: Bool = Bool()
+  private val runtimeRenderBusy: Bool = Bool()
+  private val runtimeRenderStart: Bool = Bool()
+  private val clearPendingPlayfieldRender: Bool = Bool()
+
+  runtimeRenderEnable := False
+  runtimeRenderBusy := False
+  runtimeRenderStart := False
+  clearPendingPlayfieldRender := False
+
+  private val setupCharDone: Bool = Bool()
+  private val runtimeScoreCharDone: Bool = Bool()
+  private val setupBlockDone: Bool = Bool()
+  private val runtimeFieldBlockDone: Bool = Bool()
 
 
-    // score_vec(0) store the left-most digital in decimal
-    val score_vec = Vec.fill(bcd_inst.bcdDigits)(UInt(4 bits))
+  private val scoreCache: Area {
+    val digits: Vec[UInt]
+  } = new Area {
+    private val bcdInst = new bcd(binaryWidth = scoreBitsWidth)
 
-    for ( i <- 0 until( bcd_inst.bcdDigits ) ) {
-        val digitMsb = bcd_inst.bcdWidth - 1 - i * 4
-        val a = score( digitMsb downto ( digitMsb-3) ).asBits
-        score_vec(i) := a.asUInt
+    bcdInst.io.data_in_bin << io.score_val
+
+    private val scoreReg: Bits = Reg(Bits(bcdInst.bcdWidth bits)) init 0
+    when(bcdInst.io.data_out_dec.valid) {
+      scoreReg := bcdInst.io.data_out_dec.payload
     }
 
+    // BCD 9A2B -> scoreReg : 1001 1010 0010 1011 (4 bits per digit)
+    // digits(0) = 9
+    // digits(1) = A,
+    // digits(2) = 2,
+    // digits(3) = B
+    val digits: Vec[UInt] = Vec.fill(bcdInst.bcdDigits)(UInt(4 bits))
 
-    val digital_cnt = Counter(stateCount = ( bcd_inst.bcdDigits ) , io.row_val.valid )
+    for (digitIndex <- 0 until bcdInst.bcdDigits) {
+      val digitMsb = bcdInst.bcdWidth - 1 - digitIndex * 4
+      digits(digitIndex) := scoreReg(digitMsb downto digitMsb - 3).asUInt
+    }
+  }.setName("score_cache")
 
+  private class TextRomArea extends Area {
+    private val rom: Mem[UInt] = Mem(UInt(7 bits), keyLengths.sum)
+    rom.addAttribute("ram_style", "distributed")
 
-    val itf = new draw_char_if(IDX_W)
-    itf.scale := score_scale
-    itf.color := score_fg_color
-    itf.word := U(3, 3 bit ) @@ score_vec(digital_cnt.value)  // Covert to Ascii
-    itf.start := False
+    private val romInitialContent: Seq[BigInt] = stringList.keys.toSeq.flatMap { text =>
+      text.map(char => BigInt(char.toInt))
+    }
+    rom.initBigInt(romInitialContent)
 
-  }.setName("")
+    val charCounter: Counter = Counter(rom.wordCount)
+    val word: UInt = rom.readAsync(charCounter)
 
+    def isLast(text: String): Bool = {
+      charCounter === (offset(text) + text.length - 1)
+    }
+  }
 
-  val update_playfield = new Area {
+  private val textRom: TextRomArea = new TextRomArea().setName("text_rom")
 
-    // Sync-write and Sync-read
-    val memory = Mem(Bits(colBlocksNum bits), rowBlocksNum)
+  private val wallRom: Area {
+    val wallCounter: Counter
+    val command: DisplayBlockCommand
+  } = new Area {
+    val wallCounter: Counter = Counter(wallInfoList.size)
+    val command: DisplayBlockCommand = DisplayBlockCommand(IDX_W, FB_X_ADDRWIDTH, FB_Y_ADDRWIDTH)
+    command.start := True //False
+
+    private val bitLengths: List[Int] = command.payloadFields.map(_.getBitsWidth)
+    private val wordWidth: Int = bitLengths.sum
+
+    private val wallMem: Mem[Bits] = Mem(Bits(wordWidth bits), wallInfoList.size)
+    wallMem.initBigInt(wallRomInit(bitLengths))
+
+    private val blockInfo: Bits = wallMem.readAsync(wallCounter)
+
+    def unpackFields(fields: List[UInt]): Int = fields match {
+      case Nil => 0
+      case head :: tail =>
+        val offsetAfterTail = unpackFields(tail)
+        head.assignFromBits(blockInfo(offsetAfterTail, head.getBitsWidth bits))
+        offsetAfterTail + head.getBitsWidth
+    }
+
+    unpackFields(command.payloadFields.reverse)
+  }.setName("wall_rom")
+
+  private val pendingPlayfieldRender: Bool = RegInit(False)
+
+  private val playfieldStorage: Area {
+    val memory: Mem[Bits]
+  } = new Area {
+    val memory: Mem[Bits] = Mem(Bits(colBlocksNum bits), rowBlocksNum)
     memory.addAttribute("ram_style", "distributed")
 
-    //*****************************************************
-    //              Write
-    //*****************************************************
-    val wr_row_cnt = Counter(stateCount = rowBlocksNum, io.row_val.valid )
+    val writeRowCounter = Counter(stateCount = rowBlocksNum, inc = io.row_val.valid)
 
     memory.write(
-      address = wr_row_cnt,
-      data    = io.row_val.payload,
-      enable  = io.row_val.valid
+      address = writeRowCounter,
+      data = io.row_val.payload,
+      enable = io.row_val.valid
     )
 
-    //*****************************************************
-    //              Read
-    //*****************************************************
+    // Functional fix: keep the existing no-stall burst contract, but store the completion as an explicit pending request.
+    private val rowBurstComplete: Bool = io.row_val.valid.fall(False)
 
-    val rd_en = Bool()
-    val row_cnt_inc = Bool()
-    val col_cnt_inc = Bool()
-    val col_cnt = Counter(stateCount = colBlocksNum, col_cnt_inc  )
-    val row_cnt = Counter(stateCount = rowBlocksNum, row_cnt_inc  )
+    when(clearPendingPlayfieldRender) {
+      pendingPlayfieldRender := False
+    } otherwise {
+      when(rowBurstComplete) {
+        pendingPlayfieldRender := True
+      } otherwise {
+        when(runtimeRenderStart) {
+          pendingPlayfieldRender := False
+        }
+      }
+    }
+  }.setName("playfield_storage")
 
+  val runtimeRenderer = new Area {
+    val blockCommand: DisplayBlockCommand = DisplayBlockCommand(IDX_W, FB_X_ADDRWIDTH, FB_Y_ADDRWIDTH)
+    val scoreCommand: DisplayCharCommand = DisplayCharCommand(IDX_W, FB_X_ADDRWIDTH, FB_Y_ADDRWIDTH)
+    clearBlockCommand(blockCommand)
+    clearCharCommand(scoreCommand)
 
+    private val readEnable: Bool = Bool()
+    readEnable := False
+    readEnable.addAttribute("keep")
 
-    val row_value = memory.readSync(
-      address = row_cnt,
-      enable = rd_en
+    private val rowCounter: Counter = Counter(stateCount = rowBlocksNum)
+    private val colCounter: Counter = Counter(stateCount = colBlocksNum)
+    private val scoreDigitCounter: Counter = Counter(stateCount = scoreCache.digits.length)
+
+    private val rowValue: Bits = playfieldStorage.memory.readSync(
+      address = rowCounter,
+      enable = readEnable
     )
 
-    rd_en.addAttribute("keep")
+    private val rowBits: Bits = Reg(Bits(colBlocksNum bits)) init 0
+    private val fieldX: UInt = Reg(UInt(FB_X_ADDRWIDTH bits)) init 0
+    private val fieldY: UInt = Reg(UInt(FB_Y_ADDRWIDTH bits)) init 0
+    private val scoreX: UInt = Reg(UInt(FB_X_ADDRWIDTH bits)) init 0
 
-
-    val load = Bool()
-    val shift_en = Bool()
-    val row_bits = cloneOf(row_value ) setAsReg()
-    //val row_bits_next = row_bits |>> 1
-    val row_bits_next = row_bits |<< 1
-//    val gen_start = io.row_val.valid.fall(False)
-
-    // CCT temp begin
-    // Update FrameBuffer with playfield must be at intra-frame. So SOF is treated as start trigger of updating FrameBuffer
-    val data_ready = io.row_val.valid.fall(False)
-    val wait_date_readout = RegInit(False)
-    when ( data_ready  ) {
-      wait_date_readout := True
-    } .elsewhen (io.draw_openning_start ) {  /* draw_openning_start is sof of VGA */
-      wait_date_readout := False
-    }
-    val gen_start = wait_date_readout.fall(False)
-
-    // CCT temp end
-
-    when ( load ) {
-      row_bits := row_value
-    } .elsewhen( shift_en ) {
-      row_bits := row_bits_next
+    private val fieldColor: UInt = U(piece_bg_color, IDX_W bits)
+    when(rowBits.msb) {
+      fieldColor := piece_ft_color
     }
 
-    val ft_color = U(piece_bg_color, IDX_W bits)
-//    when (row_bits.lsb ) {
-    when (row_bits.msb ) {
-      ft_color  := piece_ft_color
-    }
+    val fsm: StateMachine = new StateMachine {
 
+      lazy val IDLE: State = makeInstantEntry()
 
-    val x = RegInit( U(0,  FB_X_ADDRWIDTH bits) )
-    val y = RegInit( U(0,  FB_Y_ADDRWIDTH bits) )
-
-    val x_next = x + U(block_len)
-    val y_next = y + U(block_len)
-
-
-    when (gen_start ) {
-      x := U(getFieldOrig._1)
-      y := U(getFieldOrig._2)
-    }
-
-    when( io.draw_field_done ) {
-      x := U(0)
-      y := U(0)
-    } .otherwise {
-
-      when(col_cnt.willOverflow) {
-        x := U(getFieldOrig._1)
-      }.elsewhen(col_cnt_inc) {
-        x := x_next
-      }
-
-      when(row_cnt_inc) {
-        y := y_next
-      }
-
-
-
-    }
-
-    val itf = new draw_block_if(IDX_W)
-
-    itf.start := False
-    itf.in_color := ft_color
-//    itf.width := U( block_len-1 ) // -1 because draw_block_engine.io.width = N-1 where N is total width
-//    itf.height:= U( block_len-1 ) // -1 because draw_block_engine.io.width = N-1 where N is total width
-//    itf.fill_pattern := U(0) // solid
-//    itf.pat_color := U(0)
-    itf.width := U( block_len-2 ) // -1 because draw_block_engine.io.width = N-1 where N is total width
-    itf.height:= U( block_len-2 ) // -1 because draw_block_engine.io.width = N-1 where N is total width
-        itf.fill_pattern := U(0) // solid
-        itf.pat_color := U(bg_color_idx)
-    io.draw_field_done := False
-
-
-
-
-
-
-
-
-
-    val fsm = new StateMachine {
-
-      rd_en := False
-      load := False
-      col_cnt_inc := False
-      row_cnt_inc := False
-      shift_en := False
-
-      val IDLE = makeInstantEntry()
       IDLE.whenIsActive {
-        when(gen_start ) {
-          goto(FETCH)
+        when(pendingPlayfieldRender && io.draw_openning_start && runtimeRenderEnable) {
+          // Functional fix: start only from a latched pending request so the frame pulse is consumed exactly once.
+          runtimeRenderStart := True
+          rowCounter.clear()
+          colCounter.clear()
+          scoreDigitCounter.clear()
+          fieldX := U(getFieldOrig._1, FB_X_ADDRWIDTH bits)
+          fieldY := U(getFieldOrig._2, FB_Y_ADDRWIDTH bits)
+          goto(FETCH_ROW)
         }
       }
 
-      val FETCH : State = new State {
+      val FETCH_ROW: State = new State {
         whenIsActive {
-          rd_en := True
-          goto(DATA_READY)
+          runtimeRenderBusy := True
+          readEnable := True
+          goto(LOAD_ROW)
         }
       }
 
-      val DATA_READY : State = new State {
+      val LOAD_ROW: State = new State {
         whenIsActive {
-          load := True
-          goto(DRAW)
+          runtimeRenderBusy := True
+          rowBits := rowValue
+          goto(DRAW_FIELD_BLOCK)
         }
       }
 
-      val DRAW : State = new State {
+      val DRAW_FIELD_BLOCK: State = new State {
         whenIsActive {
-          itf.start := True
-          goto(WAIT_DONE)
+          runtimeRenderBusy := True
+          //clearBlockCommand(blockCommand)
+          blockCommand.start := True
+          blockCommand.x_orig := fieldX
+          blockCommand.y_orig := fieldY
+          blockCommand.width := U(block_len - 2)
+          blockCommand.height := U(block_len - 2)
+          blockCommand.in_color := fieldColor
+          blockCommand.pat_color := U(bg_color_idx)
+          blockCommand.fill_pattern := U(BlockFillPattern.SOLID)
+          goto(WAIT_FIELD_BLOCK_DONE)
         }
-
       }
 
-      val WAIT_DONE : State = new State {
+      val WAIT_FIELD_BLOCK_DONE: State = new State {
         whenIsActive {
-          when(itf.done) {
-            when(row_cnt.willOverflowIfInc && col_cnt.willOverflowIfInc ) {
-              row_cnt_inc := True
-              col_cnt_inc := True
-//              io.draw_field_done := True
-              goto(PRE_DRAW_SCORE)
+          runtimeRenderBusy := True
+          when(runtimeFieldBlockDone) {
+            when(rowCounter.willOverflowIfInc && colCounter.willOverflowIfInc) {
+              scoreDigitCounter.clear()
+              scoreX := U(score_orig_x, FB_X_ADDRWIDTH bits)
+              goto(DRAW_SCORE_DIGIT)
             } otherwise {
-              col_cnt_inc := True
-              when(col_cnt.willOverflowIfInc) {
-                row_cnt_inc := True
-                goto(FETCH)
+              when(colCounter.willOverflowIfInc) {
+                colCounter.clear()
+                rowCounter.increment()
+                fieldX := U(getFieldOrig._1, FB_X_ADDRWIDTH bits)
+                fieldY := fieldY + U(block_len)
+                goto(FETCH_ROW)
               } otherwise {
-                shift_en := True
-                goto(DRAW)
+                colCounter.increment()
+                rowBits := rowBits |<< 1
+                fieldX := fieldX + U(block_len)
+                goto(DRAW_FIELD_BLOCK)
               }
             }
           }
         }
       }
 
-      val PRE_DRAW_SCORE : State = new State {
+      val DRAW_SCORE_DIGIT: State = new State {
         whenIsActive {
-            x := score_orig_x
-            y := score_orig_y
-            goto(DRAW_DIGIT)
+          runtimeRenderBusy := True
+          driveTextCommand(
+            cmd = scoreCommand,
+            xOrig = scoreX,
+            yOrig = U(score_orig_y, FB_Y_ADDRWIDTH bits),
+            scale = U(score_scale, 3 bits),
+            color = U(score_fg_color, IDX_W bits),
+            word = U(3, 3 bits) @@ scoreCache.digits(scoreDigitCounter.value)
+          )
+          goto(WAIT_SCORE_DIGIT_DONE)
         }
       }
 
-      val DRAW_DIGIT : State = new State {
-
+      val WAIT_SCORE_DIGIT_DONE: State = new State {
         whenIsActive {
-          update_score.itf.start := True
-          goto(WAIT_DRAW_DIGIT_DONE)
-
-        }
-      }
-
-      val WAIT_DRAW_DIGIT_DONE : State = new State {
-
-        whenIsActive {
-          when(update_score.itf.done) {
-            when ( update_score.digital_cnt.willOverflowIfInc ) {
-              goto(POST_DRAW_SCORE)
-            } .otherwise {
-              goto(DRAW_DIGIT)
+          runtimeRenderBusy := True
+          when(runtimeScoreCharDone) {
+            when(scoreDigitCounter.willOverflowIfInc) {
+              goto(COMPLETE)
+            } otherwise {
+              scoreDigitCounter.increment()
+              scoreX := scoreX + U(score_width)
+              goto(DRAW_SCORE_DIGIT)
             }
-
           }
         }
-
-        onExit {
-          x := x + score_width
-          update_score.digital_cnt.increment()
-        }
-
       }
 
-      val POST_DRAW_SCORE : State = new State {
+      val COMPLETE: State = new State {
         whenIsActive {
-          update_score.digital_cnt.clear()
           io.draw_field_done := True
           goto(IDLE)
-
         }
       }
-
     }
+  }.setName("runtime_renderer")
 
 
-  } .setName("")
+val setupRenderer = new Area {
+    val charCommand: DisplayCharCommand = DisplayCharCommand(IDX_W, FB_X_ADDRWIDTH, FB_Y_ADDRWIDTH)
+    val blockCommand: DisplayBlockCommand = DisplayBlockCommand(IDX_W, FB_X_ADDRWIDTH, FB_Y_ADDRWIDTH)
+    clearCharCommand(charCommand)
+    clearBlockCommand(blockCommand)
 
+    private val textX: UInt = Reg(UInt(FB_X_ADDRWIDTH bits)) init 0
+    private val textY: UInt = Reg(UInt(FB_Y_ADDRWIDTH bits)) init 0
+    private val textScale: UInt = Reg(UInt(3 bits)) init 0
+    private val textColor: UInt = Reg(UInt(IDX_W bits)) init 0
+    private val gameIsRunning: Bool = RegInit(False)
 
-
-
-  val allStrings = new Area {
-
-    val itf = new draw_char_if(IDX_W)
-    val rom = Mem(UInt(7 bits), keyLengths.sum )
-    rom.addAttribute("ram_style", "distributed")
-
-    val romInitialContent = scala.collection.mutable.ArrayBuffer[BigInt]()
-
-    stringList.keys.foreach { keyString =>
-      romInitialContent ++=  keyString.map{ char => BigInt(char.toInt.toHexString, 16) }
-    }
-
-    romInitialContent.foreach( a => println(s"$a"))
-    rom.initBigInt(romInitialContent)
-
-    val cnt = Counter(rom.wordCount)
-
-    val isLast = offset.map {
-      case (key, value) =>
-        println(s"key = $key, value = $value, offset = ${value + key.length - 1}")
-        key -> (cnt === (value + key.length - 1))
-    }
-
-    itf.word := rom.readAsync(cnt)
-
-  } .setName("")
-
-  val wall = new Area {
-
-    /*
-
-    val outputList = List(x,y, io.draw_block.width, io.draw_block.height, io.draw_block.in_color, io.draw_block.pat_color, io.draw_block.fill_pattern)
-*/
-    val x = cloneOf(io.draw_x_orig)
-    val y = cloneOf(io.draw_y_orig)
-    val itf = new draw_block_if( IDX_W )
-    val outputList = x :: y :: itf.getList
-
-    val bitLengths = outputList.map( _.getBitsWidth )
-
-    val wordWidth = bitLengths.sum
-
-    val wall_rom = Mem(Bits(wordWidth bits), wallInfoLsit.size)
-
-    wall_rom.initBigInt( wallRomInit(bitLengths) )
-
-    val cnt = Counter(wallInfoLsit.size)
-
-    val blockInfo = wall_rom.readAsync(cnt)
-
-    //  Unpack and connect
-    def getOffsetAfterConnect(l: List[UInt]): Int = l match {
-      case Nil => 0
-      case h :: l =>
-        val offset = getOffsetAfterConnect(l)
-        //h := blockInfo(offset, h.getBitsWidth bits)  // word extraction and connect
-        h.assignFromBits( blockInfo(offset, h.getBitsWidth bits) )
-        h.getBitsWidth + offset
-    }
-
-    getOffsetAfterConnect(outputList.reverse)
-
-  } .setName("")
-
-
-
-  val setup_fsm = new Area {
-    def genOutputReg[T <: Data](that: T, isReg: Boolean = true): T = {
-      val ret = cloneOf(that)
-      if (isReg) ret setAsReg()
-      that := ret
-      ret
-    }
-
-    /*
-    val x = genOutputReg(io.draw_x_orig)
-    val y = genOutputReg(io.draw_y_orig)
-    */
-    val x = RegInit( U(0,  FB_X_ADDRWIDTH bits) )
-    val y = RegInit( U(0,  FB_Y_ADDRWIDTH bits) )
-
-
-
-    val scale = genOutputReg(allStrings.itf.scale)
-    val color = genOutputReg(allStrings.itf.color)
-
-    val start_char_draw = genOutputReg(allStrings.itf.start,  false)
-    val start_block_draw = genOutputReg(wall.itf.start,       false)
-
-    def load_chars_info(str: String, colorRm: Boolean = false) = {
-      x := stringList(str).x_orig
-      y := stringList(str).y_orig
-      scale := stringList(str).scale
-      if (colorRm) { // Remove it by painting background in_color
-        color := bg_color_idx
+    def loadTextInfo(text: String, useBackgroundColor: Boolean = false): Unit = {
+      textX := U(stringList(text).x_orig, FB_X_ADDRWIDTH bits)
+      textY := U(stringList(text).y_orig, FB_Y_ADDRWIDTH bits)
+      textScale := U(stringList(text).scale, 3 bits)
+      if (useBackgroundColor) {
+        textColor := U(bg_color_idx, IDX_W bits)
       } else {
-        color := stringList(str).color
+        textColor := U(stringList(text).color, IDX_W bits)
       }
     }
 
-
-    //val logoHasRm = RegInit(False)
-    val game_is_running = RegInit(False)
-
-    val fsm = new StateMachine {
-
-      start_char_draw := False
-      start_block_draw := False
-      io.screen_is_ready := False
-      io.bf_clear_start := False
-      allStrings.cnt.willIncrement := False
-      update_score.digital_cnt.willIncrement := False
-
-      val SETUP_IDLE = makeInstantEntry()
+    private val fsm: StateMachine = new StateMachine {
+      lazy val SETUP_IDLE: State = makeInstantEntry()
 
       SETUP_IDLE.whenIsActive {
-        game_is_running := False
         when(io.draw_openning_start) {
+          textRom.charCounter.clear()
+          wallRom.wallCounter.clear()
           goto(CLEAN_SCREEN)
         }
-
       }
 
-      val CLEAN_SCREEN : State = new State {
+      val CLEAN_SCREEN: State = new State {
         onEntry {
           io.bf_clear_start := True
         }
 
         whenIsActive {
-          when ( io.bf_clear_done ) {
-            when ( game_is_running )  {
-              load_chars_info("Score")
-              allStrings.cnt.load( offset("Score") )  // Reset offset index to "Score"
-              goto(START_DRAW_STRING)
-            } .otherwise {
-              load_chars_info("Tetris")
-              goto(START_DRAW_OPEN)
+          when(io.bf_clear_done) {
+            wallRom.wallCounter.clear()
+            when(gameIsRunning) {
+              textRom.charCounter.load(offset("Score"))
+              loadTextInfo("Score")
+              goto(DRAW_STATIC_TEXT)
+            } otherwise {
+              textRom.charCounter.clear()
+              loadTextInfo("Tetris")
+              goto(DRAW_OPENING_TEXT)
             }
-
           }
-
         }
       }
 
-      val START_DRAW_OPEN: State = new State {
+      val DRAW_OPENING_TEXT: State = new State {
         whenIsActive {
-          start_char_draw := True
-          goto(WAIT_DRAW_OPEN_DONE)
+          driveTextCommand(
+            cmd = charCommand,
+            xOrig = textX,
+            yOrig = textY,
+            scale = textScale,
+            color = textColor,
+            word = textRom.word
+          )
+          goto(WAIT_OPENING_TEXT_DONE)
         }
-
       }
 
-      val WAIT_DRAW_OPEN_DONE: State = new State {
-
+      val WAIT_OPENING_TEXT_DONE: State = new State {
         whenIsActive {
-          when(allStrings.itf.done) {
-            allStrings.cnt.increment()
-            when(allStrings.isLast("Tetris")) {
+          when(setupCharDone) {
+            when(textRom.isLast("Tetris")) {
               goto(WAIT_GAME_START)
             } otherwise {
-              x := x + stringList("Tetris").width
-              goto(START_DRAW_OPEN)
+              textRom.charCounter.increment()
+              textX := textX + U(stringList("Tetris").width)
+              goto(DRAW_OPENING_TEXT)
             }
           }
         }
@@ -588,146 +555,172 @@ class display_controller ( config : DisplayControllerConfig )  extends Component
 
       val WAIT_GAME_START: State = new State {
         whenIsActive {
-          /*
-          when(logoHasRm) {
-            load_chars_info("Score")
-            logoHasRm := False
-            goto(START_DRAW_STRING)
-          }.elsewhen(io.game_start) {
-            load_chars_info("Tetris", true)
-            logoHasRm := True
-            allStrings.cnt.clear()
-            goto(START_DRAW_OPEN)
-          }
-*/
-          when (io.game_start) {
-            game_is_running := True
+          when(io.game_start) {
+            gameIsRunning := True
             goto(CLEAN_SCREEN)
           }
-
-        }
-
-      }
-
-      val START_DRAW_STRING: State = new State {
-        whenIsActive {
-          start_char_draw := True
-          goto(WAIT_DRAW_STRING_DONE)
         }
       }
 
-      val WAIT_DRAW_STRING_DONE: State = new State {
-
+      val DRAW_STATIC_TEXT: State = new State {
         whenIsActive {
-          when(allStrings.itf.done) {
-            allStrings.cnt.increment()
-            when(allStrings.isLast("Score")) {
-              goto(WAIT_DRAW_SCORE)
+          driveTextCommand(
+            cmd = charCommand,
+            xOrig = textX,
+            yOrig = textY,
+            scale = textScale,
+            color = textColor,
+            word = textRom.word
+          )
+          goto(WAIT_STATIC_TEXT_DONE)
+        }
+      }
+
+      val WAIT_STATIC_TEXT_DONE: State = new State {
+        whenIsActive {
+          when(setupCharDone) {
+            when(textRom.isLast("Score")) {
+              goto(DRAW_WALL)
             } otherwise {
-              x := x + stringList("Score").width
-              goto(START_DRAW_STRING)
+              textRom.charCounter.increment()
+              textX := textX + U(stringList("Score").width)
+              goto(DRAW_STATIC_TEXT)
             }
           }
         }
       }
 
-
-      val WAIT_DRAW_SCORE: State = new State {
-
+      val DRAW_WALL: State = new State {
         whenIsActive {
-          goto(PRE_DRAW_WALL)
-        }
-
-      }
-
-      val PRE_DRAW_WALL: State = new State {
-        whenIsActive {
-          x := wall.x
-          y := wall.y
-          goto(START_DRAW_WALL)
-        }
-
-      }
-
-      val START_DRAW_WALL: State = new State {
-        whenIsActive {
-          start_block_draw := True
-          goto(WAIT_DRAW_WALL_DONE)
+          blockCommand := wallRom.command
+//          blockCommand.start := True
+          goto(WAIT_WALL_DONE)
         }
       }
 
-      val WAIT_DRAW_WALL_DONE: State = new State {
-
+      val WAIT_WALL_DONE: State = new State {
         whenIsActive {
-          when(wall.itf.done) {
-            wall.cnt.increment()
-            when(wall.cnt.willOverflow) {
-              goto(DRAW_SCORE)
+          when(setupBlockDone) {
+            when(wallRom.wallCounter.willOverflowIfInc) {
+              goto(RUNNING)
             } otherwise {
-              goto(PRE_DRAW_WALL)
+              wallRom.wallCounter.increment()
+              goto(DRAW_WALL)
             }
           }
         }
-
       }
 
-      val DRAW_SCORE: State = new State {
-
+      val RUNNING: State = new State {
         whenIsActive {
+          runtimeRenderEnable := True
           io.screen_is_ready := True
-          x := 0
-          y := 0
 
-          when ( io.game_restart ) {
-            goto(CLEAN_SCREEN)
+          when(io.game_restart) {
+            // Functional fix: drop stale playfield requests on restart so UI redraw cannot replay old field data.
+            clearPendingPlayfieldRender := True
+            when(runtimeRenderBusy) {
+              goto(WAIT_RUNTIME_IDLE)
+            } otherwise {
+              goto(CLEAN_SCREEN)
+            }
           }
         }
       }
 
+      val WAIT_RUNTIME_IDLE: State = new State {
+        whenIsActive {
+          clearPendingPlayfieldRender := True
+          when(!runtimeRenderBusy) {
+            goto(CLEAN_SCREEN)
+          }
+        }
+      }
     }
 
-    val fsm_debug = Bits()
-
+    val fsmDebug = Bits()
     fsm.postBuild {
-      fsm_debug := fsm.stateReg.asBits
+      fsmDebug := fsm.stateReg.asBits
     }
-  } .setName("stepup")
 
 
-  // connect draw_char_engine interface
-//  io.draw_char <> allStrings.itf
+  }.setName("setup_renderer")
 
-  io.draw_char.start :=  allStrings.itf.start || update_score.itf.start
-  io.draw_char.scale :=  allStrings.itf.start  ? allStrings.itf.scale | update_score.itf.scale
-  io.draw_char.color :=  allStrings.itf.start  ? allStrings.itf.color | update_score.itf.color
-  io.draw_char.word  :=  allStrings.itf.start  ? allStrings.itf.word  | update_score.itf.word
+  private val selectedCharCommand: DisplayCharCommand = DisplayCharCommand(IDX_W, FB_X_ADDRWIDTH, FB_Y_ADDRWIDTH)
+  private val selectedBlockCommand: DisplayBlockCommand = DisplayBlockCommand(IDX_W, FB_X_ADDRWIDTH, FB_Y_ADDRWIDTH)
+  clearCharCommand(selectedCharCommand)
+  clearBlockCommand(selectedBlockCommand)
 
-  allStrings.itf.done   := io.draw_char.done
-  update_score.itf.done := io.draw_char.done
+  private val charStartCollision: Bool = setupRenderer.charCommand.start && runtimeRenderer.scoreCommand.start
+  private val blockStartCollision: Bool = setupRenderer.blockCommand.start && runtimeRenderer.blockCommand.start
+  private val drawStartCollision: Bool =
+    setupRenderer.charCommand.start && (setupRenderer.blockCommand.start || runtimeRenderer.blockCommand.start) ||
+    runtimeRenderer.scoreCommand.start && (setupRenderer.blockCommand.start || runtimeRenderer.blockCommand.start)
 
+  assert(!charStartCollision, "display_controller: setup and runtime score char commands must not start together", severity = FAILURE)
+  assert(!blockStartCollision, "display_controller: setup and runtime block commands must not start together", severity = FAILURE)
+  assert(!drawStartCollision, "display_controller: char and block engines must not receive start in the same cycle", severity = FAILURE)
 
+  when(setupRenderer.charCommand.start) {
+    selectedCharCommand := setupRenderer.charCommand
+  } otherwise {
+    when(runtimeRenderer.scoreCommand.start) {
+      selectedCharCommand := runtimeRenderer.scoreCommand
+    }
+  }
 
-  // connect draw_block_engine interface
-  io.draw_block.start :=  update_playfield.itf.start  || wall.itf.start
-  io.draw_block.width := update_playfield.itf.start  ? update_playfield.itf.width | wall.itf.width
-  io.draw_block.height := update_playfield.itf.start  ? update_playfield.itf.height | wall.itf.height
-  io.draw_block.in_color := update_playfield.itf.start  ? update_playfield.itf.in_color | wall.itf.in_color
-  io.draw_block.pat_color := update_playfield.itf.start ? update_playfield.itf.pat_color|  wall.itf.pat_color  // ?
-  io.draw_block.fill_pattern := update_playfield.itf.start  ? update_playfield.itf.fill_pattern | wall.itf.fill_pattern
-  update_playfield.itf.done := io.draw_block.done
-  wall.itf.done := io.draw_block.done
+  when(setupRenderer.blockCommand.start) {
+    selectedBlockCommand := setupRenderer.blockCommand
+  } otherwise {
+    when(runtimeRenderer.blockCommand.start) {
+      selectedBlockCommand := runtimeRenderer.blockCommand
+    }
+  }
 
-  // connect fb_addr interface
-  io.draw_x_orig := update_playfield.x |  setup_fsm.x
-  io.draw_y_orig := update_playfield.y |  setup_fsm.y
+  private val charOwnerIsSetup: Bool = RegInit(False)
+  when(selectedCharCommand.start) {
+    charOwnerIsSetup := setupRenderer.charCommand.start
+  }
 
+  private val blockOwnerIsSetup: Bool = RegInit(False)
+  when(selectedBlockCommand.start) {
+    blockOwnerIsSetup := setupRenderer.blockCommand.start
+  }
 
+  setupCharDone := io.draw_char.done && charOwnerIsSetup
+  runtimeScoreCharDone := io.draw_char.done && !charOwnerIsSetup
+  setupBlockDone := io.draw_block.done && blockOwnerIsSetup
+  runtimeFieldBlockDone := io.draw_block.done && !blockOwnerIsSetup
+
+  io.draw_char.start := selectedCharCommand.start
+  io.draw_char.word := selectedCharCommand.word
+  io.draw_char.scale := selectedCharCommand.scale
+  io.draw_char.color := selectedCharCommand.color
+
+  io.draw_block.start := selectedBlockCommand.start
+  io.draw_block.width := selectedBlockCommand.width
+  io.draw_block.height := selectedBlockCommand.height
+  io.draw_block.in_color := selectedBlockCommand.in_color
+  io.draw_block.pat_color := selectedBlockCommand.pat_color
+  io.draw_block.fill_pattern := selectedBlockCommand.fill_pattern
+
+  io.draw_x_orig := 0
+  io.draw_y_orig := 0
+  when(selectedCharCommand.start) {
+    io.draw_x_orig := selectedCharCommand.x_orig
+    io.draw_y_orig := selectedCharCommand.y_orig
+  } otherwise {
+    when(selectedBlockCommand.start) {
+      io.draw_x_orig := selectedBlockCommand.x_orig
+      io.draw_y_orig := selectedBlockCommand.y_orig
+    }
+  }
 }
 
-object displayControllerMain{
-  def main(args: Array[String]) {
+object displayControllerMain {
+  def main(args: Array[String]): Unit = {
     val FB_WIDTH = 320
-    val FB_HEIGHT  = 240
+    val FB_HEIGHT = 240
     val pfConfig = TetrisPlayFeildConfig(
       block_len = 9,
       wall_width = 9,
@@ -740,7 +733,6 @@ object displayControllerMain{
     val config = DisplayControllerConfig(
       FB_X_ADDRWIDTH = log2Up(FB_WIDTH),
       FB_Y_ADDRWIDTH = log2Up(FB_HEIGHT),
-      IDX_W = 4,
       bg_color_idx = 2,
       playFieldConfig = pfConfig
     )
@@ -754,7 +746,7 @@ object displayControllerMain{
       mergeAsyncProcess = true,
       inlineRom = true
     ).generateVerilog(
-      gen = new display_controller((config))
+      gen = new display_controller(config)
     )
   }
 }
