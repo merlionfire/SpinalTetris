@@ -419,12 +419,12 @@ class display_top ( config :  DisplayTopConfig, test : Boolean = false ) extends
 
     vgaArea.lineBuffer.io.wr_in << coreArea.frameBuffer.io.rd.data
 
-    // The same recovered frame-start pulse resets the framebuffer reader and kicks the opening
-    // draw sequence so the splash/update happens on the first row of each new frame.
+    // The same recovered frame-start pulse resets the framebuffer reader and kicks the
+    // controller draw sequence so setup and runtime updates both start on a frame boundary.
     if ( test ) {
-      coreArea.drawController.io.draw_openning_start := False // Freeze FSM when testing each draw engine in isolation.
+      coreArea.drawController.io.frame_start := False // Freeze FSM when testing each draw engine in isolation.
     } else {
-      coreArea.drawController.io.draw_openning_start := frameStart
+      coreArea.drawController.io.frame_start := frameStart
     }
   }
 

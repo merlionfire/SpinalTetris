@@ -131,23 +131,9 @@ class display_controller(config: DisplayControllerConfig) extends Component {
   import config._
   import config.playFieldConfig._
 
-  val io: Bundle {
-    val game_restart: Bool
-    val draw_openning_start: Bool
-    val game_start: Bool
-    val row_val: Flow[Bits]
-    val score_val: Flow[UInt]
-    val screen_is_ready: Bool
-    val draw_char: draw_char_if
-    val draw_block: draw_block_if
-    val draw_x_orig: UInt
-    val draw_y_orig: UInt
-    val draw_field_done: Bool
-    val bf_clear_start: Bool
-    val bf_clear_done: Bool
-  } = new Bundle {
+  val io = new Bundle {
     val game_restart: Bool = in(Bool())
-    val draw_openning_start: Bool = in(Bool())
+    val frame_start: Bool = in(Bool())
     val game_start: Bool = in(Bool())
     val row_val: Flow[Bits] = slave(Flow(Bits(colBlocksNum bits)))
     val score_val: Flow[UInt] = slave(Flow(UInt(scoreBitsWidth bits)))
@@ -248,7 +234,7 @@ class display_controller(config: DisplayControllerConfig) extends Component {
     }
   }.setName("score_cache")
 
-  private class TextRomArea extends Area {
+  private val textRom  = new Area {
     private val rom: Mem[UInt] = Mem(UInt(7 bits), keyLengths.sum)
     rom.addAttribute("ram_style", "distributed")
 
@@ -263,9 +249,7 @@ class display_controller(config: DisplayControllerConfig) extends Component {
     def isLast(text: String): Bool = {
       charCounter === (offset(text) + text.length - 1)
     }
-  }
-
-  private val textRom: TextRomArea = new TextRomArea().setName("text_rom")
+  }.setName("text_rom")
 
   private val wallRom: Area {
     val wallCounter: Counter
@@ -360,8 +344,8 @@ class display_controller(config: DisplayControllerConfig) extends Component {
       lazy val IDLE: State = makeInstantEntry()
 
       IDLE.whenIsActive {
-        when(pendingPlayfieldRender && io.draw_openning_start && runtimeRenderEnable) {
-          // Functional fix: start only from a latched pending request so the frame pulse is consumed exactly once.
+        when(pendingPlayfieldRender && io.frame_start && runtimeRenderEnable) {
+          // Functional fix: start only from a latched pending request so the frame-start pulse is consumed exactly once.
           runtimeRenderStart := True
           rowCounter.clear()
           colCounter.clear()
@@ -470,7 +454,7 @@ class display_controller(config: DisplayControllerConfig) extends Component {
   }.setName("runtime_renderer")
 
 
-val setupRenderer = new Area {
+  val setupRenderer = new Area {
     val charCommand: DisplayCharCommand = DisplayCharCommand(IDX_W, FB_X_ADDRWIDTH, FB_Y_ADDRWIDTH)
     val blockCommand: DisplayBlockCommand = DisplayBlockCommand(IDX_W, FB_X_ADDRWIDTH, FB_Y_ADDRWIDTH)
     clearCharCommand(charCommand)
@@ -497,7 +481,7 @@ val setupRenderer = new Area {
       lazy val SETUP_IDLE: State = makeInstantEntry()
 
       SETUP_IDLE.whenIsActive {
-        when(io.draw_openning_start) {
+        when(io.frame_start) {
           textRom.charCounter.clear()
           wallRom.wallCounter.clear()
           goto(CLEAN_SCREEN)

@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : display_top
-// Git hash  : d046b1bfda1238e3a50254a6d27aea75dfbebd19
+// Git hash  : 368ea5849555199e0e9a28d11425797e410264a4
 
 `timescale 1ns/1ps
 
@@ -202,7 +202,7 @@ module display_top (
   );
   display_controller draw_controller (
     .game_restart            (game_restart                                ), //i
-    .draw_openning_start     (dmaArea_frameStart                          ), //i
+    .frame_start             (1'b0                                        ), //i
     .game_start              (1'b0                                        ), //i
     .row_val_valid           (row_val_valid                               ), //i
     .row_val_payload         (row_val_payload[9:0]                        ), //i
@@ -840,7 +840,7 @@ endmodule
 
 module display_controller (
   input  wire          game_restart,
-  input  wire          draw_openning_start,
+  input  wire          frame_start,
   input  wire          game_start,
   input  wire          row_val_valid,
   input  wire [9:0]    row_val_payload,
@@ -859,891 +859,1005 @@ module display_controller (
   output wire [3:0]    draw_block_pat_color,
   output wire [1:0]    draw_block_fill_pattern,
   input  wire          draw_block_done,
-  output wire [8:0]    draw_x_orig,
-  output wire [7:0]    draw_y_orig,
+  output reg  [8:0]    draw_x_orig,
+  output reg  [7:0]    draw_y_orig,
   output reg           draw_field_done,
   output reg           bf_clear_start,
   input  wire          bf_clear_done,
   input  wire          core_clk,
   input  wire          core_rst
 );
-  localparam IDLE = 4'd0;
-  localparam FETCH = 4'd1;
-  localparam DATA_READY = 4'd2;
-  localparam DRAW = 4'd3;
-  localparam WAIT_DONE = 4'd4;
-  localparam PRE_DRAW_SCORE = 4'd5;
-  localparam DRAW_DIGIT = 4'd6;
-  localparam WAIT_DRAW_DIGIT_DONE = 4'd7;
-  localparam POST_DRAW_SCORE = 4'd8;
+  localparam IDLE = 3'd0;
+  localparam FETCH_ROW = 3'd1;
+  localparam LOAD_ROW = 3'd2;
+  localparam DRAW_FIELD_BLOCK = 3'd3;
+  localparam WAIT_FIELD_BLOCK_DONE = 3'd4;
+  localparam DRAW_SCORE_DIGIT = 3'd5;
+  localparam WAIT_SCORE_DIGIT_DONE = 3'd6;
+  localparam COMPLETE = 3'd7;
   localparam SETUP_IDLE = 4'd0;
   localparam CLEAN_SCREEN = 4'd1;
-  localparam START_DRAW_OPEN = 4'd2;
-  localparam WAIT_DRAW_OPEN_DONE = 4'd3;
+  localparam DRAW_OPENING_TEXT = 4'd2;
+  localparam WAIT_OPENING_TEXT_DONE = 4'd3;
   localparam WAIT_GAME_START = 4'd4;
-  localparam START_DRAW_STRING = 4'd5;
-  localparam WAIT_DRAW_STRING_DONE = 4'd6;
-  localparam WAIT_DRAW_SCORE = 4'd7;
-  localparam PRE_DRAW_WALL = 4'd8;
-  localparam START_DRAW_WALL = 4'd9;
-  localparam WAIT_DRAW_WALL_DONE = 4'd10;
-  localparam DRAW_SCORE = 4'd11;
+  localparam DRAW_STATIC_TEXT = 4'd5;
+  localparam WAIT_STATIC_TEXT_DONE = 4'd6;
+  localparam DRAW_WALL = 4'd7;
+  localparam WAIT_WALL_DONE = 4'd8;
+  localparam RUNNING = 4'd9;
+  localparam WAIT_RUNTIME_IDLE = 4'd10;
 
-  reg        [9:0]    memory_spinal_port1;
-  wire       [6:0]    rom_spinal_port0;
-  wire       [42:0]   wall_rom_spinal_port0;
-  wire                bcd_inst_data_out_dec_valid;
-  wire       [15:0]   bcd_inst_data_out_dec_payload;
-  wire       [1:0]    temp_digital_cnt_valueNext;
-  wire       [0:0]    temp_digital_cnt_valueNext_1;
-  reg        [3:0]    temp_itf_word;
-  wire       [4:0]    temp_wr_row_cnt_valueNext;
-  wire       [0:0]    temp_wr_row_cnt_valueNext_1;
-  wire       [3:0]    temp_col_cnt_valueNext;
-  wire       [0:0]    temp_col_cnt_valueNext_1;
-  wire       [4:0]    temp_row_cnt_valueNext;
-  wire       [0:0]    temp_row_cnt_valueNext_1;
-  wire       [3:0]    temp_cnt_valueNext;
-  wire       [0:0]    temp_cnt_valueNext_1;
-  wire       [1:0]    temp_cnt_valueNext_1_1;
-  wire       [0:0]    temp_cnt_valueNext_1_2;
+  wire       [6:0]    text_rom_rom_spinal_port0;
+  wire       [42:0]   wall_rom_wallMem_spinal_port0;
+  reg        [9:0]    playfield_storage_memory_spinal_port1;
+  wire                score_cache_bcdInst_data_out_dec_valid;
+  wire       [15:0]   score_cache_bcdInst_data_out_dec_payload;
+  wire       [3:0]    temp_text_rom_charCounter_valueNext;
+  wire       [0:0]    temp_text_rom_charCounter_valueNext_1;
+  wire       [1:0]    temp_wall_rom_wallCounter_valueNext;
+  wire       [0:0]    temp_wall_rom_wallCounter_valueNext_1;
+  wire       [4:0]    temp_playfield_storage_writeRowCounter_valueNext;
+  wire       [0:0]    temp_playfield_storage_writeRowCounter_valueNext_1;
+  wire       [4:0]    temp_runtime_renderer_rowCounter_valueNext;
+  wire       [0:0]    temp_runtime_renderer_rowCounter_valueNext_1;
+  wire       [3:0]    temp_runtime_renderer_colCounter_valueNext;
+  wire       [0:0]    temp_runtime_renderer_colCounter_valueNext_1;
+  wire       [1:0]    temp_runtime_renderer_scoreDigitCounter_valueNext;
+  wire       [0:0]    temp_runtime_renderer_scoreDigitCounter_valueNext_1;
   wire                temp_when;
+  reg        [3:0]    temp_runtime_renderer_scoreCommand_word;
   wire                temp_when_1;
-  reg        [15:0]   score;
-  wire       [3:0]    score_vec_0;
-  wire       [3:0]    score_vec_1;
-  wire       [3:0]    score_vec_2;
-  wire       [3:0]    score_vec_3;
-  reg                 digital_cnt_willIncrement;
-  reg                 digital_cnt_willClear;
-  reg        [1:0]    digital_cnt_valueNext;
-  reg        [1:0]    digital_cnt_value;
-  wire                digital_cnt_willOverflowIfInc;
-  wire                digital_cnt_willOverflow;
-  reg                 itf_start;
-  wire       [6:0]    itf_word;
-  wire       [2:0]    itf_scale;
-  wire       [3:0]    itf_color;
-  wire                itf_done;
-  reg                 wr_row_cnt_willIncrement;
-  wire                wr_row_cnt_willClear;
-  reg        [4:0]    wr_row_cnt_valueNext;
-  reg        [4:0]    wr_row_cnt_value;
-  wire                wr_row_cnt_willOverflowIfInc;
-  wire                wr_row_cnt_willOverflow;
-  (* keep *) reg                 rd_en;
-  reg                 row_cnt_inc;
-  reg                 col_cnt_inc;
-  reg                 col_cnt_willIncrement;
-  wire                col_cnt_willClear;
-  reg        [3:0]    col_cnt_valueNext;
-  reg        [3:0]    col_cnt_value;
-  wire                col_cnt_willOverflowIfInc;
-  wire                col_cnt_willOverflow;
-  reg                 row_cnt_willIncrement;
-  wire                row_cnt_willClear;
-  reg        [4:0]    row_cnt_valueNext;
-  reg        [4:0]    row_cnt_value;
-  wire                row_cnt_willOverflowIfInc;
-  wire                row_cnt_willOverflow;
-  wire       [9:0]    row_value;
-  reg                 load;
-  reg                 shift_en;
-  reg        [9:0]    row_bits;
-  wire       [9:0]    row_bits_next;
+  wire                temp_when_2;
+  wire                temp_when_3;
+  reg                 runtimeRenderEnable;
+  reg                 runtimeRenderBusy;
+  reg                 runtimeRenderStart;
+  reg                 clearPendingPlayfieldRender;
+  wire                setupCharDone;
+  wire                runtimeScoreCharDone;
+  wire                setupBlockDone;
+  wire                runtimeFieldBlockDone;
+  reg        [15:0]   score_cache_scoreReg;
+  wire       [3:0]    score_cache_digits_0;
+  wire       [3:0]    score_cache_digits_1;
+  wire       [3:0]    score_cache_digits_2;
+  wire       [3:0]    score_cache_digits_3;
+  reg                 text_rom_charCounter_willIncrement;
+  reg                 text_rom_charCounter_willClear;
+  reg        [3:0]    text_rom_charCounter_valueNext;
+  reg        [3:0]    text_rom_charCounter_value;
+  wire                text_rom_charCounter_willOverflowIfInc;
+  wire                text_rom_charCounter_willOverflow;
+  wire       [6:0]    text_rom_word;
+  reg                 wall_rom_wallCounter_willIncrement;
+  reg                 wall_rom_wallCounter_willClear;
+  reg        [1:0]    wall_rom_wallCounter_valueNext;
+  reg        [1:0]    wall_rom_wallCounter_value;
+  wire                wall_rom_wallCounter_willOverflowIfInc;
+  wire                wall_rom_wallCounter_willOverflow;
+  wire                wall_rom_command_start;
+  wire       [8:0]    wall_rom_command_x_orig;
+  wire       [7:0]    wall_rom_command_y_orig;
+  wire       [7:0]    wall_rom_command_width;
+  wire       [7:0]    wall_rom_command_height;
+  wire       [3:0]    wall_rom_command_in_color;
+  wire       [3:0]    wall_rom_command_pat_color;
+  wire       [1:0]    wall_rom_command_fill_pattern;
+  wire       [42:0]   wall_rom_blockInfo;
+  reg                 pendingPlayfieldRender;
+  reg                 playfield_storage_writeRowCounter_willIncrement;
+  wire                playfield_storage_writeRowCounter_willClear;
+  reg        [4:0]    playfield_storage_writeRowCounter_valueNext;
+  reg        [4:0]    playfield_storage_writeRowCounter_value;
+  wire                playfield_storage_writeRowCounter_willOverflowIfInc;
+  wire                playfield_storage_writeRowCounter_willOverflow;
   reg                 row_val_valid_regNext;
-  wire                data_ready;
-  reg                 wait_date_readout;
-  reg                 wait_date_readout_regNext;
-  wire                gen_start;
-  reg        [3:0]    ft_color;
-  reg        [8:0]    x;
-  reg        [7:0]    y;
-  wire       [8:0]    x_next;
-  wire       [7:0]    y_next;
-  reg                 itf_start_1;
-  wire       [7:0]    itf_width;
-  wire       [7:0]    itf_height;
-  wire       [3:0]    itf_in_color;
-  wire       [3:0]    itf_pat_color;
-  wire       [1:0]    itf_fill_pattern;
-  wire                itf_done_1;
-  wire                fsm_wantExit;
-  reg                 fsm_wantStart;
-  wire                fsm_wantKill;
-  wire                itf_start_2;
-  wire       [6:0]    itf_word_1;
-  wire       [2:0]    itf_scale_1;
-  wire       [3:0]    itf_color_1;
-  wire                itf_done_2;
-  reg                 cnt_willIncrement;
-  wire                cnt_willClear;
-  reg        [3:0]    cnt_valueNext;
-  reg        [3:0]    cnt_value;
-  wire                cnt_willOverflowIfInc;
-  wire                cnt_willOverflow;
-  wire       [8:0]    x_1;
-  wire       [7:0]    y_1;
-  wire                itf_start_3;
-  wire       [7:0]    itf_width_1;
-  wire       [7:0]    itf_height_1;
-  wire       [3:0]    itf_in_color_1;
-  wire       [3:0]    itf_pat_color_1;
-  wire       [1:0]    itf_fill_pattern_1;
-  wire                itf_done_3;
-  reg                 cnt_willIncrement_1;
-  wire                cnt_willClear_1;
-  reg        [1:0]    cnt_valueNext_1;
-  reg        [1:0]    cnt_value_1;
-  wire                cnt_willOverflowIfInc_1;
-  wire                cnt_willOverflow_1;
-  wire       [42:0]   blockInfo;
-  reg        [8:0]    stepup_x;
-  reg        [7:0]    stepup_y;
-  reg        [2:0]    stepup_scale;
-  reg        [3:0]    stepup_color;
-  reg                 stepup_start_char_draw;
-  reg                 stepup_start_block_draw;
-  reg                 stepup_game_is_running;
-  wire                stepup_fsm_wantExit;
-  reg                 stepup_fsm_wantStart;
-  wire                stepup_fsm_wantKill;
-  wire       [3:0]    stepup_fsm_debug;
-  reg        [3:0]    fsm_stateReg;
-  reg        [3:0]    fsm_stateNext;
-  wire                fsm_onExit_IDLE;
-  wire                fsm_onExit_FETCH;
-  wire                fsm_onExit_DATA_READY;
-  wire                fsm_onExit_DRAW;
-  wire                fsm_onExit_WAIT_DONE;
-  wire                fsm_onExit_PRE_DRAW_SCORE;
-  wire                fsm_onExit_DRAW_DIGIT;
-  wire                fsm_onExit_WAIT_DRAW_DIGIT_DONE;
-  wire                fsm_onExit_POST_DRAW_SCORE;
-  wire                fsm_onEntry_IDLE;
-  wire                fsm_onEntry_FETCH;
-  wire                fsm_onEntry_DATA_READY;
-  wire                fsm_onEntry_DRAW;
-  wire                fsm_onEntry_WAIT_DONE;
-  wire                fsm_onEntry_PRE_DRAW_SCORE;
-  wire                fsm_onEntry_DRAW_DIGIT;
-  wire                fsm_onEntry_WAIT_DRAW_DIGIT_DONE;
-  wire                fsm_onEntry_POST_DRAW_SCORE;
-  reg        [3:0]    stepup_fsm_stateReg;
-  reg        [3:0]    stepup_fsm_stateNext;
-  wire                stepup_fsm_onExit_SETUP_IDLE;
-  wire                stepup_fsm_onExit_CLEAN_SCREEN;
-  wire                stepup_fsm_onExit_START_DRAW_OPEN;
-  wire                stepup_fsm_onExit_WAIT_DRAW_OPEN_DONE;
-  wire                stepup_fsm_onExit_WAIT_GAME_START;
-  wire                stepup_fsm_onExit_START_DRAW_STRING;
-  wire                stepup_fsm_onExit_WAIT_DRAW_STRING_DONE;
-  wire                stepup_fsm_onExit_WAIT_DRAW_SCORE;
-  wire                stepup_fsm_onExit_PRE_DRAW_WALL;
-  wire                stepup_fsm_onExit_START_DRAW_WALL;
-  wire                stepup_fsm_onExit_WAIT_DRAW_WALL_DONE;
-  wire                stepup_fsm_onExit_DRAW_SCORE;
-  wire                stepup_fsm_onEntry_SETUP_IDLE;
-  wire                stepup_fsm_onEntry_CLEAN_SCREEN;
-  wire                stepup_fsm_onEntry_START_DRAW_OPEN;
-  wire                stepup_fsm_onEntry_WAIT_DRAW_OPEN_DONE;
-  wire                stepup_fsm_onEntry_WAIT_GAME_START;
-  wire                stepup_fsm_onEntry_START_DRAW_STRING;
-  wire                stepup_fsm_onEntry_WAIT_DRAW_STRING_DONE;
-  wire                stepup_fsm_onEntry_WAIT_DRAW_SCORE;
-  wire                stepup_fsm_onEntry_PRE_DRAW_WALL;
-  wire                stepup_fsm_onEntry_START_DRAW_WALL;
-  wire                stepup_fsm_onEntry_WAIT_DRAW_WALL_DONE;
-  wire                stepup_fsm_onEntry_DRAW_SCORE;
+  wire                playfield_storage_rowBurstComplete;
+  reg                 runtime_renderer_blockCommand_start;
+  reg        [8:0]    runtime_renderer_blockCommand_x_orig;
+  reg        [7:0]    runtime_renderer_blockCommand_y_orig;
+  reg        [7:0]    runtime_renderer_blockCommand_width;
+  reg        [7:0]    runtime_renderer_blockCommand_height;
+  reg        [3:0]    runtime_renderer_blockCommand_in_color;
+  reg        [3:0]    runtime_renderer_blockCommand_pat_color;
+  reg        [1:0]    runtime_renderer_blockCommand_fill_pattern;
+  reg                 runtime_renderer_scoreCommand_start;
+  reg        [8:0]    runtime_renderer_scoreCommand_x_orig;
+  reg        [7:0]    runtime_renderer_scoreCommand_y_orig;
+  reg        [6:0]    runtime_renderer_scoreCommand_word;
+  reg        [2:0]    runtime_renderer_scoreCommand_scale;
+  reg        [3:0]    runtime_renderer_scoreCommand_color;
+  (* keep *) reg                 runtime_renderer_readEnable;
+  reg                 runtime_renderer_rowCounter_willIncrement;
+  reg                 runtime_renderer_rowCounter_willClear;
+  reg        [4:0]    runtime_renderer_rowCounter_valueNext;
+  reg        [4:0]    runtime_renderer_rowCounter_value;
+  wire                runtime_renderer_rowCounter_willOverflowIfInc;
+  wire                runtime_renderer_rowCounter_willOverflow;
+  reg                 runtime_renderer_colCounter_willIncrement;
+  reg                 runtime_renderer_colCounter_willClear;
+  reg        [3:0]    runtime_renderer_colCounter_valueNext;
+  reg        [3:0]    runtime_renderer_colCounter_value;
+  wire                runtime_renderer_colCounter_willOverflowIfInc;
+  wire                runtime_renderer_colCounter_willOverflow;
+  reg                 runtime_renderer_scoreDigitCounter_willIncrement;
+  reg                 runtime_renderer_scoreDigitCounter_willClear;
+  reg        [1:0]    runtime_renderer_scoreDigitCounter_valueNext;
+  reg        [1:0]    runtime_renderer_scoreDigitCounter_value;
+  wire                runtime_renderer_scoreDigitCounter_willOverflowIfInc;
+  wire                runtime_renderer_scoreDigitCounter_willOverflow;
+  wire       [9:0]    runtime_renderer_rowValue;
+  reg        [9:0]    runtime_renderer_rowBits;
+  reg        [8:0]    runtime_renderer_fieldX;
+  reg        [7:0]    runtime_renderer_fieldY;
+  reg        [8:0]    runtime_renderer_scoreX;
+  reg        [3:0]    runtime_renderer_fieldColor;
+  wire                runtime_renderer_fsm_wantExit;
+  reg                 runtime_renderer_fsm_wantStart;
+  wire                runtime_renderer_fsm_wantKill;
+  reg                 setup_renderer_charCommand_start;
+  reg        [8:0]    setup_renderer_charCommand_x_orig;
+  reg        [7:0]    setup_renderer_charCommand_y_orig;
+  reg        [6:0]    setup_renderer_charCommand_word;
+  reg        [2:0]    setup_renderer_charCommand_scale;
+  reg        [3:0]    setup_renderer_charCommand_color;
+  reg                 setup_renderer_blockCommand_start;
+  reg        [8:0]    setup_renderer_blockCommand_x_orig;
+  reg        [7:0]    setup_renderer_blockCommand_y_orig;
+  reg        [7:0]    setup_renderer_blockCommand_width;
+  reg        [7:0]    setup_renderer_blockCommand_height;
+  reg        [3:0]    setup_renderer_blockCommand_in_color;
+  reg        [3:0]    setup_renderer_blockCommand_pat_color;
+  reg        [1:0]    setup_renderer_blockCommand_fill_pattern;
+  reg        [8:0]    setup_renderer_textX;
+  reg        [7:0]    setup_renderer_textY;
+  reg        [2:0]    setup_renderer_textScale;
+  reg        [3:0]    setup_renderer_textColor;
+  reg                 setup_renderer_gameIsRunning;
+  wire                setup_renderer_fsm_wantExit;
+  reg                 setup_renderer_fsm_wantStart;
+  wire                setup_renderer_fsm_wantKill;
+  wire       [3:0]    setup_renderer_fsmDebug;
+  reg                 selectedCharCommand_start;
+  reg        [8:0]    selectedCharCommand_x_orig;
+  reg        [7:0]    selectedCharCommand_y_orig;
+  reg        [6:0]    selectedCharCommand_word;
+  reg        [2:0]    selectedCharCommand_scale;
+  reg        [3:0]    selectedCharCommand_color;
+  reg                 selectedBlockCommand_start;
+  reg        [8:0]    selectedBlockCommand_x_orig;
+  reg        [7:0]    selectedBlockCommand_y_orig;
+  reg        [7:0]    selectedBlockCommand_width;
+  reg        [7:0]    selectedBlockCommand_height;
+  reg        [3:0]    selectedBlockCommand_in_color;
+  reg        [3:0]    selectedBlockCommand_pat_color;
+  reg        [1:0]    selectedBlockCommand_fill_pattern;
+  wire                charStartCollision;
+  wire                blockStartCollision;
+  wire                drawStartCollision;
+  reg                 charOwnerIsSetup;
+  reg                 blockOwnerIsSetup;
+  reg        [2:0]    runtime_renderer_fsm_stateReg;
+  reg        [2:0]    runtime_renderer_fsm_stateNext;
+  wire                runtime_renderer_fsm_onExit_IDLE;
+  wire                runtime_renderer_fsm_onExit_FETCH_ROW;
+  wire                runtime_renderer_fsm_onExit_LOAD_ROW;
+  wire                runtime_renderer_fsm_onExit_DRAW_FIELD_BLOCK;
+  wire                runtime_renderer_fsm_onExit_WAIT_FIELD_BLOCK_DONE;
+  wire                runtime_renderer_fsm_onExit_DRAW_SCORE_DIGIT;
+  wire                runtime_renderer_fsm_onExit_WAIT_SCORE_DIGIT_DONE;
+  wire                runtime_renderer_fsm_onExit_COMPLETE;
+  wire                runtime_renderer_fsm_onEntry_IDLE;
+  wire                runtime_renderer_fsm_onEntry_FETCH_ROW;
+  wire                runtime_renderer_fsm_onEntry_LOAD_ROW;
+  wire                runtime_renderer_fsm_onEntry_DRAW_FIELD_BLOCK;
+  wire                runtime_renderer_fsm_onEntry_WAIT_FIELD_BLOCK_DONE;
+  wire                runtime_renderer_fsm_onEntry_DRAW_SCORE_DIGIT;
+  wire                runtime_renderer_fsm_onEntry_WAIT_SCORE_DIGIT_DONE;
+  wire                runtime_renderer_fsm_onEntry_COMPLETE;
+  reg        [3:0]    setup_renderer_fsm_stateReg;
+  reg        [3:0]    setup_renderer_fsm_stateNext;
+  wire                setup_renderer_fsm_onExit_SETUP_IDLE;
+  wire                setup_renderer_fsm_onExit_CLEAN_SCREEN;
+  wire                setup_renderer_fsm_onExit_DRAW_OPENING_TEXT;
+  wire                setup_renderer_fsm_onExit_WAIT_OPENING_TEXT_DONE;
+  wire                setup_renderer_fsm_onExit_WAIT_GAME_START;
+  wire                setup_renderer_fsm_onExit_DRAW_STATIC_TEXT;
+  wire                setup_renderer_fsm_onExit_WAIT_STATIC_TEXT_DONE;
+  wire                setup_renderer_fsm_onExit_DRAW_WALL;
+  wire                setup_renderer_fsm_onExit_WAIT_WALL_DONE;
+  wire                setup_renderer_fsm_onExit_RUNNING;
+  wire                setup_renderer_fsm_onExit_WAIT_RUNTIME_IDLE;
+  wire                setup_renderer_fsm_onEntry_SETUP_IDLE;
+  wire                setup_renderer_fsm_onEntry_CLEAN_SCREEN;
+  wire                setup_renderer_fsm_onEntry_DRAW_OPENING_TEXT;
+  wire                setup_renderer_fsm_onEntry_WAIT_OPENING_TEXT_DONE;
+  wire                setup_renderer_fsm_onEntry_WAIT_GAME_START;
+  wire                setup_renderer_fsm_onEntry_DRAW_STATIC_TEXT;
+  wire                setup_renderer_fsm_onEntry_WAIT_STATIC_TEXT_DONE;
+  wire                setup_renderer_fsm_onEntry_DRAW_WALL;
+  wire                setup_renderer_fsm_onEntry_WAIT_WALL_DONE;
+  wire                setup_renderer_fsm_onEntry_RUNNING;
+  wire                setup_renderer_fsm_onEntry_WAIT_RUNTIME_IDLE;
   `ifndef SYNTHESIS
-  reg [159:0] fsm_stateReg_string;
-  reg [159:0] fsm_stateNext_string;
-  reg [167:0] stepup_fsm_stateReg_string;
-  reg [167:0] stepup_fsm_stateNext_string;
+  reg [167:0] runtime_renderer_fsm_stateReg_string;
+  reg [167:0] runtime_renderer_fsm_stateNext_string;
+  reg [175:0] setup_renderer_fsm_stateReg_string;
+  reg [175:0] setup_renderer_fsm_stateNext_string;
   `endif
 
-  (* ram_style = "distributed" *) reg [9:0] memory [0:21];
-  (* ram_style = "distributed" *) reg [6:0] rom [0:10];
-  reg [42:0] wall_rom [0:3];
+  (* ram_style = "distributed" *) reg [6:0] text_rom_rom [0:10];
+  reg [42:0] wall_rom_wallMem [0:3];
+  (* ram_style = "distributed" *) reg [9:0] playfield_storage_memory [0:21];
 
-  assign temp_when = (cnt_value == 4'b0101);
-  assign temp_when_1 = (cnt_value == 4'b1010);
-  assign temp_digital_cnt_valueNext_1 = digital_cnt_willIncrement;
-  assign temp_digital_cnt_valueNext = {1'd0, temp_digital_cnt_valueNext_1};
-  assign temp_wr_row_cnt_valueNext_1 = wr_row_cnt_willIncrement;
-  assign temp_wr_row_cnt_valueNext = {4'd0, temp_wr_row_cnt_valueNext_1};
-  assign temp_col_cnt_valueNext_1 = col_cnt_willIncrement;
-  assign temp_col_cnt_valueNext = {3'd0, temp_col_cnt_valueNext_1};
-  assign temp_row_cnt_valueNext_1 = row_cnt_willIncrement;
-  assign temp_row_cnt_valueNext = {4'd0, temp_row_cnt_valueNext_1};
-  assign temp_cnt_valueNext_1 = cnt_willIncrement;
-  assign temp_cnt_valueNext = {3'd0, temp_cnt_valueNext_1};
-  assign temp_cnt_valueNext_1_2 = cnt_willIncrement_1;
-  assign temp_cnt_valueNext_1_1 = {1'd0, temp_cnt_valueNext_1_2};
+  assign temp_when_2 = (text_rom_charCounter_value == 4'b0101);
+  assign temp_when_3 = (text_rom_charCounter_value == 4'b1010);
+  assign temp_when = (runtime_renderer_rowCounter_willOverflowIfInc && runtime_renderer_colCounter_willOverflowIfInc);
+  assign temp_when_1 = ((pendingPlayfieldRender && frame_start) && runtimeRenderEnable);
+  assign temp_text_rom_charCounter_valueNext_1 = text_rom_charCounter_willIncrement;
+  assign temp_text_rom_charCounter_valueNext = {3'd0, temp_text_rom_charCounter_valueNext_1};
+  assign temp_wall_rom_wallCounter_valueNext_1 = wall_rom_wallCounter_willIncrement;
+  assign temp_wall_rom_wallCounter_valueNext = {1'd0, temp_wall_rom_wallCounter_valueNext_1};
+  assign temp_playfield_storage_writeRowCounter_valueNext_1 = playfield_storage_writeRowCounter_willIncrement;
+  assign temp_playfield_storage_writeRowCounter_valueNext = {4'd0, temp_playfield_storage_writeRowCounter_valueNext_1};
+  assign temp_runtime_renderer_rowCounter_valueNext_1 = runtime_renderer_rowCounter_willIncrement;
+  assign temp_runtime_renderer_rowCounter_valueNext = {4'd0, temp_runtime_renderer_rowCounter_valueNext_1};
+  assign temp_runtime_renderer_colCounter_valueNext_1 = runtime_renderer_colCounter_willIncrement;
+  assign temp_runtime_renderer_colCounter_valueNext = {3'd0, temp_runtime_renderer_colCounter_valueNext_1};
+  assign temp_runtime_renderer_scoreDigitCounter_valueNext_1 = runtime_renderer_scoreDigitCounter_willIncrement;
+  assign temp_runtime_renderer_scoreDigitCounter_valueNext = {1'd0, temp_runtime_renderer_scoreDigitCounter_valueNext_1};
+  initial begin
+    $readmemb("display_top.v_toplevel_draw_controller_text_rom_rom.bin",text_rom_rom);
+  end
+  assign text_rom_rom_spinal_port0 = text_rom_rom[text_rom_charCounter_value];
+  initial begin
+    $readmemb("display_top.v_toplevel_draw_controller_wall_rom_wallMem.bin",wall_rom_wallMem);
+  end
+  assign wall_rom_wallMem_spinal_port0 = wall_rom_wallMem[wall_rom_wallCounter_value];
   always @(posedge core_clk) begin
     if(row_val_valid) begin
-      memory[wr_row_cnt_value] <= row_val_payload;
+      playfield_storage_memory[playfield_storage_writeRowCounter_value] <= row_val_payload;
     end
   end
 
   always @(posedge core_clk) begin
-    if(rd_en) begin
-      memory_spinal_port1 <= memory[row_cnt_value];
+    if(runtime_renderer_readEnable) begin
+      playfield_storage_memory_spinal_port1 <= playfield_storage_memory[runtime_renderer_rowCounter_value];
     end
   end
 
-  initial begin
-    $readmemb("display_top.v_toplevel_draw_controller_rom.bin",rom);
-  end
-  assign rom_spinal_port0 = rom[cnt_value];
-  initial begin
-    $readmemb("display_top.v_toplevel_draw_controller_wall_rom.bin",wall_rom);
-  end
-  assign wall_rom_spinal_port0 = wall_rom[cnt_value_1];
-  bcd bcd_inst (
-    .data_in_bin_valid    (score_val_valid                    ), //i
-    .data_in_bin_payload  (score_val_payload[9:0]             ), //i
-    .data_out_dec_valid   (bcd_inst_data_out_dec_valid        ), //o
-    .data_out_dec_payload (bcd_inst_data_out_dec_payload[15:0]), //o
-    .core_clk             (core_clk                           ), //i
-    .core_rst             (core_rst                           )  //i
+  bcd score_cache_bcdInst (
+    .data_in_bin_valid    (score_val_valid                               ), //i
+    .data_in_bin_payload  (score_val_payload[9:0]                        ), //i
+    .data_out_dec_valid   (score_cache_bcdInst_data_out_dec_valid        ), //o
+    .data_out_dec_payload (score_cache_bcdInst_data_out_dec_payload[15:0]), //o
+    .core_clk             (core_clk                                      ), //i
+    .core_rst             (core_rst                                      )  //i
   );
   always @(*) begin
-    case(digital_cnt_value)
-      2'b00 : temp_itf_word = score_vec_0;
-      2'b01 : temp_itf_word = score_vec_1;
-      2'b10 : temp_itf_word = score_vec_2;
-      default : temp_itf_word = score_vec_3;
+    case(runtime_renderer_scoreDigitCounter_value)
+      2'b00 : temp_runtime_renderer_scoreCommand_word = score_cache_digits_0;
+      2'b01 : temp_runtime_renderer_scoreCommand_word = score_cache_digits_1;
+      2'b10 : temp_runtime_renderer_scoreCommand_word = score_cache_digits_2;
+      default : temp_runtime_renderer_scoreCommand_word = score_cache_digits_3;
     endcase
   end
 
   `ifndef SYNTHESIS
   always @(*) begin
-    case(fsm_stateReg)
-      IDLE : fsm_stateReg_string = "IDLE                ";
-      FETCH : fsm_stateReg_string = "FETCH               ";
-      DATA_READY : fsm_stateReg_string = "DATA_READY          ";
-      DRAW : fsm_stateReg_string = "DRAW                ";
-      WAIT_DONE : fsm_stateReg_string = "WAIT_DONE           ";
-      PRE_DRAW_SCORE : fsm_stateReg_string = "PRE_DRAW_SCORE      ";
-      DRAW_DIGIT : fsm_stateReg_string = "DRAW_DIGIT          ";
-      WAIT_DRAW_DIGIT_DONE : fsm_stateReg_string = "WAIT_DRAW_DIGIT_DONE";
-      POST_DRAW_SCORE : fsm_stateReg_string = "POST_DRAW_SCORE     ";
-      default : fsm_stateReg_string = "????????????????????";
+    case(runtime_renderer_fsm_stateReg)
+      IDLE : runtime_renderer_fsm_stateReg_string = "IDLE                 ";
+      FETCH_ROW : runtime_renderer_fsm_stateReg_string = "FETCH_ROW            ";
+      LOAD_ROW : runtime_renderer_fsm_stateReg_string = "LOAD_ROW             ";
+      DRAW_FIELD_BLOCK : runtime_renderer_fsm_stateReg_string = "DRAW_FIELD_BLOCK     ";
+      WAIT_FIELD_BLOCK_DONE : runtime_renderer_fsm_stateReg_string = "WAIT_FIELD_BLOCK_DONE";
+      DRAW_SCORE_DIGIT : runtime_renderer_fsm_stateReg_string = "DRAW_SCORE_DIGIT     ";
+      WAIT_SCORE_DIGIT_DONE : runtime_renderer_fsm_stateReg_string = "WAIT_SCORE_DIGIT_DONE";
+      COMPLETE : runtime_renderer_fsm_stateReg_string = "COMPLETE             ";
+      default : runtime_renderer_fsm_stateReg_string = "?????????????????????";
     endcase
   end
   always @(*) begin
-    case(fsm_stateNext)
-      IDLE : fsm_stateNext_string = "IDLE                ";
-      FETCH : fsm_stateNext_string = "FETCH               ";
-      DATA_READY : fsm_stateNext_string = "DATA_READY          ";
-      DRAW : fsm_stateNext_string = "DRAW                ";
-      WAIT_DONE : fsm_stateNext_string = "WAIT_DONE           ";
-      PRE_DRAW_SCORE : fsm_stateNext_string = "PRE_DRAW_SCORE      ";
-      DRAW_DIGIT : fsm_stateNext_string = "DRAW_DIGIT          ";
-      WAIT_DRAW_DIGIT_DONE : fsm_stateNext_string = "WAIT_DRAW_DIGIT_DONE";
-      POST_DRAW_SCORE : fsm_stateNext_string = "POST_DRAW_SCORE     ";
-      default : fsm_stateNext_string = "????????????????????";
+    case(runtime_renderer_fsm_stateNext)
+      IDLE : runtime_renderer_fsm_stateNext_string = "IDLE                 ";
+      FETCH_ROW : runtime_renderer_fsm_stateNext_string = "FETCH_ROW            ";
+      LOAD_ROW : runtime_renderer_fsm_stateNext_string = "LOAD_ROW             ";
+      DRAW_FIELD_BLOCK : runtime_renderer_fsm_stateNext_string = "DRAW_FIELD_BLOCK     ";
+      WAIT_FIELD_BLOCK_DONE : runtime_renderer_fsm_stateNext_string = "WAIT_FIELD_BLOCK_DONE";
+      DRAW_SCORE_DIGIT : runtime_renderer_fsm_stateNext_string = "DRAW_SCORE_DIGIT     ";
+      WAIT_SCORE_DIGIT_DONE : runtime_renderer_fsm_stateNext_string = "WAIT_SCORE_DIGIT_DONE";
+      COMPLETE : runtime_renderer_fsm_stateNext_string = "COMPLETE             ";
+      default : runtime_renderer_fsm_stateNext_string = "?????????????????????";
     endcase
   end
   always @(*) begin
-    case(stepup_fsm_stateReg)
-      SETUP_IDLE : stepup_fsm_stateReg_string = "SETUP_IDLE           ";
-      CLEAN_SCREEN : stepup_fsm_stateReg_string = "CLEAN_SCREEN         ";
-      START_DRAW_OPEN : stepup_fsm_stateReg_string = "START_DRAW_OPEN      ";
-      WAIT_DRAW_OPEN_DONE : stepup_fsm_stateReg_string = "WAIT_DRAW_OPEN_DONE  ";
-      WAIT_GAME_START : stepup_fsm_stateReg_string = "WAIT_GAME_START      ";
-      START_DRAW_STRING : stepup_fsm_stateReg_string = "START_DRAW_STRING    ";
-      WAIT_DRAW_STRING_DONE : stepup_fsm_stateReg_string = "WAIT_DRAW_STRING_DONE";
-      WAIT_DRAW_SCORE : stepup_fsm_stateReg_string = "WAIT_DRAW_SCORE      ";
-      PRE_DRAW_WALL : stepup_fsm_stateReg_string = "PRE_DRAW_WALL        ";
-      START_DRAW_WALL : stepup_fsm_stateReg_string = "START_DRAW_WALL      ";
-      WAIT_DRAW_WALL_DONE : stepup_fsm_stateReg_string = "WAIT_DRAW_WALL_DONE  ";
-      DRAW_SCORE : stepup_fsm_stateReg_string = "DRAW_SCORE           ";
-      default : stepup_fsm_stateReg_string = "?????????????????????";
+    case(setup_renderer_fsm_stateReg)
+      SETUP_IDLE : setup_renderer_fsm_stateReg_string = "SETUP_IDLE            ";
+      CLEAN_SCREEN : setup_renderer_fsm_stateReg_string = "CLEAN_SCREEN          ";
+      DRAW_OPENING_TEXT : setup_renderer_fsm_stateReg_string = "DRAW_OPENING_TEXT     ";
+      WAIT_OPENING_TEXT_DONE : setup_renderer_fsm_stateReg_string = "WAIT_OPENING_TEXT_DONE";
+      WAIT_GAME_START : setup_renderer_fsm_stateReg_string = "WAIT_GAME_START       ";
+      DRAW_STATIC_TEXT : setup_renderer_fsm_stateReg_string = "DRAW_STATIC_TEXT      ";
+      WAIT_STATIC_TEXT_DONE : setup_renderer_fsm_stateReg_string = "WAIT_STATIC_TEXT_DONE ";
+      DRAW_WALL : setup_renderer_fsm_stateReg_string = "DRAW_WALL             ";
+      WAIT_WALL_DONE : setup_renderer_fsm_stateReg_string = "WAIT_WALL_DONE        ";
+      RUNNING : setup_renderer_fsm_stateReg_string = "RUNNING               ";
+      WAIT_RUNTIME_IDLE : setup_renderer_fsm_stateReg_string = "WAIT_RUNTIME_IDLE     ";
+      default : setup_renderer_fsm_stateReg_string = "??????????????????????";
     endcase
   end
   always @(*) begin
-    case(stepup_fsm_stateNext)
-      SETUP_IDLE : stepup_fsm_stateNext_string = "SETUP_IDLE           ";
-      CLEAN_SCREEN : stepup_fsm_stateNext_string = "CLEAN_SCREEN         ";
-      START_DRAW_OPEN : stepup_fsm_stateNext_string = "START_DRAW_OPEN      ";
-      WAIT_DRAW_OPEN_DONE : stepup_fsm_stateNext_string = "WAIT_DRAW_OPEN_DONE  ";
-      WAIT_GAME_START : stepup_fsm_stateNext_string = "WAIT_GAME_START      ";
-      START_DRAW_STRING : stepup_fsm_stateNext_string = "START_DRAW_STRING    ";
-      WAIT_DRAW_STRING_DONE : stepup_fsm_stateNext_string = "WAIT_DRAW_STRING_DONE";
-      WAIT_DRAW_SCORE : stepup_fsm_stateNext_string = "WAIT_DRAW_SCORE      ";
-      PRE_DRAW_WALL : stepup_fsm_stateNext_string = "PRE_DRAW_WALL        ";
-      START_DRAW_WALL : stepup_fsm_stateNext_string = "START_DRAW_WALL      ";
-      WAIT_DRAW_WALL_DONE : stepup_fsm_stateNext_string = "WAIT_DRAW_WALL_DONE  ";
-      DRAW_SCORE : stepup_fsm_stateNext_string = "DRAW_SCORE           ";
-      default : stepup_fsm_stateNext_string = "?????????????????????";
+    case(setup_renderer_fsm_stateNext)
+      SETUP_IDLE : setup_renderer_fsm_stateNext_string = "SETUP_IDLE            ";
+      CLEAN_SCREEN : setup_renderer_fsm_stateNext_string = "CLEAN_SCREEN          ";
+      DRAW_OPENING_TEXT : setup_renderer_fsm_stateNext_string = "DRAW_OPENING_TEXT     ";
+      WAIT_OPENING_TEXT_DONE : setup_renderer_fsm_stateNext_string = "WAIT_OPENING_TEXT_DONE";
+      WAIT_GAME_START : setup_renderer_fsm_stateNext_string = "WAIT_GAME_START       ";
+      DRAW_STATIC_TEXT : setup_renderer_fsm_stateNext_string = "DRAW_STATIC_TEXT      ";
+      WAIT_STATIC_TEXT_DONE : setup_renderer_fsm_stateNext_string = "WAIT_STATIC_TEXT_DONE ";
+      DRAW_WALL : setup_renderer_fsm_stateNext_string = "DRAW_WALL             ";
+      WAIT_WALL_DONE : setup_renderer_fsm_stateNext_string = "WAIT_WALL_DONE        ";
+      RUNNING : setup_renderer_fsm_stateNext_string = "RUNNING               ";
+      WAIT_RUNTIME_IDLE : setup_renderer_fsm_stateNext_string = "WAIT_RUNTIME_IDLE     ";
+      default : setup_renderer_fsm_stateNext_string = "??????????????????????";
     endcase
   end
   `endif
 
-  assign score_vec_0 = score[15 : 12];
-  assign score_vec_1 = score[11 : 8];
-  assign score_vec_2 = score[7 : 4];
-  assign score_vec_3 = score[3 : 0];
   always @(*) begin
-    digital_cnt_willIncrement = 1'b0;
-    if(row_val_valid) begin
-      digital_cnt_willIncrement = 1'b1;
-    end
-    digital_cnt_willIncrement = 1'b0;
-    if(fsm_onExit_WAIT_DRAW_DIGIT_DONE) begin
-      digital_cnt_willIncrement = 1'b1;
-    end
-  end
-
-  always @(*) begin
-    digital_cnt_willClear = 1'b0;
-    itf_start = 1'b0;
-    itf_start_1 = 1'b0;
-    draw_field_done = 1'b0;
-    fsm_wantStart = 1'b0;
-    rd_en = 1'b0;
-    load = 1'b0;
-    col_cnt_inc = 1'b0;
-    row_cnt_inc = 1'b0;
-    shift_en = 1'b0;
-    fsm_stateNext = fsm_stateReg;
-    case(fsm_stateReg)
-      FETCH : begin
-        rd_en = 1'b1;
-        fsm_stateNext = DATA_READY;
-      end
-      DATA_READY : begin
-        load = 1'b1;
-        fsm_stateNext = DRAW;
-      end
-      DRAW : begin
-        itf_start_1 = 1'b1;
-        fsm_stateNext = WAIT_DONE;
-      end
-      WAIT_DONE : begin
-        if(itf_done_1) begin
-          if((row_cnt_willOverflowIfInc && col_cnt_willOverflowIfInc)) begin
-            row_cnt_inc = 1'b1;
-            col_cnt_inc = 1'b1;
-            fsm_stateNext = PRE_DRAW_SCORE;
-          end else begin
-            col_cnt_inc = 1'b1;
-            if(col_cnt_willOverflowIfInc) begin
-              row_cnt_inc = 1'b1;
-              fsm_stateNext = FETCH;
-            end else begin
-              shift_en = 1'b1;
-              fsm_stateNext = DRAW;
-            end
-          end
-        end
-      end
-      PRE_DRAW_SCORE : begin
-        fsm_stateNext = DRAW_DIGIT;
-      end
-      DRAW_DIGIT : begin
-        itf_start = 1'b1;
-        fsm_stateNext = WAIT_DRAW_DIGIT_DONE;
-      end
-      WAIT_DRAW_DIGIT_DONE : begin
-        if(itf_done) begin
-          if(digital_cnt_willOverflowIfInc) begin
-            fsm_stateNext = POST_DRAW_SCORE;
-          end else begin
-            fsm_stateNext = DRAW_DIGIT;
-          end
-        end
-      end
-      POST_DRAW_SCORE : begin
-        digital_cnt_willClear = 1'b1;
-        draw_field_done = 1'b1;
-        fsm_stateNext = IDLE;
-      end
-      default : begin
-        if(gen_start) begin
-          fsm_stateNext = FETCH;
-        end
-        fsm_wantStart = 1'b1;
-      end
-    endcase
-    if(fsm_wantKill) begin
-      fsm_stateNext = IDLE;
-    end
-  end
-
-  assign digital_cnt_willOverflowIfInc = (digital_cnt_value == 2'b11);
-  assign digital_cnt_willOverflow = (digital_cnt_willOverflowIfInc && digital_cnt_willIncrement);
-  always @(*) begin
-    digital_cnt_valueNext = (digital_cnt_value + temp_digital_cnt_valueNext);
-    if(digital_cnt_willClear) begin
-      digital_cnt_valueNext = 2'b00;
-    end
-  end
-
-  assign itf_scale = 3'b000;
-  assign itf_color = 4'b0110;
-  assign itf_word = {3'b011,temp_itf_word};
-  always @(*) begin
-    wr_row_cnt_willIncrement = 1'b0;
-    if(row_val_valid) begin
-      wr_row_cnt_willIncrement = 1'b1;
-    end
-  end
-
-  assign wr_row_cnt_willClear = 1'b0;
-  assign wr_row_cnt_willOverflowIfInc = (wr_row_cnt_value == 5'h15);
-  assign wr_row_cnt_willOverflow = (wr_row_cnt_willOverflowIfInc && wr_row_cnt_willIncrement);
-  always @(*) begin
-    if(wr_row_cnt_willOverflow) begin
-      wr_row_cnt_valueNext = 5'h0;
-    end else begin
-      wr_row_cnt_valueNext = (wr_row_cnt_value + temp_wr_row_cnt_valueNext);
-    end
-    if(wr_row_cnt_willClear) begin
-      wr_row_cnt_valueNext = 5'h0;
-    end
-  end
-
-  always @(*) begin
-    col_cnt_willIncrement = 1'b0;
-    if(col_cnt_inc) begin
-      col_cnt_willIncrement = 1'b1;
-    end
-  end
-
-  assign col_cnt_willClear = 1'b0;
-  assign col_cnt_willOverflowIfInc = (col_cnt_value == 4'b1001);
-  assign col_cnt_willOverflow = (col_cnt_willOverflowIfInc && col_cnt_willIncrement);
-  always @(*) begin
-    if(col_cnt_willOverflow) begin
-      col_cnt_valueNext = 4'b0000;
-    end else begin
-      col_cnt_valueNext = (col_cnt_value + temp_col_cnt_valueNext);
-    end
-    if(col_cnt_willClear) begin
-      col_cnt_valueNext = 4'b0000;
-    end
-  end
-
-  always @(*) begin
-    row_cnt_willIncrement = 1'b0;
-    if(row_cnt_inc) begin
-      row_cnt_willIncrement = 1'b1;
-    end
-  end
-
-  assign row_cnt_willClear = 1'b0;
-  assign row_cnt_willOverflowIfInc = (row_cnt_value == 5'h15);
-  assign row_cnt_willOverflow = (row_cnt_willOverflowIfInc && row_cnt_willIncrement);
-  always @(*) begin
-    if(row_cnt_willOverflow) begin
-      row_cnt_valueNext = 5'h0;
-    end else begin
-      row_cnt_valueNext = (row_cnt_value + temp_row_cnt_valueNext);
-    end
-    if(row_cnt_willClear) begin
-      row_cnt_valueNext = 5'h0;
-    end
-  end
-
-  assign row_value = memory_spinal_port1;
-  assign row_bits_next = (row_bits <<< 1);
-  assign data_ready = ((! row_val_valid) && row_val_valid_regNext);
-  assign gen_start = ((! wait_date_readout) && wait_date_readout_regNext);
-  always @(*) begin
-    ft_color = 4'b0010;
-    if(row_bits[9]) begin
-      ft_color = 4'b1001;
-    end
-  end
-
-  assign x_next = (x + 9'h009);
-  assign y_next = (y + 8'h09);
-  assign itf_in_color = ft_color;
-  assign itf_width = 8'h07;
-  assign itf_height = 8'h07;
-  assign itf_fill_pattern = 2'b00;
-  assign itf_pat_color = 4'b0010;
-  assign fsm_wantExit = 1'b0;
-  assign fsm_wantKill = 1'b0;
-  always @(*) begin
-    cnt_willIncrement = 1'b0;
-    if(cnt_willOverflow) begin
-      cnt_valueNext = 4'b0000;
-    end else begin
-      cnt_valueNext = (cnt_value + temp_cnt_valueNext);
-    end
-    if(cnt_willClear) begin
-      cnt_valueNext = 4'b0000;
-    end
-    cnt_willIncrement_1 = 1'b0;
-    stepup_fsm_wantStart = 1'b0;
-    stepup_start_char_draw = 1'b0;
-    stepup_start_block_draw = 1'b0;
     screen_is_ready = 1'b0;
-    cnt_willIncrement = 1'b0;
-    stepup_fsm_stateNext = stepup_fsm_stateReg;
-    case(stepup_fsm_stateReg)
+    runtimeRenderEnable = 1'b0;
+    clearPendingPlayfieldRender = 1'b0;
+    text_rom_charCounter_willIncrement = 1'b0;
+    text_rom_charCounter_willClear = 1'b0;
+    if(text_rom_charCounter_willOverflow) begin
+      text_rom_charCounter_valueNext = 4'b0000;
+    end else begin
+      text_rom_charCounter_valueNext = (text_rom_charCounter_value + temp_text_rom_charCounter_valueNext);
+    end
+    if(text_rom_charCounter_willClear) begin
+      text_rom_charCounter_valueNext = 4'b0000;
+    end
+    wall_rom_wallCounter_willIncrement = 1'b0;
+    wall_rom_wallCounter_willClear = 1'b0;
+    setup_renderer_charCommand_start = 1'b0;
+    setup_renderer_charCommand_x_orig = 9'h0;
+    setup_renderer_charCommand_y_orig = 8'h0;
+    setup_renderer_charCommand_word = 7'h0;
+    setup_renderer_charCommand_scale = 3'b000;
+    setup_renderer_charCommand_color = 4'b0000;
+    setup_renderer_blockCommand_start = 1'b0;
+    setup_renderer_blockCommand_x_orig = 9'h0;
+    setup_renderer_blockCommand_y_orig = 8'h0;
+    setup_renderer_blockCommand_width = 8'h0;
+    setup_renderer_blockCommand_height = 8'h0;
+    setup_renderer_blockCommand_in_color = 4'b0000;
+    setup_renderer_blockCommand_pat_color = 4'b0000;
+    setup_renderer_blockCommand_fill_pattern = 2'b00;
+    setup_renderer_fsm_wantStart = 1'b0;
+    setup_renderer_fsm_stateNext = setup_renderer_fsm_stateReg;
+    case(setup_renderer_fsm_stateReg)
       CLEAN_SCREEN : begin
         if(bf_clear_done) begin
-          if(stepup_game_is_running) begin
-            cnt_valueNext = 4'b0110;
-            stepup_fsm_stateNext = START_DRAW_STRING;
+          wall_rom_wallCounter_willClear = 1'b1;
+          if(setup_renderer_gameIsRunning) begin
+            text_rom_charCounter_valueNext = 4'b0110;
+            setup_renderer_fsm_stateNext = DRAW_STATIC_TEXT;
           end else begin
-            stepup_fsm_stateNext = START_DRAW_OPEN;
+            text_rom_charCounter_willClear = 1'b1;
+            setup_renderer_fsm_stateNext = DRAW_OPENING_TEXT;
           end
         end
       end
-      START_DRAW_OPEN : begin
-        stepup_start_char_draw = 1'b1;
-        stepup_fsm_stateNext = WAIT_DRAW_OPEN_DONE;
+      DRAW_OPENING_TEXT : begin
+        setup_renderer_charCommand_start = 1'b1;
+        setup_renderer_charCommand_x_orig = setup_renderer_textX;
+        setup_renderer_charCommand_y_orig = setup_renderer_textY;
+        setup_renderer_charCommand_scale = setup_renderer_textScale;
+        setup_renderer_charCommand_color = setup_renderer_textColor;
+        setup_renderer_charCommand_word = text_rom_word;
+        setup_renderer_fsm_stateNext = WAIT_OPENING_TEXT_DONE;
       end
-      WAIT_DRAW_OPEN_DONE : begin
-        if(itf_done_2) begin
-          cnt_willIncrement = 1'b1;
-          if(temp_when) begin
-            stepup_fsm_stateNext = WAIT_GAME_START;
+      WAIT_OPENING_TEXT_DONE : begin
+        if(setupCharDone) begin
+          if(temp_when_2) begin
+            setup_renderer_fsm_stateNext = WAIT_GAME_START;
           end else begin
-            stepup_fsm_stateNext = START_DRAW_OPEN;
+            text_rom_charCounter_willIncrement = 1'b1;
+            setup_renderer_fsm_stateNext = DRAW_OPENING_TEXT;
           end
         end
       end
       WAIT_GAME_START : begin
         if(game_start) begin
-          stepup_fsm_stateNext = CLEAN_SCREEN;
+          setup_renderer_fsm_stateNext = CLEAN_SCREEN;
         end
       end
-      START_DRAW_STRING : begin
-        stepup_start_char_draw = 1'b1;
-        stepup_fsm_stateNext = WAIT_DRAW_STRING_DONE;
+      DRAW_STATIC_TEXT : begin
+        setup_renderer_charCommand_start = 1'b1;
+        setup_renderer_charCommand_x_orig = setup_renderer_textX;
+        setup_renderer_charCommand_y_orig = setup_renderer_textY;
+        setup_renderer_charCommand_scale = setup_renderer_textScale;
+        setup_renderer_charCommand_color = setup_renderer_textColor;
+        setup_renderer_charCommand_word = text_rom_word;
+        setup_renderer_fsm_stateNext = WAIT_STATIC_TEXT_DONE;
       end
-      WAIT_DRAW_STRING_DONE : begin
-        if(itf_done_2) begin
-          cnt_willIncrement = 1'b1;
-          if(temp_when_1) begin
-            stepup_fsm_stateNext = WAIT_DRAW_SCORE;
+      WAIT_STATIC_TEXT_DONE : begin
+        if(setupCharDone) begin
+          if(temp_when_3) begin
+            setup_renderer_fsm_stateNext = DRAW_WALL;
           end else begin
-            stepup_fsm_stateNext = START_DRAW_STRING;
+            text_rom_charCounter_willIncrement = 1'b1;
+            setup_renderer_fsm_stateNext = DRAW_STATIC_TEXT;
           end
         end
       end
-      WAIT_DRAW_SCORE : begin
-        stepup_fsm_stateNext = PRE_DRAW_WALL;
+      DRAW_WALL : begin
+        setup_renderer_blockCommand_start = wall_rom_command_start;
+        setup_renderer_blockCommand_x_orig = wall_rom_command_x_orig;
+        setup_renderer_blockCommand_y_orig = wall_rom_command_y_orig;
+        setup_renderer_blockCommand_width = wall_rom_command_width;
+        setup_renderer_blockCommand_height = wall_rom_command_height;
+        setup_renderer_blockCommand_in_color = wall_rom_command_in_color;
+        setup_renderer_blockCommand_pat_color = wall_rom_command_pat_color;
+        setup_renderer_blockCommand_fill_pattern = wall_rom_command_fill_pattern;
+        setup_renderer_fsm_stateNext = WAIT_WALL_DONE;
       end
-      PRE_DRAW_WALL : begin
-        stepup_fsm_stateNext = START_DRAW_WALL;
-      end
-      START_DRAW_WALL : begin
-        stepup_start_block_draw = 1'b1;
-        stepup_fsm_stateNext = WAIT_DRAW_WALL_DONE;
-      end
-      WAIT_DRAW_WALL_DONE : begin
-        if(itf_done_3) begin
-          cnt_willIncrement_1 = 1'b1;
-          if(cnt_willOverflow_1) begin
-            stepup_fsm_stateNext = DRAW_SCORE;
+      WAIT_WALL_DONE : begin
+        if(setupBlockDone) begin
+          if(wall_rom_wallCounter_willOverflowIfInc) begin
+            setup_renderer_fsm_stateNext = RUNNING;
           end else begin
-            stepup_fsm_stateNext = PRE_DRAW_WALL;
+            wall_rom_wallCounter_willIncrement = 1'b1;
+            setup_renderer_fsm_stateNext = DRAW_WALL;
           end
         end
       end
-      DRAW_SCORE : begin
+      RUNNING : begin
+        runtimeRenderEnable = 1'b1;
         screen_is_ready = 1'b1;
         if(game_restart) begin
-          stepup_fsm_stateNext = CLEAN_SCREEN;
+          clearPendingPlayfieldRender = 1'b1;
+          if(runtimeRenderBusy) begin
+            setup_renderer_fsm_stateNext = WAIT_RUNTIME_IDLE;
+          end else begin
+            setup_renderer_fsm_stateNext = CLEAN_SCREEN;
+          end
+        end
+      end
+      WAIT_RUNTIME_IDLE : begin
+        clearPendingPlayfieldRender = 1'b1;
+        if((! runtimeRenderBusy)) begin
+          setup_renderer_fsm_stateNext = CLEAN_SCREEN;
         end
       end
       default : begin
-        if(draw_openning_start) begin
-          stepup_fsm_stateNext = CLEAN_SCREEN;
+        if(frame_start) begin
+          text_rom_charCounter_willClear = 1'b1;
+          wall_rom_wallCounter_willClear = 1'b1;
+          setup_renderer_fsm_stateNext = CLEAN_SCREEN;
         end
-        stepup_fsm_wantStart = 1'b1;
+        setup_renderer_fsm_wantStart = 1'b1;
       end
     endcase
-    if(stepup_fsm_wantKill) begin
-      stepup_fsm_stateNext = SETUP_IDLE;
+    if(setup_renderer_fsm_wantKill) begin
+      setup_renderer_fsm_stateNext = SETUP_IDLE;
     end
   end
 
-  assign cnt_willClear = 1'b0;
-  assign cnt_willOverflowIfInc = (cnt_value == 4'b1010);
-  assign cnt_willOverflow = (cnt_willOverflowIfInc && cnt_willIncrement);
-  assign itf_word_1 = rom_spinal_port0;
-  assign cnt_willClear_1 = 1'b0;
-  assign cnt_willOverflowIfInc_1 = (cnt_value_1 == 2'b11);
-  assign cnt_willOverflow_1 = (cnt_willOverflowIfInc_1 && cnt_willIncrement_1);
   always @(*) begin
-    cnt_valueNext_1 = (cnt_value_1 + temp_cnt_valueNext_1_1);
-    if(cnt_willClear_1) begin
-      cnt_valueNext_1 = 2'b00;
+    draw_field_done = 1'b0;
+    runtimeRenderBusy = 1'b0;
+    runtimeRenderStart = 1'b0;
+    runtime_renderer_blockCommand_start = 1'b0;
+    runtime_renderer_blockCommand_x_orig = 9'h0;
+    runtime_renderer_blockCommand_y_orig = 8'h0;
+    runtime_renderer_blockCommand_width = 8'h0;
+    runtime_renderer_blockCommand_height = 8'h0;
+    runtime_renderer_blockCommand_in_color = 4'b0000;
+    runtime_renderer_blockCommand_pat_color = 4'b0000;
+    runtime_renderer_blockCommand_fill_pattern = 2'b00;
+    runtime_renderer_scoreCommand_start = 1'b0;
+    runtime_renderer_scoreCommand_x_orig = 9'h0;
+    runtime_renderer_scoreCommand_y_orig = 8'h0;
+    runtime_renderer_scoreCommand_word = 7'h0;
+    runtime_renderer_scoreCommand_scale = 3'b000;
+    runtime_renderer_scoreCommand_color = 4'b0000;
+    runtime_renderer_readEnable = 1'b0;
+    runtime_renderer_rowCounter_willIncrement = 1'b0;
+    runtime_renderer_rowCounter_willClear = 1'b0;
+    runtime_renderer_colCounter_willIncrement = 1'b0;
+    runtime_renderer_colCounter_willClear = 1'b0;
+    runtime_renderer_scoreDigitCounter_willIncrement = 1'b0;
+    runtime_renderer_scoreDigitCounter_willClear = 1'b0;
+    runtime_renderer_fsm_wantStart = 1'b0;
+    runtime_renderer_fsm_stateNext = runtime_renderer_fsm_stateReg;
+    case(runtime_renderer_fsm_stateReg)
+      FETCH_ROW : begin
+        runtimeRenderBusy = 1'b1;
+        runtime_renderer_readEnable = 1'b1;
+        runtime_renderer_fsm_stateNext = LOAD_ROW;
+      end
+      LOAD_ROW : begin
+        runtimeRenderBusy = 1'b1;
+        runtime_renderer_fsm_stateNext = DRAW_FIELD_BLOCK;
+      end
+      DRAW_FIELD_BLOCK : begin
+        runtimeRenderBusy = 1'b1;
+        runtime_renderer_blockCommand_start = 1'b1;
+        runtime_renderer_blockCommand_x_orig = runtime_renderer_fieldX;
+        runtime_renderer_blockCommand_y_orig = runtime_renderer_fieldY;
+        runtime_renderer_blockCommand_width = 8'h07;
+        runtime_renderer_blockCommand_height = 8'h07;
+        runtime_renderer_blockCommand_in_color = runtime_renderer_fieldColor;
+        runtime_renderer_blockCommand_pat_color = 4'b0010;
+        runtime_renderer_blockCommand_fill_pattern = 2'b00;
+        runtime_renderer_fsm_stateNext = WAIT_FIELD_BLOCK_DONE;
+      end
+      WAIT_FIELD_BLOCK_DONE : begin
+        runtimeRenderBusy = 1'b1;
+        if(runtimeFieldBlockDone) begin
+          if(temp_when) begin
+            runtime_renderer_scoreDigitCounter_willClear = 1'b1;
+            runtime_renderer_fsm_stateNext = DRAW_SCORE_DIGIT;
+          end else begin
+            if(runtime_renderer_colCounter_willOverflowIfInc) begin
+              runtime_renderer_colCounter_willClear = 1'b1;
+              runtime_renderer_rowCounter_willIncrement = 1'b1;
+              runtime_renderer_fsm_stateNext = FETCH_ROW;
+            end else begin
+              runtime_renderer_colCounter_willIncrement = 1'b1;
+              runtime_renderer_fsm_stateNext = DRAW_FIELD_BLOCK;
+            end
+          end
+        end
+      end
+      DRAW_SCORE_DIGIT : begin
+        runtimeRenderBusy = 1'b1;
+        runtime_renderer_scoreCommand_start = 1'b1;
+        runtime_renderer_scoreCommand_x_orig = runtime_renderer_scoreX;
+        runtime_renderer_scoreCommand_y_orig = 8'h50;
+        runtime_renderer_scoreCommand_scale = 3'b000;
+        runtime_renderer_scoreCommand_color = 4'b0110;
+        runtime_renderer_scoreCommand_word = {3'b011,temp_runtime_renderer_scoreCommand_word};
+        runtime_renderer_fsm_stateNext = WAIT_SCORE_DIGIT_DONE;
+      end
+      WAIT_SCORE_DIGIT_DONE : begin
+        runtimeRenderBusy = 1'b1;
+        if(runtimeScoreCharDone) begin
+          if(runtime_renderer_scoreDigitCounter_willOverflowIfInc) begin
+            runtime_renderer_fsm_stateNext = COMPLETE;
+          end else begin
+            runtime_renderer_scoreDigitCounter_willIncrement = 1'b1;
+            runtime_renderer_fsm_stateNext = DRAW_SCORE_DIGIT;
+          end
+        end
+      end
+      COMPLETE : begin
+        draw_field_done = 1'b1;
+        runtime_renderer_fsm_stateNext = IDLE;
+      end
+      default : begin
+        if(temp_when_1) begin
+          runtimeRenderStart = 1'b1;
+          runtime_renderer_rowCounter_willClear = 1'b1;
+          runtime_renderer_colCounter_willClear = 1'b1;
+          runtime_renderer_scoreDigitCounter_willClear = 1'b1;
+          runtime_renderer_fsm_stateNext = FETCH_ROW;
+        end
+        runtime_renderer_fsm_wantStart = 1'b1;
+      end
+    endcase
+    if(runtime_renderer_fsm_wantKill) begin
+      runtime_renderer_fsm_stateNext = IDLE;
     end
   end
 
-  assign blockInfo = wall_rom_spinal_port0;
-  assign x_1 = blockInfo[8 : 0];
-  assign y_1 = blockInfo[16 : 9];
-  assign itf_width_1 = blockInfo[24 : 17];
-  assign itf_height_1 = blockInfo[32 : 25];
-  assign itf_in_color_1 = blockInfo[36 : 33];
-  assign itf_pat_color_1 = blockInfo[40 : 37];
-  assign itf_fill_pattern_1 = blockInfo[42 : 41];
-  assign itf_scale_1 = stepup_scale;
-  assign itf_color_1 = stepup_color;
-  assign itf_start_2 = stepup_start_char_draw;
-  assign itf_start_3 = stepup_start_block_draw;
-  assign stepup_fsm_wantExit = 1'b0;
-  assign stepup_fsm_wantKill = 1'b0;
   always @(*) begin
     bf_clear_start = 1'b0;
-    if(stepup_fsm_onEntry_CLEAN_SCREEN) begin
+    if(setup_renderer_fsm_onEntry_CLEAN_SCREEN) begin
       bf_clear_start = 1'b1;
     end
   end
 
-  assign draw_char_start = (itf_start_2 || itf_start);
-  assign draw_char_scale = (itf_start_2 ? itf_scale_1 : itf_scale);
-  assign draw_char_color = (itf_start_2 ? itf_color_1 : itf_color);
-  assign draw_char_word = (itf_start_2 ? itf_word_1 : itf_word);
-  assign itf_done_2 = draw_char_done;
-  assign itf_done = draw_char_done;
-  assign draw_block_start = (itf_start_1 || itf_start_3);
-  assign draw_block_width = (itf_start_1 ? itf_width : itf_width_1);
-  assign draw_block_height = (itf_start_1 ? itf_height : itf_height_1);
-  assign draw_block_in_color = (itf_start_1 ? itf_in_color : itf_in_color_1);
-  assign draw_block_pat_color = (itf_start_1 ? itf_pat_color : itf_pat_color_1);
-  assign draw_block_fill_pattern = (itf_start_1 ? itf_fill_pattern : itf_fill_pattern_1);
-  assign itf_done_1 = draw_block_done;
-  assign itf_done_3 = draw_block_done;
-  assign draw_x_orig = (x | stepup_x);
-  assign draw_y_orig = (y | stepup_y);
-  assign fsm_onExit_IDLE = ((fsm_stateNext != IDLE) && (fsm_stateReg == IDLE));
-  assign fsm_onExit_FETCH = ((fsm_stateNext != FETCH) && (fsm_stateReg == FETCH));
-  assign fsm_onExit_DATA_READY = ((fsm_stateNext != DATA_READY) && (fsm_stateReg == DATA_READY));
-  assign fsm_onExit_DRAW = ((fsm_stateNext != DRAW) && (fsm_stateReg == DRAW));
-  assign fsm_onExit_WAIT_DONE = ((fsm_stateNext != WAIT_DONE) && (fsm_stateReg == WAIT_DONE));
-  assign fsm_onExit_PRE_DRAW_SCORE = ((fsm_stateNext != PRE_DRAW_SCORE) && (fsm_stateReg == PRE_DRAW_SCORE));
-  assign fsm_onExit_DRAW_DIGIT = ((fsm_stateNext != DRAW_DIGIT) && (fsm_stateReg == DRAW_DIGIT));
-  assign fsm_onExit_WAIT_DRAW_DIGIT_DONE = ((fsm_stateNext != WAIT_DRAW_DIGIT_DONE) && (fsm_stateReg == WAIT_DRAW_DIGIT_DONE));
-  assign fsm_onExit_POST_DRAW_SCORE = ((fsm_stateNext != POST_DRAW_SCORE) && (fsm_stateReg == POST_DRAW_SCORE));
-  assign fsm_onEntry_IDLE = ((fsm_stateNext == IDLE) && (fsm_stateReg != IDLE));
-  assign fsm_onEntry_FETCH = ((fsm_stateNext == FETCH) && (fsm_stateReg != FETCH));
-  assign fsm_onEntry_DATA_READY = ((fsm_stateNext == DATA_READY) && (fsm_stateReg != DATA_READY));
-  assign fsm_onEntry_DRAW = ((fsm_stateNext == DRAW) && (fsm_stateReg != DRAW));
-  assign fsm_onEntry_WAIT_DONE = ((fsm_stateNext == WAIT_DONE) && (fsm_stateReg != WAIT_DONE));
-  assign fsm_onEntry_PRE_DRAW_SCORE = ((fsm_stateNext == PRE_DRAW_SCORE) && (fsm_stateReg != PRE_DRAW_SCORE));
-  assign fsm_onEntry_DRAW_DIGIT = ((fsm_stateNext == DRAW_DIGIT) && (fsm_stateReg != DRAW_DIGIT));
-  assign fsm_onEntry_WAIT_DRAW_DIGIT_DONE = ((fsm_stateNext == WAIT_DRAW_DIGIT_DONE) && (fsm_stateReg != WAIT_DRAW_DIGIT_DONE));
-  assign fsm_onEntry_POST_DRAW_SCORE = ((fsm_stateNext == POST_DRAW_SCORE) && (fsm_stateReg != POST_DRAW_SCORE));
-  assign stepup_fsm_onExit_SETUP_IDLE = ((stepup_fsm_stateNext != SETUP_IDLE) && (stepup_fsm_stateReg == SETUP_IDLE));
-  assign stepup_fsm_onExit_CLEAN_SCREEN = ((stepup_fsm_stateNext != CLEAN_SCREEN) && (stepup_fsm_stateReg == CLEAN_SCREEN));
-  assign stepup_fsm_onExit_START_DRAW_OPEN = ((stepup_fsm_stateNext != START_DRAW_OPEN) && (stepup_fsm_stateReg == START_DRAW_OPEN));
-  assign stepup_fsm_onExit_WAIT_DRAW_OPEN_DONE = ((stepup_fsm_stateNext != WAIT_DRAW_OPEN_DONE) && (stepup_fsm_stateReg == WAIT_DRAW_OPEN_DONE));
-  assign stepup_fsm_onExit_WAIT_GAME_START = ((stepup_fsm_stateNext != WAIT_GAME_START) && (stepup_fsm_stateReg == WAIT_GAME_START));
-  assign stepup_fsm_onExit_START_DRAW_STRING = ((stepup_fsm_stateNext != START_DRAW_STRING) && (stepup_fsm_stateReg == START_DRAW_STRING));
-  assign stepup_fsm_onExit_WAIT_DRAW_STRING_DONE = ((stepup_fsm_stateNext != WAIT_DRAW_STRING_DONE) && (stepup_fsm_stateReg == WAIT_DRAW_STRING_DONE));
-  assign stepup_fsm_onExit_WAIT_DRAW_SCORE = ((stepup_fsm_stateNext != WAIT_DRAW_SCORE) && (stepup_fsm_stateReg == WAIT_DRAW_SCORE));
-  assign stepup_fsm_onExit_PRE_DRAW_WALL = ((stepup_fsm_stateNext != PRE_DRAW_WALL) && (stepup_fsm_stateReg == PRE_DRAW_WALL));
-  assign stepup_fsm_onExit_START_DRAW_WALL = ((stepup_fsm_stateNext != START_DRAW_WALL) && (stepup_fsm_stateReg == START_DRAW_WALL));
-  assign stepup_fsm_onExit_WAIT_DRAW_WALL_DONE = ((stepup_fsm_stateNext != WAIT_DRAW_WALL_DONE) && (stepup_fsm_stateReg == WAIT_DRAW_WALL_DONE));
-  assign stepup_fsm_onExit_DRAW_SCORE = ((stepup_fsm_stateNext != DRAW_SCORE) && (stepup_fsm_stateReg == DRAW_SCORE));
-  assign stepup_fsm_onEntry_SETUP_IDLE = ((stepup_fsm_stateNext == SETUP_IDLE) && (stepup_fsm_stateReg != SETUP_IDLE));
-  assign stepup_fsm_onEntry_CLEAN_SCREEN = ((stepup_fsm_stateNext == CLEAN_SCREEN) && (stepup_fsm_stateReg != CLEAN_SCREEN));
-  assign stepup_fsm_onEntry_START_DRAW_OPEN = ((stepup_fsm_stateNext == START_DRAW_OPEN) && (stepup_fsm_stateReg != START_DRAW_OPEN));
-  assign stepup_fsm_onEntry_WAIT_DRAW_OPEN_DONE = ((stepup_fsm_stateNext == WAIT_DRAW_OPEN_DONE) && (stepup_fsm_stateReg != WAIT_DRAW_OPEN_DONE));
-  assign stepup_fsm_onEntry_WAIT_GAME_START = ((stepup_fsm_stateNext == WAIT_GAME_START) && (stepup_fsm_stateReg != WAIT_GAME_START));
-  assign stepup_fsm_onEntry_START_DRAW_STRING = ((stepup_fsm_stateNext == START_DRAW_STRING) && (stepup_fsm_stateReg != START_DRAW_STRING));
-  assign stepup_fsm_onEntry_WAIT_DRAW_STRING_DONE = ((stepup_fsm_stateNext == WAIT_DRAW_STRING_DONE) && (stepup_fsm_stateReg != WAIT_DRAW_STRING_DONE));
-  assign stepup_fsm_onEntry_WAIT_DRAW_SCORE = ((stepup_fsm_stateNext == WAIT_DRAW_SCORE) && (stepup_fsm_stateReg != WAIT_DRAW_SCORE));
-  assign stepup_fsm_onEntry_PRE_DRAW_WALL = ((stepup_fsm_stateNext == PRE_DRAW_WALL) && (stepup_fsm_stateReg != PRE_DRAW_WALL));
-  assign stepup_fsm_onEntry_START_DRAW_WALL = ((stepup_fsm_stateNext == START_DRAW_WALL) && (stepup_fsm_stateReg != START_DRAW_WALL));
-  assign stepup_fsm_onEntry_WAIT_DRAW_WALL_DONE = ((stepup_fsm_stateNext == WAIT_DRAW_WALL_DONE) && (stepup_fsm_stateReg != WAIT_DRAW_WALL_DONE));
-  assign stepup_fsm_onEntry_DRAW_SCORE = ((stepup_fsm_stateNext == DRAW_SCORE) && (stepup_fsm_stateReg != DRAW_SCORE));
-  assign stepup_fsm_debug = stepup_fsm_stateReg;
+  assign score_cache_digits_0 = score_cache_scoreReg[15 : 12];
+  assign score_cache_digits_1 = score_cache_scoreReg[11 : 8];
+  assign score_cache_digits_2 = score_cache_scoreReg[7 : 4];
+  assign score_cache_digits_3 = score_cache_scoreReg[3 : 0];
+  assign text_rom_charCounter_willOverflowIfInc = (text_rom_charCounter_value == 4'b1010);
+  assign text_rom_charCounter_willOverflow = (text_rom_charCounter_willOverflowIfInc && text_rom_charCounter_willIncrement);
+  assign text_rom_word = text_rom_rom_spinal_port0;
+  assign wall_rom_wallCounter_willOverflowIfInc = (wall_rom_wallCounter_value == 2'b11);
+  assign wall_rom_wallCounter_willOverflow = (wall_rom_wallCounter_willOverflowIfInc && wall_rom_wallCounter_willIncrement);
+  always @(*) begin
+    wall_rom_wallCounter_valueNext = (wall_rom_wallCounter_value + temp_wall_rom_wallCounter_valueNext);
+    if(wall_rom_wallCounter_willClear) begin
+      wall_rom_wallCounter_valueNext = 2'b00;
+    end
+  end
+
+  assign wall_rom_command_start = 1'b1;
+  assign wall_rom_blockInfo = wall_rom_wallMem_spinal_port0;
+  assign wall_rom_command_x_orig = wall_rom_blockInfo[8 : 0];
+  assign wall_rom_command_y_orig = wall_rom_blockInfo[16 : 9];
+  assign wall_rom_command_width = wall_rom_blockInfo[24 : 17];
+  assign wall_rom_command_height = wall_rom_blockInfo[32 : 25];
+  assign wall_rom_command_in_color = wall_rom_blockInfo[36 : 33];
+  assign wall_rom_command_pat_color = wall_rom_blockInfo[40 : 37];
+  assign wall_rom_command_fill_pattern = wall_rom_blockInfo[42 : 41];
+  always @(*) begin
+    playfield_storage_writeRowCounter_willIncrement = 1'b0;
+    if(row_val_valid) begin
+      playfield_storage_writeRowCounter_willIncrement = 1'b1;
+    end
+  end
+
+  assign playfield_storage_writeRowCounter_willClear = 1'b0;
+  assign playfield_storage_writeRowCounter_willOverflowIfInc = (playfield_storage_writeRowCounter_value == 5'h15);
+  assign playfield_storage_writeRowCounter_willOverflow = (playfield_storage_writeRowCounter_willOverflowIfInc && playfield_storage_writeRowCounter_willIncrement);
+  always @(*) begin
+    if(playfield_storage_writeRowCounter_willOverflow) begin
+      playfield_storage_writeRowCounter_valueNext = 5'h0;
+    end else begin
+      playfield_storage_writeRowCounter_valueNext = (playfield_storage_writeRowCounter_value + temp_playfield_storage_writeRowCounter_valueNext);
+    end
+    if(playfield_storage_writeRowCounter_willClear) begin
+      playfield_storage_writeRowCounter_valueNext = 5'h0;
+    end
+  end
+
+  assign playfield_storage_rowBurstComplete = ((! row_val_valid) && row_val_valid_regNext);
+  assign runtime_renderer_rowCounter_willOverflowIfInc = (runtime_renderer_rowCounter_value == 5'h15);
+  assign runtime_renderer_rowCounter_willOverflow = (runtime_renderer_rowCounter_willOverflowIfInc && runtime_renderer_rowCounter_willIncrement);
+  always @(*) begin
+    if(runtime_renderer_rowCounter_willOverflow) begin
+      runtime_renderer_rowCounter_valueNext = 5'h0;
+    end else begin
+      runtime_renderer_rowCounter_valueNext = (runtime_renderer_rowCounter_value + temp_runtime_renderer_rowCounter_valueNext);
+    end
+    if(runtime_renderer_rowCounter_willClear) begin
+      runtime_renderer_rowCounter_valueNext = 5'h0;
+    end
+  end
+
+  assign runtime_renderer_colCounter_willOverflowIfInc = (runtime_renderer_colCounter_value == 4'b1001);
+  assign runtime_renderer_colCounter_willOverflow = (runtime_renderer_colCounter_willOverflowIfInc && runtime_renderer_colCounter_willIncrement);
+  always @(*) begin
+    if(runtime_renderer_colCounter_willOverflow) begin
+      runtime_renderer_colCounter_valueNext = 4'b0000;
+    end else begin
+      runtime_renderer_colCounter_valueNext = (runtime_renderer_colCounter_value + temp_runtime_renderer_colCounter_valueNext);
+    end
+    if(runtime_renderer_colCounter_willClear) begin
+      runtime_renderer_colCounter_valueNext = 4'b0000;
+    end
+  end
+
+  assign runtime_renderer_scoreDigitCounter_willOverflowIfInc = (runtime_renderer_scoreDigitCounter_value == 2'b11);
+  assign runtime_renderer_scoreDigitCounter_willOverflow = (runtime_renderer_scoreDigitCounter_willOverflowIfInc && runtime_renderer_scoreDigitCounter_willIncrement);
+  always @(*) begin
+    runtime_renderer_scoreDigitCounter_valueNext = (runtime_renderer_scoreDigitCounter_value + temp_runtime_renderer_scoreDigitCounter_valueNext);
+    if(runtime_renderer_scoreDigitCounter_willClear) begin
+      runtime_renderer_scoreDigitCounter_valueNext = 2'b00;
+    end
+  end
+
+  assign runtime_renderer_rowValue = playfield_storage_memory_spinal_port1;
+  always @(*) begin
+    runtime_renderer_fieldColor = 4'b0010;
+    if(runtime_renderer_rowBits[9]) begin
+      runtime_renderer_fieldColor = 4'b1001;
+    end
+  end
+
+  assign runtime_renderer_fsm_wantExit = 1'b0;
+  assign runtime_renderer_fsm_wantKill = 1'b0;
+  assign setup_renderer_fsm_wantExit = 1'b0;
+  assign setup_renderer_fsm_wantKill = 1'b0;
+  always @(*) begin
+    selectedCharCommand_start = 1'b0;
+    selectedCharCommand_x_orig = 9'h0;
+    selectedCharCommand_y_orig = 8'h0;
+    selectedCharCommand_word = 7'h0;
+    selectedCharCommand_scale = 3'b000;
+    selectedCharCommand_color = 4'b0000;
+    if(setup_renderer_charCommand_start) begin
+      selectedCharCommand_start = setup_renderer_charCommand_start;
+      selectedCharCommand_x_orig = setup_renderer_charCommand_x_orig;
+      selectedCharCommand_y_orig = setup_renderer_charCommand_y_orig;
+      selectedCharCommand_word = setup_renderer_charCommand_word;
+      selectedCharCommand_scale = setup_renderer_charCommand_scale;
+      selectedCharCommand_color = setup_renderer_charCommand_color;
+    end else begin
+      if(runtime_renderer_scoreCommand_start) begin
+        selectedCharCommand_start = runtime_renderer_scoreCommand_start;
+        selectedCharCommand_x_orig = runtime_renderer_scoreCommand_x_orig;
+        selectedCharCommand_y_orig = runtime_renderer_scoreCommand_y_orig;
+        selectedCharCommand_word = runtime_renderer_scoreCommand_word;
+        selectedCharCommand_scale = runtime_renderer_scoreCommand_scale;
+        selectedCharCommand_color = runtime_renderer_scoreCommand_color;
+      end
+    end
+  end
+
+  always @(*) begin
+    selectedBlockCommand_start = 1'b0;
+    selectedBlockCommand_x_orig = 9'h0;
+    selectedBlockCommand_y_orig = 8'h0;
+    selectedBlockCommand_width = 8'h0;
+    selectedBlockCommand_height = 8'h0;
+    selectedBlockCommand_in_color = 4'b0000;
+    selectedBlockCommand_pat_color = 4'b0000;
+    selectedBlockCommand_fill_pattern = 2'b00;
+    if(setup_renderer_blockCommand_start) begin
+      selectedBlockCommand_start = setup_renderer_blockCommand_start;
+      selectedBlockCommand_x_orig = setup_renderer_blockCommand_x_orig;
+      selectedBlockCommand_y_orig = setup_renderer_blockCommand_y_orig;
+      selectedBlockCommand_width = setup_renderer_blockCommand_width;
+      selectedBlockCommand_height = setup_renderer_blockCommand_height;
+      selectedBlockCommand_in_color = setup_renderer_blockCommand_in_color;
+      selectedBlockCommand_pat_color = setup_renderer_blockCommand_pat_color;
+      selectedBlockCommand_fill_pattern = setup_renderer_blockCommand_fill_pattern;
+    end else begin
+      if(runtime_renderer_blockCommand_start) begin
+        selectedBlockCommand_start = runtime_renderer_blockCommand_start;
+        selectedBlockCommand_x_orig = runtime_renderer_blockCommand_x_orig;
+        selectedBlockCommand_y_orig = runtime_renderer_blockCommand_y_orig;
+        selectedBlockCommand_width = runtime_renderer_blockCommand_width;
+        selectedBlockCommand_height = runtime_renderer_blockCommand_height;
+        selectedBlockCommand_in_color = runtime_renderer_blockCommand_in_color;
+        selectedBlockCommand_pat_color = runtime_renderer_blockCommand_pat_color;
+        selectedBlockCommand_fill_pattern = runtime_renderer_blockCommand_fill_pattern;
+      end
+    end
+  end
+
+  assign charStartCollision = (setup_renderer_charCommand_start && runtime_renderer_scoreCommand_start);
+  assign blockStartCollision = (setup_renderer_blockCommand_start && runtime_renderer_blockCommand_start);
+  assign drawStartCollision = ((setup_renderer_charCommand_start && (setup_renderer_blockCommand_start || runtime_renderer_blockCommand_start)) || (runtime_renderer_scoreCommand_start && (setup_renderer_blockCommand_start || runtime_renderer_blockCommand_start)));
+  assign setupCharDone = (draw_char_done && charOwnerIsSetup);
+  assign runtimeScoreCharDone = (draw_char_done && (! charOwnerIsSetup));
+  assign setupBlockDone = (draw_block_done && blockOwnerIsSetup);
+  assign runtimeFieldBlockDone = (draw_block_done && (! blockOwnerIsSetup));
+  assign draw_char_start = selectedCharCommand_start;
+  assign draw_char_word = selectedCharCommand_word;
+  assign draw_char_scale = selectedCharCommand_scale;
+  assign draw_char_color = selectedCharCommand_color;
+  assign draw_block_start = selectedBlockCommand_start;
+  assign draw_block_width = selectedBlockCommand_width;
+  assign draw_block_height = selectedBlockCommand_height;
+  assign draw_block_in_color = selectedBlockCommand_in_color;
+  assign draw_block_pat_color = selectedBlockCommand_pat_color;
+  assign draw_block_fill_pattern = selectedBlockCommand_fill_pattern;
+  always @(*) begin
+    draw_x_orig = 9'h0;
+    draw_y_orig = 8'h0;
+    if(selectedCharCommand_start) begin
+      draw_x_orig = selectedCharCommand_x_orig;
+      draw_y_orig = selectedCharCommand_y_orig;
+    end else begin
+      if(selectedBlockCommand_start) begin
+        draw_x_orig = selectedBlockCommand_x_orig;
+        draw_y_orig = selectedBlockCommand_y_orig;
+      end
+    end
+  end
+
+  assign runtime_renderer_fsm_onExit_IDLE = ((runtime_renderer_fsm_stateNext != IDLE) && (runtime_renderer_fsm_stateReg == IDLE));
+  assign runtime_renderer_fsm_onExit_FETCH_ROW = ((runtime_renderer_fsm_stateNext != FETCH_ROW) && (runtime_renderer_fsm_stateReg == FETCH_ROW));
+  assign runtime_renderer_fsm_onExit_LOAD_ROW = ((runtime_renderer_fsm_stateNext != LOAD_ROW) && (runtime_renderer_fsm_stateReg == LOAD_ROW));
+  assign runtime_renderer_fsm_onExit_DRAW_FIELD_BLOCK = ((runtime_renderer_fsm_stateNext != DRAW_FIELD_BLOCK) && (runtime_renderer_fsm_stateReg == DRAW_FIELD_BLOCK));
+  assign runtime_renderer_fsm_onExit_WAIT_FIELD_BLOCK_DONE = ((runtime_renderer_fsm_stateNext != WAIT_FIELD_BLOCK_DONE) && (runtime_renderer_fsm_stateReg == WAIT_FIELD_BLOCK_DONE));
+  assign runtime_renderer_fsm_onExit_DRAW_SCORE_DIGIT = ((runtime_renderer_fsm_stateNext != DRAW_SCORE_DIGIT) && (runtime_renderer_fsm_stateReg == DRAW_SCORE_DIGIT));
+  assign runtime_renderer_fsm_onExit_WAIT_SCORE_DIGIT_DONE = ((runtime_renderer_fsm_stateNext != WAIT_SCORE_DIGIT_DONE) && (runtime_renderer_fsm_stateReg == WAIT_SCORE_DIGIT_DONE));
+  assign runtime_renderer_fsm_onExit_COMPLETE = ((runtime_renderer_fsm_stateNext != COMPLETE) && (runtime_renderer_fsm_stateReg == COMPLETE));
+  assign runtime_renderer_fsm_onEntry_IDLE = ((runtime_renderer_fsm_stateNext == IDLE) && (runtime_renderer_fsm_stateReg != IDLE));
+  assign runtime_renderer_fsm_onEntry_FETCH_ROW = ((runtime_renderer_fsm_stateNext == FETCH_ROW) && (runtime_renderer_fsm_stateReg != FETCH_ROW));
+  assign runtime_renderer_fsm_onEntry_LOAD_ROW = ((runtime_renderer_fsm_stateNext == LOAD_ROW) && (runtime_renderer_fsm_stateReg != LOAD_ROW));
+  assign runtime_renderer_fsm_onEntry_DRAW_FIELD_BLOCK = ((runtime_renderer_fsm_stateNext == DRAW_FIELD_BLOCK) && (runtime_renderer_fsm_stateReg != DRAW_FIELD_BLOCK));
+  assign runtime_renderer_fsm_onEntry_WAIT_FIELD_BLOCK_DONE = ((runtime_renderer_fsm_stateNext == WAIT_FIELD_BLOCK_DONE) && (runtime_renderer_fsm_stateReg != WAIT_FIELD_BLOCK_DONE));
+  assign runtime_renderer_fsm_onEntry_DRAW_SCORE_DIGIT = ((runtime_renderer_fsm_stateNext == DRAW_SCORE_DIGIT) && (runtime_renderer_fsm_stateReg != DRAW_SCORE_DIGIT));
+  assign runtime_renderer_fsm_onEntry_WAIT_SCORE_DIGIT_DONE = ((runtime_renderer_fsm_stateNext == WAIT_SCORE_DIGIT_DONE) && (runtime_renderer_fsm_stateReg != WAIT_SCORE_DIGIT_DONE));
+  assign runtime_renderer_fsm_onEntry_COMPLETE = ((runtime_renderer_fsm_stateNext == COMPLETE) && (runtime_renderer_fsm_stateReg != COMPLETE));
+  assign setup_renderer_fsm_onExit_SETUP_IDLE = ((setup_renderer_fsm_stateNext != SETUP_IDLE) && (setup_renderer_fsm_stateReg == SETUP_IDLE));
+  assign setup_renderer_fsm_onExit_CLEAN_SCREEN = ((setup_renderer_fsm_stateNext != CLEAN_SCREEN) && (setup_renderer_fsm_stateReg == CLEAN_SCREEN));
+  assign setup_renderer_fsm_onExit_DRAW_OPENING_TEXT = ((setup_renderer_fsm_stateNext != DRAW_OPENING_TEXT) && (setup_renderer_fsm_stateReg == DRAW_OPENING_TEXT));
+  assign setup_renderer_fsm_onExit_WAIT_OPENING_TEXT_DONE = ((setup_renderer_fsm_stateNext != WAIT_OPENING_TEXT_DONE) && (setup_renderer_fsm_stateReg == WAIT_OPENING_TEXT_DONE));
+  assign setup_renderer_fsm_onExit_WAIT_GAME_START = ((setup_renderer_fsm_stateNext != WAIT_GAME_START) && (setup_renderer_fsm_stateReg == WAIT_GAME_START));
+  assign setup_renderer_fsm_onExit_DRAW_STATIC_TEXT = ((setup_renderer_fsm_stateNext != DRAW_STATIC_TEXT) && (setup_renderer_fsm_stateReg == DRAW_STATIC_TEXT));
+  assign setup_renderer_fsm_onExit_WAIT_STATIC_TEXT_DONE = ((setup_renderer_fsm_stateNext != WAIT_STATIC_TEXT_DONE) && (setup_renderer_fsm_stateReg == WAIT_STATIC_TEXT_DONE));
+  assign setup_renderer_fsm_onExit_DRAW_WALL = ((setup_renderer_fsm_stateNext != DRAW_WALL) && (setup_renderer_fsm_stateReg == DRAW_WALL));
+  assign setup_renderer_fsm_onExit_WAIT_WALL_DONE = ((setup_renderer_fsm_stateNext != WAIT_WALL_DONE) && (setup_renderer_fsm_stateReg == WAIT_WALL_DONE));
+  assign setup_renderer_fsm_onExit_RUNNING = ((setup_renderer_fsm_stateNext != RUNNING) && (setup_renderer_fsm_stateReg == RUNNING));
+  assign setup_renderer_fsm_onExit_WAIT_RUNTIME_IDLE = ((setup_renderer_fsm_stateNext != WAIT_RUNTIME_IDLE) && (setup_renderer_fsm_stateReg == WAIT_RUNTIME_IDLE));
+  assign setup_renderer_fsm_onEntry_SETUP_IDLE = ((setup_renderer_fsm_stateNext == SETUP_IDLE) && (setup_renderer_fsm_stateReg != SETUP_IDLE));
+  assign setup_renderer_fsm_onEntry_CLEAN_SCREEN = ((setup_renderer_fsm_stateNext == CLEAN_SCREEN) && (setup_renderer_fsm_stateReg != CLEAN_SCREEN));
+  assign setup_renderer_fsm_onEntry_DRAW_OPENING_TEXT = ((setup_renderer_fsm_stateNext == DRAW_OPENING_TEXT) && (setup_renderer_fsm_stateReg != DRAW_OPENING_TEXT));
+  assign setup_renderer_fsm_onEntry_WAIT_OPENING_TEXT_DONE = ((setup_renderer_fsm_stateNext == WAIT_OPENING_TEXT_DONE) && (setup_renderer_fsm_stateReg != WAIT_OPENING_TEXT_DONE));
+  assign setup_renderer_fsm_onEntry_WAIT_GAME_START = ((setup_renderer_fsm_stateNext == WAIT_GAME_START) && (setup_renderer_fsm_stateReg != WAIT_GAME_START));
+  assign setup_renderer_fsm_onEntry_DRAW_STATIC_TEXT = ((setup_renderer_fsm_stateNext == DRAW_STATIC_TEXT) && (setup_renderer_fsm_stateReg != DRAW_STATIC_TEXT));
+  assign setup_renderer_fsm_onEntry_WAIT_STATIC_TEXT_DONE = ((setup_renderer_fsm_stateNext == WAIT_STATIC_TEXT_DONE) && (setup_renderer_fsm_stateReg != WAIT_STATIC_TEXT_DONE));
+  assign setup_renderer_fsm_onEntry_DRAW_WALL = ((setup_renderer_fsm_stateNext == DRAW_WALL) && (setup_renderer_fsm_stateReg != DRAW_WALL));
+  assign setup_renderer_fsm_onEntry_WAIT_WALL_DONE = ((setup_renderer_fsm_stateNext == WAIT_WALL_DONE) && (setup_renderer_fsm_stateReg != WAIT_WALL_DONE));
+  assign setup_renderer_fsm_onEntry_RUNNING = ((setup_renderer_fsm_stateNext == RUNNING) && (setup_renderer_fsm_stateReg != RUNNING));
+  assign setup_renderer_fsm_onEntry_WAIT_RUNTIME_IDLE = ((setup_renderer_fsm_stateNext == WAIT_RUNTIME_IDLE) && (setup_renderer_fsm_stateReg != WAIT_RUNTIME_IDLE));
+  assign setup_renderer_fsmDebug = setup_renderer_fsm_stateReg;
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
-      score <= 16'h0;
-      digital_cnt_value <= 2'b00;
-      wr_row_cnt_value <= 5'h0;
-      col_cnt_value <= 4'b0000;
-      row_cnt_value <= 5'h0;
+      score_cache_scoreReg <= 16'h0;
+      text_rom_charCounter_value <= 4'b0000;
+      wall_rom_wallCounter_value <= 2'b00;
+      pendingPlayfieldRender <= 1'b0;
+      playfield_storage_writeRowCounter_value <= 5'h0;
       row_val_valid_regNext <= 1'b0;
-      wait_date_readout <= 1'b0;
-      wait_date_readout_regNext <= 1'b0;
-      x <= 9'h0;
-      y <= 8'h0;
-      cnt_value <= 4'b0000;
-      cnt_value_1 <= 2'b00;
-      stepup_x <= 9'h0;
-      stepup_y <= 8'h0;
-      stepup_game_is_running <= 1'b0;
-      fsm_stateReg <= IDLE;
-      stepup_fsm_stateReg <= SETUP_IDLE;
+      runtime_renderer_rowCounter_value <= 5'h0;
+      runtime_renderer_colCounter_value <= 4'b0000;
+      runtime_renderer_scoreDigitCounter_value <= 2'b00;
+      runtime_renderer_rowBits <= 10'h0;
+      runtime_renderer_fieldX <= 9'h0;
+      runtime_renderer_fieldY <= 8'h0;
+      runtime_renderer_scoreX <= 9'h0;
+      setup_renderer_textX <= 9'h0;
+      setup_renderer_textY <= 8'h0;
+      setup_renderer_textScale <= 3'b000;
+      setup_renderer_textColor <= 4'b0000;
+      setup_renderer_gameIsRunning <= 1'b0;
+      charOwnerIsSetup <= 1'b0;
+      blockOwnerIsSetup <= 1'b0;
+      runtime_renderer_fsm_stateReg <= IDLE;
+      setup_renderer_fsm_stateReg <= SETUP_IDLE;
     end else begin
-      if(bcd_inst_data_out_dec_valid) begin
-        score <= bcd_inst_data_out_dec_payload;
+      if(score_cache_bcdInst_data_out_dec_valid) begin
+        score_cache_scoreReg <= score_cache_bcdInst_data_out_dec_payload;
       end
-      digital_cnt_value <= digital_cnt_valueNext;
-      wr_row_cnt_value <= wr_row_cnt_valueNext;
-      col_cnt_value <= col_cnt_valueNext;
-      row_cnt_value <= row_cnt_valueNext;
+      text_rom_charCounter_value <= text_rom_charCounter_valueNext;
+      wall_rom_wallCounter_value <= wall_rom_wallCounter_valueNext;
+      playfield_storage_writeRowCounter_value <= playfield_storage_writeRowCounter_valueNext;
       row_val_valid_regNext <= row_val_valid;
-      if(data_ready) begin
-        wait_date_readout <= 1'b1;
+      if(clearPendingPlayfieldRender) begin
+        pendingPlayfieldRender <= 1'b0;
       end else begin
-        if(draw_openning_start) begin
-          wait_date_readout <= 1'b0;
-        end
-      end
-      wait_date_readout_regNext <= wait_date_readout;
-      if(gen_start) begin
-        x <= 9'h03b;
-        y <= 8'h14;
-      end
-      if(draw_field_done) begin
-        x <= 9'h0;
-        y <= 8'h0;
-      end else begin
-        if(col_cnt_willOverflow) begin
-          x <= 9'h03b;
+        if(playfield_storage_rowBurstComplete) begin
+          pendingPlayfieldRender <= 1'b1;
         end else begin
-          if(col_cnt_inc) begin
-            x <= x_next;
+          if(runtimeRenderStart) begin
+            pendingPlayfieldRender <= 1'b0;
           end
         end
-        if(row_cnt_inc) begin
-          y <= y_next;
-        end
       end
-      cnt_value <= cnt_valueNext;
-      cnt_value_1 <= cnt_valueNext_1;
-      fsm_stateReg <= fsm_stateNext;
-      case(fsm_stateReg)
-        FETCH : begin
-        end
-        DATA_READY : begin
-        end
-        DRAW : begin
-        end
-        WAIT_DONE : begin
-        end
-        PRE_DRAW_SCORE : begin
-          x <= 9'h0d6;
-          y <= 8'h50;
-        end
-        DRAW_DIGIT : begin
-        end
-        WAIT_DRAW_DIGIT_DONE : begin
-        end
-        POST_DRAW_SCORE : begin
-        end
-        default : begin
-        end
-      endcase
-      if(fsm_onExit_WAIT_DRAW_DIGIT_DONE) begin
-        x <= (x + 9'h00c);
+      runtime_renderer_rowCounter_value <= runtime_renderer_rowCounter_valueNext;
+      runtime_renderer_colCounter_value <= runtime_renderer_colCounter_valueNext;
+      runtime_renderer_scoreDigitCounter_value <= runtime_renderer_scoreDigitCounter_valueNext;
+      `ifndef SYNTHESIS
+        `ifdef FORMAL
+          assert((! charStartCollision)); // display_controller.scala:L644
+        `else
+          if(!(! charStartCollision)) begin
+            $display("FAILURE display_controller: setup and runtime score char commands must not start together"); // display_controller.scala:L644
+            $finish;
+          end
+        `endif
+      `endif
+      `ifndef SYNTHESIS
+        `ifdef FORMAL
+          assert((! blockStartCollision)); // display_controller.scala:L645
+        `else
+          if(!(! blockStartCollision)) begin
+            $display("FAILURE display_controller: setup and runtime block commands must not start together"); // display_controller.scala:L645
+            $finish;
+          end
+        `endif
+      `endif
+      `ifndef SYNTHESIS
+        `ifdef FORMAL
+          assert((! drawStartCollision)); // display_controller.scala:L646
+        `else
+          if(!(! drawStartCollision)) begin
+            $display("FAILURE display_controller: char and block engines must not receive start in the same cycle"); // display_controller.scala:L646
+            $finish;
+          end
+        `endif
+      `endif
+      if(selectedCharCommand_start) begin
+        charOwnerIsSetup <= setup_renderer_charCommand_start;
       end
-      stepup_fsm_stateReg <= stepup_fsm_stateNext;
-      case(stepup_fsm_stateReg)
-        CLEAN_SCREEN : begin
-          if(bf_clear_done) begin
-            if(stepup_game_is_running) begin
-              stepup_x <= 9'h0d2;
-              stepup_y <= 8'h17;
+      if(selectedBlockCommand_start) begin
+        blockOwnerIsSetup <= setup_renderer_blockCommand_start;
+      end
+      runtime_renderer_fsm_stateReg <= runtime_renderer_fsm_stateNext;
+      case(runtime_renderer_fsm_stateReg)
+        FETCH_ROW : begin
+        end
+        LOAD_ROW : begin
+          runtime_renderer_rowBits <= runtime_renderer_rowValue;
+        end
+        DRAW_FIELD_BLOCK : begin
+        end
+        WAIT_FIELD_BLOCK_DONE : begin
+          if(runtimeFieldBlockDone) begin
+            if(temp_when) begin
+              runtime_renderer_scoreX <= 9'h0d6;
             end else begin
-              stepup_x <= 9'h018;
-              stepup_y <= 8'h42;
+              if(runtime_renderer_colCounter_willOverflowIfInc) begin
+                runtime_renderer_fieldX <= 9'h03b;
+                runtime_renderer_fieldY <= (runtime_renderer_fieldY + 8'h09);
+              end else begin
+                runtime_renderer_rowBits <= (runtime_renderer_rowBits <<< 1);
+                runtime_renderer_fieldX <= (runtime_renderer_fieldX + 9'h009);
+              end
             end
           end
         end
-        START_DRAW_OPEN : begin
+        DRAW_SCORE_DIGIT : begin
         end
-        WAIT_DRAW_OPEN_DONE : begin
-          if(itf_done_2) begin
-            if(!temp_when) begin
-              stepup_x <= (stepup_x + 9'h02e);
+        WAIT_SCORE_DIGIT_DONE : begin
+          if(runtimeScoreCharDone) begin
+            if(!runtime_renderer_scoreDigitCounter_willOverflowIfInc) begin
+              runtime_renderer_scoreX <= (runtime_renderer_scoreX + 9'h00c);
+            end
+          end
+        end
+        COMPLETE : begin
+        end
+        default : begin
+          if(temp_when_1) begin
+            runtime_renderer_fieldX <= 9'h03b;
+            runtime_renderer_fieldY <= 8'h14;
+          end
+        end
+      endcase
+      setup_renderer_fsm_stateReg <= setup_renderer_fsm_stateNext;
+      case(setup_renderer_fsm_stateReg)
+        CLEAN_SCREEN : begin
+          if(bf_clear_done) begin
+            if(setup_renderer_gameIsRunning) begin
+              setup_renderer_textX <= 9'h0d2;
+              setup_renderer_textY <= 8'h17;
+              setup_renderer_textScale <= 3'b000;
+              setup_renderer_textColor <= 4'b0110;
+            end else begin
+              setup_renderer_textX <= 9'h018;
+              setup_renderer_textY <= 8'h42;
+              setup_renderer_textScale <= 3'b010;
+              setup_renderer_textColor <= 4'b0110;
+            end
+          end
+        end
+        DRAW_OPENING_TEXT : begin
+        end
+        WAIT_OPENING_TEXT_DONE : begin
+          if(setupCharDone) begin
+            if(!temp_when_2) begin
+              setup_renderer_textX <= (setup_renderer_textX + 9'h02e);
             end
           end
         end
         WAIT_GAME_START : begin
           if(game_start) begin
-            stepup_game_is_running <= 1'b1;
+            setup_renderer_gameIsRunning <= 1'b1;
           end
         end
-        START_DRAW_STRING : begin
+        DRAW_STATIC_TEXT : begin
         end
-        WAIT_DRAW_STRING_DONE : begin
-          if(itf_done_2) begin
-            if(!temp_when_1) begin
-              stepup_x <= (stepup_x + 9'h00c);
+        WAIT_STATIC_TEXT_DONE : begin
+          if(setupCharDone) begin
+            if(!temp_when_3) begin
+              setup_renderer_textX <= (setup_renderer_textX + 9'h00c);
             end
           end
         end
-        WAIT_DRAW_SCORE : begin
+        DRAW_WALL : begin
         end
-        PRE_DRAW_WALL : begin
-          stepup_x <= x_1;
-          stepup_y <= y_1;
+        WAIT_WALL_DONE : begin
         end
-        START_DRAW_WALL : begin
+        RUNNING : begin
         end
-        WAIT_DRAW_WALL_DONE : begin
-        end
-        DRAW_SCORE : begin
-          stepup_x <= 9'h0;
-          stepup_y <= 8'h0;
+        WAIT_RUNTIME_IDLE : begin
         end
         default : begin
-          stepup_game_is_running <= 1'b0;
         end
       endcase
     end
-  end
-
-  always @(posedge core_clk) begin
-    if(load) begin
-      row_bits <= row_value;
-    end else begin
-      if(shift_en) begin
-        row_bits <= row_bits_next;
-      end
-    end
-    case(stepup_fsm_stateReg)
-      CLEAN_SCREEN : begin
-        if(bf_clear_done) begin
-          if(stepup_game_is_running) begin
-            stepup_scale <= 3'b000;
-            stepup_color <= 4'b0110;
-          end else begin
-            stepup_scale <= 3'b010;
-            stepup_color <= 4'b0110;
-          end
-        end
-      end
-      START_DRAW_OPEN : begin
-      end
-      WAIT_DRAW_OPEN_DONE : begin
-      end
-      WAIT_GAME_START : begin
-      end
-      START_DRAW_STRING : begin
-      end
-      WAIT_DRAW_STRING_DONE : begin
-      end
-      WAIT_DRAW_SCORE : begin
-      end
-      PRE_DRAW_WALL : begin
-      end
-      START_DRAW_WALL : begin
-      end
-      WAIT_DRAW_WALL_DONE : begin
-      end
-      DRAW_SCORE : begin
-      end
-      default : begin
-      end
-    endcase
   end
 
 
