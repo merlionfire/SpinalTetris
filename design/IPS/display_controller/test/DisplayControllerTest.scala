@@ -54,6 +54,7 @@ class DisplayControllerTest extends AnyFunSuite {
   private val rightWallOrig = playFieldConfig.getRightWallOrig
   private val baseOrig = playFieldConfig.getBaseOrig
   private val fieldOrig = playFieldConfig.getFieldOrig
+  private val initialPlayfieldBurstRows = rowBlocksNum - 1
 
   private def initDut(dut: display_controller): Unit = {
     dut.io.game_restart #= false
@@ -402,7 +403,7 @@ class DisplayControllerTest extends AnyFunSuite {
         Integer.parseInt("1000000001", 2),
         Integer.parseInt("0000000000", 2),
         Integer.parseInt("1111111111", 2)
-      ) ++ Seq.fill(rowBlocksNum - 3)(0)
+      ) ++ Seq.fill(initialPlayfieldBurstRows - 3)(0)
 
       sendPlayfieldBurst(dut, rows)
       dut.clockDomain.waitSampling(20)
@@ -485,7 +486,7 @@ class DisplayControllerTest extends AnyFunSuite {
       val setupBlockCount = blockEvents.length
 
       sendScore(dut, value = 7)
-      sendPlayfieldBurst(dut, Seq.fill(rowBlocksNum)(Integer.parseInt("1010101010", 2)))
+      sendPlayfieldBurst(dut, Seq.fill(initialPlayfieldBurstRows)(Integer.parseInt("1010101010", 2)))
       dut.clockDomain.waitSampling(10)
 
       pulseGameRestart(dut)

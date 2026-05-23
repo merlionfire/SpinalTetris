@@ -6,6 +6,7 @@ import spinal.lib.fsm._
 import config._
 import utils.PathUtils
 import IPS.bcd._
+import spinal.core.formal.{past, pastValid}
 
 import scala.collection.immutable.ListMap
 import scala.language.postfixOps
@@ -61,6 +62,7 @@ case class DisplayControllerConfig(
 
 
 class draw_char_if(colorBitsWidth: Int) extends Bundle with IMasterSlave {
+
   val start: Bool = Bool()
   val word: UInt = UInt(7 bit)
   val scale: UInt = UInt(3 bits)
@@ -282,6 +284,8 @@ class display_controller(config: DisplayControllerConfig) extends Component {
 
   private val playfieldStorage: Area {
     val memory: Mem[Bits]
+    val rowBurstComplete: Bool
+    val writeRowCounter: Counter
   } = new Area {
     val memory: Mem[Bits] = Mem(Bits(colBlocksNum bits), rowBlocksNum)
     memory.addAttribute("ram_style", "distributed")
@@ -295,7 +299,7 @@ class display_controller(config: DisplayControllerConfig) extends Component {
     )
 
     // Functional fix: keep the existing no-stall burst contract, but store the completion as an explicit pending request.
-    private val rowBurstComplete: Bool = io.row_val.valid.fall(False)
+    val rowBurstComplete: Bool = io.row_val.valid.fall(False)
 
     when(clearPendingPlayfieldRender) {
       pendingPlayfieldRender := False
@@ -334,10 +338,12 @@ class display_controller(config: DisplayControllerConfig) extends Component {
     private val fieldY: UInt = Reg(UInt(FB_Y_ADDRWIDTH bits)) init 0
     private val scoreX: UInt = Reg(UInt(FB_X_ADDRWIDTH bits)) init 0
 
-    private val fieldColor: UInt = U(piece_bg_color, IDX_W bits)
+    private val fieldColor = UInt(IDX_W bits)
+    fieldColor := U(piece_bg_color, IDX_W bits)
     when(rowBits.msb) {
-      fieldColor := piece_ft_color
+      fieldColor := U(piece_ft_color, IDX_W bits)
     }
+
 
     val fsm: StateMachine = new StateMachine {
 
@@ -603,7 +609,12 @@ class display_controller(config: DisplayControllerConfig) extends Component {
           when(io.game_restart) {
             // Functional fix: drop stale playfield requests on restart so UI redraw cannot replay old field data.
             clearPendingPlayfieldRender := True
-            when(runtimeRenderBusy) {
+            // Note : runtimeRenderStart is guard to prevent the case where below 2 conditions happen in the same cycle right after game restart:
+            //  - io.game_restart is pulsed
+            //  - runtimeRender FSM is still in IDLE
+            // Above case can cause the FSM to jump to WAIT_RUNTIME_IDLE and get stuck there because runtimeRenderStart is never cleared in that branch.
+
+            when(runtimeRenderBusy  || runtimeRenderStart ) {
               goto(WAIT_RUNTIME_IDLE)
             } otherwise {
               goto(CLEAN_SCREEN)
@@ -623,6 +634,7 @@ class display_controller(config: DisplayControllerConfig) extends Component {
     }
 
     val fsmDebug = Bits()
+
     fsm.postBuild {
       fsmDebug := fsm.stateReg.asBits
     }
@@ -644,6 +656,27 @@ class display_controller(config: DisplayControllerConfig) extends Component {
   assert(!charStartCollision, "display_controller: setup and runtime score char commands must not start together", severity = FAILURE)
   assert(!blockStartCollision, "display_controller: setup and runtime block commands must not start together", severity = FAILURE)
   assert(!drawStartCollision, "display_controller: char and block engines must not receive start in the same cycle", severity = FAILURE)
+  // Note: done must not be held more than 1 cycle without intervening start
+  assert(!(io.draw_char.done && io.draw_char.start),
+    "draw_char: done and start must not coincide")
+
+  // Burst length exactly rowBlocksNum
+  // No gaps: once valid rises, it must stay high for rowBlocksNum cycles
+  // Counter must be at rowBlocksNum-1 when valid falls
+  assert(
+    !(playfieldStorage.rowBurstComplete && playfieldStorage.writeRowCounter =/= rowBlocksNum - 1),
+    "row_val: burst ended before rowBlocksNum rows were received"
+  )
+
+  // Property: if game_restart is seen, runtime renderer must not be active
+  // the cycle after restart
+  GenerationFlags.formal {
+    when(pastValid() && past(io.game_restart)) {
+      assert(!runtimeRenderBusy || past(runtimeRenderBusy))
+    }
+  }
+
+
 
   when(setupRenderer.charCommand.start) {
     selectedCharCommand := setupRenderer.charCommand
@@ -729,7 +762,7 @@ object displayControllerMain {
       anonymSignalPrefix = "temp",
       mergeAsyncProcess = true,
       inlineRom = true
-    ).generateVerilog(
+    ).includeFormal.generateVerilog(
       gen = new display_controller(config)
     )
   }

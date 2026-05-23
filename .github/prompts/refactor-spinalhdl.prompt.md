@@ -100,6 +100,13 @@ Apply two-tier policy:
 Flag: abbreviations that lose meaning, generic names (`data`, `reg1`, `flag`),
 and names that mismatch their RTL function.
 
+Example : use definitionName to specify the component name in the generated Verilog, and ensure it matches the class name for clarity.
+
+```scala
+class DisplayController(config: DisplayControllerConfig) extends Component {
+  def definitionName = "display_controller"
+  ...
+}
 ---
 
 ## Step 5 — Refactored Output
