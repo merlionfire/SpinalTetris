@@ -95,6 +95,8 @@ class seven_bag_rng extends Component {
     }
 
     val ELEMENT : State = new State {
+      // Pipeline bubble: allows RegNext(invalid) and Reg(existed)
+      // to settle for one full cycle after LFSR shift before CHECK evaluates them.
       whenIsActive {
         goto(CHECK)
       }
