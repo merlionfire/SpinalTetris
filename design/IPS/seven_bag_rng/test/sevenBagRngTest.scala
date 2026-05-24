@@ -125,8 +125,9 @@ class sevenBagRngTest extends AnyFunSuite {
     compiled.doSimUntilVoid(seed = 42) { dut =>
       initialize(dut)
 
-      val results = requestShapes(dut, count = 21)
-      printSummary("three consecutive bags", results)
+      val bagCount = 28
+      val results = requestShapes(dut, count = bagCount * 7)
+      printSummary(s"$bagCount consecutive bags", results)
 
       val expectedSet = (0 to 6).toSet
       val failedBags = results.grouped(7).zipWithIndex.flatMap { case (bagResults, bagIndex) =>

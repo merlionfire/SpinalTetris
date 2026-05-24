@@ -38,6 +38,12 @@ class seven_bag_rng extends Component {
 
   io.shape.payload := nextNumber
 
+  assert(
+    !(io.shape.valid && io.shape.payload === U(7, 3 bits)),
+    "seven_bag_rng: valid shape must never be 7",
+    severity = FAILURE
+  )
+
   val fsm = new StateMachine {
 
     shift := False
