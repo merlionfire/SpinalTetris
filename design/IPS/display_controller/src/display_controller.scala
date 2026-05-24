@@ -662,9 +662,9 @@ class display_controller(config: DisplayControllerConfig) extends Component {
 
   // Burst length exactly rowBlocksNum
   // No gaps: once valid rises, it must stay high for rowBlocksNum cycles
-  // Counter must be at rowBlocksNum-1 when valid falls
+  // Counter wraps to 0 after the rowBlocksNum-th accepted row
   assert(
-    !(playfieldStorage.rowBurstComplete && playfieldStorage.writeRowCounter =/= rowBlocksNum - 1),
+    !(playfieldStorage.rowBurstComplete && playfieldStorage.writeRowCounter =/= 0),
     "row_val: burst ended before rowBlocksNum rows were received"
   )
 

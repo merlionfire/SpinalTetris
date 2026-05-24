@@ -1,717 +1,590 @@
 package SSC.display_top
 
-import SSC.tetris_core.tetris_core
-import utils.PathUtils
 import config._
+import org.scalatest.funsuite.AnyFunSuite
 import spinal.core._
 import spinal.core.sim._
-import org.scalatest.funsuite.AnyFunSuite
-import spinal.core.{Bits, ClockDomain}
-import spinal.lib.sim.FlowMonitor
+import utils.PathUtils
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
-import java.awt.{BasicStroke, Color, Font, Graphics2D}
+import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import javax.imageio.ImageIO
 import javax.swing.WindowConstants
 import scala.collection.mutable
+import scala.language.postfixOps
 import scala.swing._
-import scala.swing.event._
-
+import scala.swing.event.WindowClosing
+import scala.util.Random
 
 class DisplayTopTest extends AnyFunSuite {
 
-  // ***************************************
-  //  CUSTOM CODE BEGIN
-  // ***************************************
+  private val compiler: String = "vcs"
+  private val runFolder: String = PathUtils.getRtlOutputPath(getClass, middlePath = "design/SSC", targetName = "sim").toString
+  private val workFolder: String = s"$runFolder/$compiler"
+  private val debugRunFolder: String = s"$runFolder/debug"
+  private val normalRunFolder: String = s"$runFolder/normal"
+  private val displayConfig: DisplayTopConfig = DisplayTopConfig(offset_x = 32)
+  private val frameWidth: Int = displayConfig.xWidth
+  private val frameHeight: Int = displayConfig.yWidth
+  private val framePixels: Int = frameWidth * frameHeight
+  private val enableInteractiveGui: Boolean = false
 
-  val debugMode : Boolean =  false   // True : drive each draw engines signals instead of FSM ( default )
-  // ***************************************
-  //  CUSTOM CODE END
-  // ***************************************
-  //val compiler : String = "verilator"
-  val compiler : String = "vcs"
-  val runFolder : String = PathUtils.getRtlOutputPath(getClass, middlePath = "design/SSC", targetName = "sim").toString
-  val workFolder = runFolder+"/"+compiler
-
-  val memory_model : String  = compiler match  {
+  private val memoryModel: String = compiler match {
     case "verilator" => "RAMB16_S9_VERILATOR.v"
     case "vcs" => "RAMB16_S9.v"
   }
 
+  private val xilinxPath: String = System.getenv("XILINX")
+  println(s"[INFO] @[elab] xilinxPath=$xilinxPath")
 
-  val xilinxPath = System.getenv("XILINX")
+  private var drawFrameInstance: Option[MainFrame] = None
+  private val obsMem: mutable.Queue[(Int, Int, Int)] = mutable.Queue[(Int, Int, Int)]()
 
-  println("[DEBUG] xilinxPath = " + xilinxPath)
+  private lazy val debugCompiled: SimCompiled[display_top] = compileDut(testMode = true, outputFolder = debugRunFolder)
+  private lazy val normalCompiled: SimCompiled[display_top] = compileDut(testMode = false, outputFolder = normalRunFolder)
 
-  var drawFrameInstance: Option[MainFrame] = None
+  import displayConfig.pfConfig._
 
-  val expectedData, receivedData = ArrayBuffer[Int]()
-  val receivedHitStatus = mutable.Queue[Boolean]()
-  var obs_mem = mutable.Queue[(Int, Int, Int)]()
+  private case class TestInfo(name: String, purpose: String, strategy: String, imageName: String, interactiveGui: Boolean = false)
 
-  val shift_mem = mutable.Queue[ArrayBuffer[BigInt]]()
+  private object ControllerState {
+    val WAIT_GAME_START: Int = 4
+  }
 
-  val  config = DisplayTopConfig(offset_x = 32 )
-
-  lazy val compiled: SimCompiled[display_top] = runSimConfig(runFolder, compiler)
-    .addRtl(s"${xilinxPath}/glbl.v")
-    .addRtl(s"${xilinxPath}/unisims/${memory_model}")
-    //.addRtl("design/utils/ascii_font16x8.v")
-    .withTimeScale( 1 ns)
-    .withTimePrecision(10 ps)
-    .compile {
-      val c = new display_top( config,debugMode)
-      c.vgaArea.pixel_debug.simPublic()
-      c.vgaArea.vgaSync.io.sof.simPublic()
-      c.coreArea.drawController.setupRenderer.fsmDebug.simPublic()
-      c
-    }
-
-  import config.pfConfig._
-
-  object GuiHelper {
-    def vga4BitTo8Bit(color : ( Int, Int, Int) ): Int = {
-      // Scale the 4-bit value (0-15) to the 8-bit range (0-255)
-      // Multiplying by 17 (255 / 15 is approximately 17) often works well for this.
-      // (value & 0xF) * 17
-      // Alternatively, you can also try bit shifting and replication:
-      // (value & 0xF) | ((value & 0xF) << 4)
-      val r = color._1 | color._1 << 4
-      val g = color._2 | color._2 << 4
-      val color8bit = List( color._1, color._2,color._3 ).map(  x => x | ( x << 4 ))
-      color8bit(0) << 16 | color8bit(1) << 8 | color8bit(2)
-
-    }
-
-    def launchGui( imageTitle : String = "VGA Display Example" )  = {
-      // A CountDownLatch is a reliable way to have one thread wait for another.
-      // We initialize it to 1, meaning we're waiting for one event to happen.
-      val guiClosedLatch = new CountDownLatch(1)
-      val imageFile = s"${runFolder}/${compiler}/${imageTitle.replace(" ", "_")}.png"
-
-      val gui = fork {
-        // All Swing UI code must run on the Event Dispatch Thread (EDT).
-        // Swing.onEDT ensures this.
-        Swing.onEDT {
-          // Drawing after simulation
-          object DrawFrame extends MainFrame {
-            val width = 640
-            val height = 480
-            title = imageTitle
-            // 1. Take full control of the close operation.
-            // This ensures that clicking 'X' ONLY fires the WindowClosing event.
-            peer.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE)
-
-            preferredSize = new Dimension(width, height)
-            contents = new Panel {
-              preferredSize = new Dimension(width, height)
-              private var cachedImage: Option[BufferedImage] = None
-
-              // Create a simple image
-              def createImage(): BufferedImage = {
-                val img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
-                val g = img.createGraphics()
-
-                for (y <- 0 until height) {
-                  for (x <- 0 until width) {
-                    val rgb = obs_mem.dequeue()
-                    img.setRGB(x, y, vga4BitTo8Bit(rgb))
-                  }
-                }
-                if (obs_mem.nonEmpty) {
-                  println(f"[Error] obs_mem is NOT empty and number of the remaining items : ${obs_mem.size}")
-                }
-                g.dispose()
-                val outputFile = new File(imageFile)
-                ImageIO.write(img, "png", outputFile)
-                println(s"Image saved to ${outputFile.getAbsolutePath}")
-                img
-
-              }
-              //Initial generate image
-              cachedImage = Some(createImage())
-
-              override def paintComponent(g: Graphics2D): Unit = {
-                super.paintComponent(g)
-                println("DEBUG][GUI]paintComponent() is called now ! ")
-                cachedImage match {
-                  case Some(image) => g.drawImage(image, 0, 0, size.width, size.height, null) // Scale if needed.
-                  case None => // Handle the case where the image hasn't been generated yet
-                }
-
-              }
-
-            }
-
-            // 2. Listen for the user's direct intent to close the window.
-            reactions += {
-              case _: WindowClosing =>
-                println("[DEBUG] Window closing event received. Manually disposing and releasing latch.")
-                // 3. Perform shutdown actions explicitly and in order.
-                dispose() // Manually dispose the window to free resources.
-                guiClosedLatch.countDown() // Unblock the waiting thread.
-            }
-          }
-
-          DrawFrame.visible = true
-          drawFrameInstance = Some(DrawFrame)
-        } // end of onEDT
-
-        try {
-          println("[DEBUG] GUI thread waiting for window to close.")
-          guiClosedLatch.await()
-        } catch {
-          case e: InterruptedException => Thread.currentThread().interrupt()
-        }
-        println("[DEBUG] GUI thread is now finished.")
+  private def compileDut(testMode: Boolean, outputFolder: String): SimCompiled[display_top] = {
+    runSimConfig(outputFolder, compiler)
+      .addRtl(s"$xilinxPath/glbl.v")
+      .addRtl(s"$xilinxPath/unisims/$memoryModel")
+      .withTimeScale(1 ns)
+      .withTimePrecision(10 ps)
+      .compile {
+        val dut = new display_top(displayConfig, testMode)
+        dut.vgaArea.pixel_debug.simPublic()
+        dut.vgaArea.vgaSync.io.sof.simPublic()
+        dut.coreArea.drawController.setupRenderer.fsmDebug.simPublic()
+        dut
       }
+  }
 
-      println("[DEBUG] Waiting GUI exiting .... ")
-      gui.join()
-      println("[DEBUG] GUI has exited cleanly. Application will now terminate.")
+  private def logInfo(message: String): Unit = println(s"[INFO] @[${simTime()}] $message")
+  private def logDebug(message: String): Unit = println(s"[DEBUG] @[${simTime()}] $message")
+  private def logError(message: String): Unit = println(s"[ERROR] @[${simTime()}] $message")
+  private def logInteractiveGuiDisabled(): Unit = {
+    println(s"[WARN] @[${simTime()}] Interactive GUI helper is kept for this test but disabled by enableInteractiveGui=false")
+  }
 
+  private def logTestStart(info: TestInfo): Unit = {
+    logInfo(s"[TEST][START] name='${info.name}'")
+    logInfo(s"[TEST][PURPOSE] ${info.purpose}")
+    logInfo(s"[TEST][STRATEGY] ${info.strategy}")
+  }
+
+  private def logTestPass(info: TestInfo, imageFile: File, detail: String): Unit = {
+    logInfo(s"[TEST][PASS] name='${info.name}' image='${imageFile.getAbsolutePath}' detail='$detail'")
+  }
+
+  private def startClocksAndInit(dut: display_top, testMode: Boolean): Unit = {
+    dut.coreClockDomain.forkStimulus(4 ns)
+    dut.vgaClockDomain.forkStimulus(10 ns)
+    init(dut, testMode)
+    dut.vgaClockDomain.waitSampling(20)
+    dut.io.softRest #= false
+  }
+
+  private def init(dut: display_top, testMode: Boolean): Unit = {
+    dut.io.softRest #= false
+    dut.io.game_restart #= false
+    dut.io.game_start #= false
+    dut.io.row_val.valid #= false
+    dut.io.row_val.payload #= 0
+    dut.io.score_val.valid #= false
+    dut.io.score_val.payload #= 0
+
+    if (testMode) {
+      dut.io.debug.draw_char_start #= false
+      dut.io.debug.draw_block_start #= false
+      dut.io.debug.draw_x_orig #= 0
+      dut.io.debug.draw_y_orig #= 0
+      dut.io.debug.draw_char_word #= 0
+      dut.io.debug.draw_char_scale #= 0
+      dut.io.debug.draw_char_color #= 0
+      dut.io.debug.draw_block_width #= 0
+      dut.io.debug.draw_block_height #= 0
+      dut.io.debug.draw_block_in_color #= 0
+      dut.io.debug.draw_block_pat_color #= 0
+      dut.io.debug.draw_block_fill_pattern #= 0
     }
   }
-  def config_char( dut:display_top,  x : Int, y : Int ,  value : Int, color : Int = 6, scale : Int = 1  ) {
+
+  private def waitCoreUntil(dut: display_top, maxCycles: Int, message: String)(condition: => Boolean): Unit = {
+    var cycles = 0
+    while (cycles < maxCycles && !condition) {
+      dut.coreClockDomain.waitSampling()
+      cycles += 1
+    }
+    if (!condition) {
+      logError(s"$message after waiting $cycles core cycles")
+    }
+    assert(condition, s"$message after waiting $cycles core cycles")
+  }
+
+  private def waitForOpeningWaitState(dut: display_top): Unit = {
+    val message = "opening screen did not reach WAIT_GAME_START"
+    waitCoreUntil(dut, maxCycles = 250000, message = message) {
+      dut.coreArea.drawController.setupRenderer.fsmDebug.toInt == ControllerState.WAIT_GAME_START
+    }
+    logInfo(s"Controller reached state=${ControllerState.WAIT_GAME_START} for '$message'")
+  }
+
+  private def waitForScreenReady(dut: display_top): Unit = {
+    val message = "controller did not finish static game layout after game_start"
+    waitCoreUntil(dut, maxCycles = 250000, message = message) {
+      dut.io.screen_is_ready.toBoolean
+    }
+    logInfo(s"screen_is_ready observed for '$message'")
+  }
+
+  private def waitForDrawDoneLow(dut: display_top): Unit = {
+    var cycles = 0
+    while (cycles < 20 && dut.io.draw_done.toBoolean) {
+      dut.coreClockDomain.waitSampling()
+      cycles += 1
+    }
+    assert(!dut.io.draw_done.toBoolean, s"draw_done stayed high for $cycles cycles")
+  }
+
+  private def configChar(dut: display_top, x: Int, y: Int, value: Int, color: Int = 6, scale: Int = 1): Unit = {
+    logDebug(s"Start debug char draw x=$x y=$y word=$value color=$color scale=$scale")
     dut.coreClockDomain.waitSampling(2)
     dut.io.debug.draw_x_orig #= x
     dut.io.debug.draw_y_orig #= y
     dut.io.debug.draw_char_word #= value
-    dut.io.debug.draw_char_scale #= scale-1
+    dut.io.debug.draw_char_scale #= scale - 1
     dut.io.debug.draw_char_color #= color
     dut.coreClockDomain.waitSampling()
     dut.io.debug.draw_char_start #= true
     dut.coreClockDomain.waitSampling()
     dut.io.debug.draw_char_start #= false
-
     dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
     dut.io.debug.draw_x_orig #= 0
     dut.io.debug.draw_y_orig #= 0
-    dut.coreClockDomain.waitSampling()
+    dut.coreClockDomain.waitSampling(2)
+    waitForDrawDoneLow(dut)
   }
 
-  def config_block( dut : display_top, x : Int, y : Int ,  width : Int , height : Int, color : Int, pat_color : Int, fill_pattern : Int = 0  ) {
+  private def configBlock(
+      dut: display_top,
+      x: Int,
+      y: Int,
+      width: Int,
+      height: Int,
+      color: Int,
+      patColor: Int,
+      fillPattern: Int = 0
+  ): Unit = {
+    logDebug(s"Start debug block draw x=$x y=$y width=$width height=$height color=$color patColor=$patColor fillPattern=$fillPattern")
     dut.coreClockDomain.waitSampling(2)
     dut.io.debug.draw_x_orig #= x
     dut.io.debug.draw_y_orig #= y
-    dut.io.debug.draw_block_width #= width-1
-    dut.io.debug.draw_block_height #= height-1
+    dut.io.debug.draw_block_width #= width - 1
+    dut.io.debug.draw_block_height #= height - 1
     dut.io.debug.draw_block_in_color #= color
-    dut.io.debug.draw_block_pat_color #= pat_color
-    dut.io.debug.draw_block_fill_pattern #= fill_pattern
-
+    dut.io.debug.draw_block_pat_color #= patColor
+    dut.io.debug.draw_block_fill_pattern #= fillPattern
     dut.coreClockDomain.waitSampling()
     dut.io.debug.draw_block_start #= true
     dut.coreClockDomain.waitSampling()
     dut.io.debug.draw_block_start #= false
     dut.coreClockDomain.waitSampling(2)
-
     dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
     dut.io.debug.draw_x_orig #= 0
     dut.io.debug.draw_y_orig #= 0
+    dut.coreClockDomain.waitSampling(2)
+    waitForDrawDoneLow(dut)
+  }
+
+  private def pulseGameStart(dut: display_top): Unit = {
+    logInfo("Pulse game_start")
+    dut.io.game_start #= true
     dut.coreClockDomain.waitSampling()
-
-  }
-
-  def init(dut:display_top): Unit = {
-    dut.io.softRest #= false
-    dut.io.game_restart #= false
     dut.io.game_start #= false
-    dut.io.row_val.valid #= false
-    dut.io.score_val.valid #= false
-    if (debugMode) {
-      dut.io.debug.draw_char_start #= false
-      dut.io.debug.draw_block_start #= false
-
-      dut.io.debug.draw_x_orig #= 0
-      dut.io.debug.draw_y_orig #= 0
-   } else {
-      dut.io.game_start #= false
-
-   }
+    dut.coreClockDomain.waitSampling(4)
   }
 
+  private def pulseGameRestart(dut: display_top): Unit = {
+    logInfo("Pulse game_restart")
+    dut.io.game_restart #= true
+    dut.coreClockDomain.waitSampling()
+    dut.io.game_restart #= false
+    dut.coreClockDomain.waitSampling(4)
+  }
 
-  def createScreenImg () = {
-    def vga4BitTo8Bit(color : ( Int, Int, Int) ): Int = {
-      // Scale the 4-bit value (0-15) to the 8-bit range (0-255)
-      // Multiplying by 17 (255 / 15 is approximately 17) often works well for this.
-      // (value & 0xF) * 17
-      // Alternatively, you can also try bit shifting and replication:
-      // (value & 0xF) | ((value & 0xF) << 4)
-      val r = color._1 | color._1 << 4
-      val g = color._2 | color._2 << 4
-      val color8bit = List( color._1, color._2,color._3 ).map(  x => x | ( x << 4 ))
-      color8bit(0) << 16 | color8bit(1) << 8 | color8bit(2)
+  private def sendScore(dut: display_top, value: Int): Unit = {
+    logInfo(s"Send score value=$value")
+    dut.io.score_val.payload #= value
+    dut.io.score_val.valid #= true
+    dut.coreClockDomain.waitSampling()
+    dut.io.score_val.valid #= false
+    dut.io.score_val.payload #= 0
+    dut.coreClockDomain.waitSampling(8)
+  }
 
+  private def sendPlayfieldRows(dut: display_top, rows: Seq[Int]): Unit = {
+    assertResult(rowBlocksNum)(rows.length)
+    logInfo(s"Send playfield row burst rows=${rows.length}")
+    rows.zipWithIndex.foreach { case (rowValue, index) =>
+      logDebug(s"Drive row_val index=$index value=$rowValue")
+      dut.io.row_val.payload #= rowValue
+      dut.io.row_val.valid #= true
+      dut.coreClockDomain.waitSampling()
     }
+    dut.io.row_val.valid #= false
+    dut.io.row_val.payload #= 0
+    dut.coreClockDomain.waitSampling(4)
+  }
 
-    val width = config.xWidth
-    val height = config.yWidth
-
-    // Define the output directory
-    val outputDirName = "screenShotsnap"
-    val outputDir = new File(s"${workFolder}/${outputDirName}")
-
-    // Create the directory if it doesn't exist
-    if (!outputDir.exists()) {
-      if (outputDir.mkdir()) {
-        println(s"Created directory: ${outputDir.getAbsolutePath}")
-      } else {
-        // Handle the case where directory creation fails (e.g., permissions)
-        println(s"[Error] Failed to create directory: ${outputDir.getAbsolutePath}. Images might not be saved.")
-      }
+  private def waitForRuntimeRenderDone(dut: display_top, message: String): Unit = {
+    dut.vgaClockDomain.waitSamplingWhere(dut.vgaArea.vgaSync.io.sof.toBoolean)
+    logInfo(s"Frame boundary observed before waiting for runtime render: $message")
+    waitCoreUntil(dut, maxCycles = 500000, message = message) {
+      dut.io.draw_field_done.toBoolean
     }
+    dut.coreClockDomain.waitSampling(8)
+  }
 
-    var idx = 0
-    while ( obs_mem.length >= ( 640 * 480 )   ) {
-      println(s"Start to generate screen image : ${idx}")
-      val img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
-
-      for (y <- 0 until height) {
-        for (x <- 0 until width) {
-          val rgb = obs_mem.dequeue()
-          img.setRGB(x, y, vga4BitTo8Bit(rgb))
+  private def expectNoDrawFieldDoneAcrossNextFrame(dut: display_top): Unit = {
+    val message = "Stale playfield render was observed after game_restart"
+    var monitorActive = true
+    var drawFieldDoneSeen = false
+    fork {
+      while (monitorActive) {
+        dut.coreClockDomain.waitSampling()
+        if (dut.io.draw_field_done.toBoolean) {
+          drawFieldDoneSeen = true
         }
       }
-
-      val g = img.createGraphics()
-      val image_file_name:String = s"screen_640x480_${idx}.png"
-      g.dispose()
-      val outputFile = new File(outputDir, image_file_name)
-      ImageIO.write(img, "png", outputFile)
-      println(s"Image saved to ${outputFile.getAbsolutePath}")
-      idx = idx + 1
-
     }
 
-    if ( obs_mem.nonEmpty ) {
-      println(f"[Error] obs_mem is NOT empty and number of the remaining items : ${obs_mem.size}")
+    dut.vgaClockDomain.waitSamplingWhere(dut.vgaArea.vgaSync.io.sof.toBoolean)
+    dut.vgaClockDomain.waitSamplingWhere(dut.vgaArea.vgaSync.io.sof.toBoolean)
+    monitorActive = false
+    dut.coreClockDomain.waitSampling(2)
+    if (drawFieldDoneSeen) {
+      logError(message)
     }
-
+    assert(!drawFieldDoneSeen, message)
   }
 
-  test("Test char and block - ") {
+  private def makePlayfieldRows(seed: Int, density: Double = 0.2): Seq[Int] = {
+    val random = new Random(seed)
+    (0 until rowBlocksNum).map { row =>
+      (0 until colBlocksNum).foldLeft(0) { case (acc, col) =>
+        val isBorder = row == 0 || row == bottomRow - 1 || col == 0 || col == colBlocksNum - 1
+        val drawOn = isBorder || random.nextDouble() < density
+        if (drawOn) acc | (1 << col) else acc
+      }
+    }
+  }
 
-    assert(
-      debugMode == true,
-      s"\n this test needs dut in debug mode where interfaces of draw_char_engine and draw_block_engine are exposed to dut interface"
+  private object ImageHelper {
+    private def vga4BitTo8Bit(color: (Int, Int, Int)): Int = {
+      val color8bit = Seq(color._1, color._2, color._3).map(value => (value & 0xF) | ((value & 0xF) << 4))
+      color8bit.head << 16 | color8bit(1) << 8 | color8bit(2)
+    }
+
+    private def imageFile(info: TestInfo): File = {
+      val safeName = info.imageName.stripSuffix(".png").replaceAll("[^A-Za-z0-9_.-]", "_")
+      new File(workFolder, s"$safeName.png")
+    }
+
+    def writeFrame(info: TestInfo, pixels: Seq[(Int, Int, Int)]): File = {
+      assertResult(framePixels, s"Captured pixel count for ${info.name}")(pixels.length)
+      val outputFile = imageFile(info)
+      val outputDir = outputFile.getParentFile
+      if (!outputDir.exists() && !outputDir.mkdirs()) {
+        logError(s"Failed to create image output directory: ${outputDir.getAbsolutePath}")
+      }
+
+      val image = new BufferedImage(frameWidth, frameHeight, BufferedImage.TYPE_INT_RGB)
+      pixels.zipWithIndex.foreach { case (rgb, index) =>
+        val x = index % frameWidth
+        val y = index / frameWidth
+        image.setRGB(x, y, vga4BitTo8Bit(rgb))
+      }
+      ImageIO.write(image, "png", outputFile)
+      logInfo(s"Image saved to ${outputFile.getAbsolutePath}")
+      outputFile
+    }
+  }
+
+  private object GuiHelper {
+    def launchGui(imageTitle: String, imageFile: File): Unit = {
+      val guiClosedLatch = new CountDownLatch(1)
+      val gui = fork {
+        Swing.onEDT {
+          object DrawFrame extends MainFrame {
+            private val image = ImageIO.read(imageFile)
+            title = imageTitle
+            peer.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE)
+            preferredSize = new Dimension(frameWidth, frameHeight)
+            contents = new Panel {
+              preferredSize = new Dimension(frameWidth, frameHeight)
+              override def paintComponent(g: Graphics2D): Unit = {
+                super.paintComponent(g)
+                logDebug("[GUI] paintComponent() called")
+                g.drawImage(image, 0, 0, size.width, size.height, null)
+              }
+            }
+            reactions += {
+              case _: WindowClosing =>
+                logInfo("GUI window closing event received")
+                dispose()
+                guiClosedLatch.countDown()
+            }
+          }
+          DrawFrame.visible = true
+          drawFrameInstance = Some(DrawFrame)
+        }
+
+        try {
+          logInfo("GUI thread waiting for window close")
+          guiClosedLatch.await()
+        } catch {
+          case _: InterruptedException => Thread.currentThread().interrupt()
+        }
+        logInfo("GUI thread finished")
+      }
+
+      logInfo("Waiting for GUI exit")
+      gui.join()
+      logInfo("GUI exited cleanly")
+    }
+  }
+
+  private def captureReferenceImage(dut: display_top, info: TestInfo): File = {
+    logInfo(s"Waiting for next SOF before reference capture for '${info.name}'")
+    obsMem.clear()
+    dut.vgaClockDomain.waitSamplingWhere(dut.vgaArea.vgaSync.io.sof.toBoolean)
+    logInfo(s"Capture started for '${info.name}'")
+    obsMem.clear()
+
+    while (obsMem.length < framePixels) {
+      dut.vgaClockDomain.waitSampling()
+      if (dut.vgaArea.pixel_debug.valid.toBoolean) {
+        val payload = dut.vgaArea.pixel_debug.payload
+        obsMem.enqueue((payload.r.toInt, payload.g.toInt, payload.b.toInt))
+      }
+    }
+
+    val pixels = obsMem.toVector
+    val distinctColors = pixels.distinct.length
+    val nonBlackPixels = pixels.count(_ != (0, 0, 0))
+    logInfo(s"Captured frame summary: pixels=${pixels.length} distinct_colors=$distinctColors non_black_pixels=$nonBlackPixels")
+    assert(distinctColors > 1, s"${info.name}: expected more than one color in reference image")
+
+    val outputFile = ImageHelper.writeFrame(info, pixels)
+    obsMem.clear()
+
+    if (info.interactiveGui && enableInteractiveGui) {
+      GuiHelper.launchGui(info.name, outputFile)
+    } else if (info.interactiveGui) {
+      logInteractiveGuiDisabled()
+    }
+
+    outputFile
+  }
+
+  test("debug primitives draw char and block reference image") {
+    val info = TestInfo(
+      name = "debug primitives draw char and block reference image",
+      purpose = "Verify the debug-exposed draw_char_engine and draw_block_engine can draw sequential commands without overlapping engine execution.",
+      strategy = "Use test-mode display_top, serialize every char/block start until draw_done is observed low again, then capture one full VGA frame as PNG.",
+      imageName = "display_top_debug_char_and_block_reference",
+      interactiveGui = true
     )
 
-    compiled.doSimUntilVoid(seed = 42) { dut =>
-
-      //dut.clockDomain.forkStimulus(10)   // 10ns ==> 100
-      dut.coreClockDomain.forkStimulus(4 ns)
-      dut.vgaClockDomain.forkStimulus(10 ns)
-
-      init(dut)
-
-      //SimTimeout(10000000) // adjust timeout as needed
-
+    debugCompiled.doSimUntilVoid(seed = 42) { dut =>
+      logTestStart(info)
+      startClocksAndInit(dut, testMode = true)
       SimTimeout(20 ms)
 
-      dut.vgaClockDomain.waitSampling(20)
-      dut.vgaClockDomain.forkSimSpeedPrinter()
-
-
-      FlowMonitor(dut.vgaArea.pixel_debug, dut.vgaClockDomain) { payload =>
-        obs_mem.enqueue((payload.r.toInt, payload.g.toInt, payload.b.toInt))
-      }
-
-      dut.vgaClockDomain.waitSampling(20)
-      dut.io.softRest #= false
-
-
       dut.vgaClockDomain.waitSamplingWhere(dut.vgaArea.vgaSync.io.sof.toBoolean)
-      println(f"[DEBUG] @${simTime()} The 1st frame has been started now !")
+      logInfo("The first frame has started")
 
-      config_char(dut, 0,0, 0x41, scale=2)
-
-      for ( i <- 1 to 16 ) {
-        println("@" + simTime() + "  :  " + i )
-        //dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
-        config_block(dut, 10+(i*16), 20, i, i,  ( i ) % 16 , ( i  +1) % 16,  fill_pattern=1)
+      configChar(dut, x = 0, y = 0, value = 0x41, scale = 2)
+      for (i <- 1 to 16) {
+        configBlock(dut, 10 + i * 16, 20, i, i, i % 16, (i + 1) % 16, fillPattern = 1)
+      }
+      for (i <- 1 to 16) {
+        configBlock(dut, 10 + i * 16, 80, i, i * 2, i % 16, (i + 1) % 16, fillPattern = 2)
+      }
+      for (i <- 1 to 16) {
+        configBlock(dut, 10 + i * 16, 160, i, i * 3, i % 16, i % 16, fillPattern = 3)
       }
 
-      for ( i <- 1 to 16 ) {
-        //dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
-        config_block(dut, 10+(i*16), 80, i, i*2,  ( i ) % 16 , ( i  +1) % 16, fill_pattern = 2)
-      }
-
-      for ( i <- 1 to 16 ) {
-        //dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
-        config_block(dut, 10+(i*16), 160, i, i*3,  ( i ) % 16 , ( i ) % 16,  fill_pattern = 3 )
-      }
-
-
-      dut.vgaClockDomain.waitSampling(10)
-      dut.vgaClockDomain.waitSamplingWhere(dut.vgaArea.vgaSync.io.sof.toBoolean)
-      println(f"[DEBUG] @${simTime()} The 2nd frame has been started and then stop sim now !")
-
-      //*************************************************************
-      //        GUI Entry Point
-      //*************************************************************
-      GuiHelper.launchGui(imageTitle="Draw char and block")
-
-      println("simTime : " + simTime())
+      val imageFile = captureReferenceImage(dut, info)
+      logTestPass(info, imageFile, "Serialized one char draw and 48 block draws; PNG contains multiple visible colors.")
       simSuccess()
-
-
     }
   }
 
-
-  test("Test Tetris Opening Image  - ") {
-
-    assert(
-      debugMode == true,
-      s"\n this test needs dut in debug mode where interfaces of draw_char_engine and draw_block_engine are exposed to dut interface"
+  test("debug primitives draw tetris opening string reference image") {
+    val info = TestInfo(
+      name = "debug primitives draw tetris opening string reference image",
+      purpose = "Verify direct character rendering for the opening Tetris banner independent of the display controller FSM.",
+      strategy = "Use debug mode, draw the banner characters one by one with a fixed scale/color, and capture exactly one VGA frame.",
+      imageName = "display_top_debug_tetris_opening_string_reference"
     )
 
-    compiled.doSimUntilVoid(seed = 42) { dut =>
-      //dut.clockDomain.forkStimulus(10)   // 10ns ==> 100
-      dut.coreClockDomain.forkStimulus(4 ns)
-      dut.vgaClockDomain.forkStimulus(10 ns)
-
-      init(dut)
-
-
-      SimTimeout(10 ms)
-
-      dut.vgaClockDomain.waitSampling(20)
-      dut.vgaClockDomain.forkSimSpeedPrinter()
-
-
-      FlowMonitor(dut.vgaArea.pixel_debug, dut.vgaClockDomain) { payload =>
-        obs_mem.enqueue((payload.r.toInt, payload.g.toInt, payload.b.toInt))
-      }
-
-      dut.vgaClockDomain.waitSampling(20)
-      dut.io.softRest #= false
+    debugCompiled.doSimUntilVoid(seed = 42) { dut =>
+      logTestStart(info)
+      startClocksAndInit(dut, testMode = true)
+      SimTimeout(20 ms)
 
       dut.vgaClockDomain.waitSamplingWhere(dut.vgaArea.vgaSync.io.sof.toBoolean)
-      println(f"[DEBUG] @${simTime()} The 1st frame has been started now !")
-      println("@" + simTime() + " Draw left wall")
+      logInfo("The first frame has started")
 
       val (x, y, width, margin) = (15, 60, 50, 18)
-
-      "Tetris".map(_.toByte).zipWithIndex.foreach { case (c, i) =>
-          println(s"[DEBUG] @${simTime()} <$i> $c")
-          config_char(dut, x + i * width + margin, y, c, scale = 3 )
-          //dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
-
+      "Tetris".map(_.toInt).zipWithIndex.foreach { case (charCode, index) =>
+        configChar(dut, x + index * width + margin, y, charCode, scale = 3)
       }
 
-
-      dut.vgaClockDomain.waitSampling(10)
-      dut.vgaClockDomain.waitSamplingWhere(dut.vgaArea.vgaSync.io.sof.toBoolean)
-      println(f"[DEBUG] @${simTime()} The 2nd frame has been started and then stop sim now !")
-
-      //*************************************************************
-      //        GUI Entry Point
-      //*************************************************************
-      GuiHelper.launchGui("Tetris Opening String Demo")
-
-      println("simTime : " + simTime())
+      val imageFile = captureReferenceImage(dut, info)
+      logTestPass(info, imageFile, "Drew six opening banner characters and captured the resulting frame.")
       simSuccess()
-
     }
   }
 
-
-  test("Test Tetris Layout - wall and score demo") {
-
-    assert(
-      debugMode == true,
-      s"\n this test needs dut in debug mode where interfaces of draw_char_engine and draw_block_engine are exposed to dut interface"
+  test("debug primitives draw tetris layout wall and score reference image") {
+    val info = TestInfo(
+      name = "debug primitives draw tetris layout wall and score reference image",
+      purpose = "Verify the composed in-game layout can be drawn using serialized primitive debug commands.",
+      strategy = "Draw static walls, a deterministic playfield sample, separator, and score text without starting a new command until the previous draw is idle.",
+      imageName = "display_top_debug_tetris_layout_reference"
     )
 
-    compiled.doSimUntilVoid(seed = 42) { dut =>
-
-      // true : use piece_draw_engine to draw playfield
-      // false : draw block by block via draw_block_engin
-      val drawAllFieldByEngine =  false //
-
-      dut.coreClockDomain.forkStimulus(4 ns)
-      dut.vgaClockDomain.forkStimulus(10 ns)
-
-      init(dut)
-
-      SimTimeout(50 ms) // adjust timeout as needed
-
-      //SimTimeout(10 ms)
-
-      dut.vgaClockDomain.waitSampling(20)
-      dut.vgaClockDomain.forkSimSpeedPrinter()
-
-
-      FlowMonitor(dut.vgaArea.pixel_debug, dut.vgaClockDomain) { payload =>
-        obs_mem.enqueue((payload.r.toInt, payload.g.toInt, payload.b.toInt))
-      }
-
-      dut.vgaClockDomain.waitSampling(20)
-      dut.io.softRest #= false
-
+    debugCompiled.doSimUntilVoid(seed = 42) { dut =>
+      logTestStart(info)
+      startClocksAndInit(dut, testMode = true)
+      SimTimeout(50 ms)
 
       dut.vgaClockDomain.waitSamplingWhere(dut.vgaArea.vgaSync.io.sof.toBoolean)
-      println(f"[DEBUG] @${simTime()} The 1st frame has been started now !")
-      println("@" + simTime() + " Draw left wall" )
-      config_block(dut, x_orig, y_orig,  wall_width, wall_height, 0, 15, fill_pattern=3)
+      logInfo("The first frame has started")
 
-
-
-      println("@" + simTime() + " Draw right wall" )
-      //dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
+      configBlock(dut, x_orig, y_orig, wall_width, wall_height, 0, 15, fillPattern = 3)
       val rightWallOrig = getRightWallOrig
-      config_block(dut, rightWallOrig._1, rightWallOrig._2,  wall_width, wall_height, 0, 15, fill_pattern=3)
-
-
-      println("@" + simTime() + " Draw base " )
-      //dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
+      configBlock(dut, rightWallOrig._1, rightWallOrig._2, wall_width, wall_height, 0, 15, fillPattern = 3)
       val baseOrig = getBaseOrig
-      config_block(dut, baseOrig._1, baseOrig._2,  base_width, base_height, 0, 15, fill_pattern=3)
+      configBlock(dut, baseOrig._1, baseOrig._2, base_width, base_height, 0, 15, fillPattern = 3)
 
-      //dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
-
-      println("@" + simTime() + " Draw blocks " )
-
-
-      val blocks_array = for {
-        row <- 0 until  rowBlocksNum
-        col <- 0 until colBlocksNum
-        draw_on = if ( row == 0 || row == (bottomRow-1) || col == 0 || col==(colBlocksNum-1)  )  {
-           true
-        } else {
-           Random.nextDouble() < 0.2
-        }
-        //if ( draw_on)
-      } yield (row, col, draw_on)
-
-      if ( drawAllFieldByEngine ) {
-        println(f"[DEBUG] @${simTime()} Start to send playfield to piece_draw_engine !")
-
-        val a = blocks_array.map(_._3).sliding(10,10).toList
-        val b = a.map { x =>   /* convert 10 bits in same row to Int */
-          val row_value = x.zipWithIndex.foldLeft(0)( (acc, y)  =>
-            if ( y._1 ) acc | 1<< y._2
-            else  acc )
-          row_value
-        }
-
-        b.foreach {  x =>  /* drive DUT by row_val stream */
-          dut.coreClockDomain.waitSampling()
-          println(s"[DEBUG] @${simTime()} Drive data = $x ")
-          dut.io.row_val.valid #= true
-          dut.io.row_val.payload #= x
-        }
-        dut.coreClockDomain.waitSampling()
-        dut.io.row_val.valid #= false
-
-        println(f"[DEBUG] @${simTime()} All playfield status has been sent. Be waiting for they being stored into FrameBuffer !")
-        dut.coreClockDomain.waitSampling(10)
-        dut.coreClockDomain.waitSamplingWhere(dut.io.draw_field_done.toBoolean)
-      } else {
-        blocks_array.filter( _._3 ).map(
-          pos => (pos._2 * block_len + x_orig + wall_width, pos._1 * block_len + y_orig)
-        ).foreach { case (x, y) =>
-          config_block(dut, x, y, block_len, block_len, 10, 11, fill_pattern = 0)
-          //dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
+      makePlayfieldRows(seed = 42).zipWithIndex.foreach { case (rowValue, row) =>
+        (0 until colBlocksNum).filter(col => ((rowValue >> col) & 1) == 1).foreach { col =>
+          configBlock(dut, col * block_len + x_orig + wall_width, row * block_len + y_orig, block_len, block_len, 10, 11)
         }
       }
 
-      val split_x = 200
-      val split_y = 10
+      val splitX = 200
+      val splitY = 10
+      configBlock(dut, splitX, splitY, 2, 222, 15, 14)
 
-
-      config_block(dut, split_x, split_y, 2, 222, 15, 14, fill_pattern = 0)
-
-      val score_string_x = split_x + 14
-      val score_string_y = split_y + 12
-      val score_x = score_string_x + 8
-      val score_y = score_string_y + 22
-
-      //dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
-      "Score".map(_.toByte).zipWithIndex.foreach { case (c, i) =>
-        println(s"[DEBUG] @${simTime()} <$i> $c")
-        config_char(dut,  score_string_x + i * 12  , score_string_y, c, color =6, scale = 1 )
-        //dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
-
+      val scoreStringX = splitX + 14
+      val scoreStringY = splitY + 12
+      val scoreX = scoreStringX + 8
+      val scoreY = scoreStringY + 22
+      "Score".map(_.toInt).zipWithIndex.foreach { case (charCode, index) =>
+        configChar(dut, scoreStringX + index * 12, scoreStringY, charCode)
+      }
+      "234".map(_.toInt).zipWithIndex.foreach { case (charCode, index) =>
+        configChar(dut, scoreX + index * 12, scoreY, charCode, color = 3, scale = 2)
       }
 
-
-      "234".map(_.toByte).zipWithIndex.foreach { case (c, i) =>
-        println(s"[DEBUG] @${simTime()} <$i> $c")
-        config_char(dut,  score_x + i * 12  , score_y, c, color =3, scale = 2 )
-        //dut.coreClockDomain.waitSamplingWhere(dut.io.draw_done.toBoolean)
-
-      }
-
-
-
-      dut.vgaClockDomain.waitSampling(10)
-      dut.vgaClockDomain.waitSamplingWhere(dut.vgaArea.vgaSync.io.sof.toBoolean)
-      println(f"[DEBUG] @${simTime()} The 2nd frame has been started and then stop sim now !")
-
-      //*************************************************************
-      //        GUI Entry Point
-      //*************************************************************
-      GuiHelper.launchGui("Tetris Layout Demo")
-
-      println("simTime : " + simTime())
+      val imageFile = captureReferenceImage(dut, info)
+      logTestPass(info, imageFile, "Drew deterministic walls, playfield blocks, separator, and score text into the reference frame.")
       simSuccess()
-
-
     }
   }
 
-  test("Test Tetris Openning Screeen - ") {
-    compiled.doSimUntilVoid(seed = 42) { dut =>
+  test("controller opening screen produces reference image") {
+    val info = TestInfo(
+      name = "controller opening screen produces reference image",
+      purpose = "Verify the normal display_controller setup path draws the opening screen and then waits for game_start.",
+      strategy = "Use non-debug display_top, wait for the controller WAIT_GAME_START state, assert the screen is not ready yet, and capture one VGA frame.",
+      imageName = "display_top_controller_opening_screen_reference"
+    )
 
-      require(!debugMode, "<debugMode> must be false because this test uses draw_fsm to drawn screen" )
-      dut.coreClockDomain.forkStimulus(4 ns)
-      dut.vgaClockDomain.forkStimulus(10 ns)
+    normalCompiled.doSimUntilVoid(seed = 42) { dut =>
+      logTestStart(info)
+      startClocksAndInit(dut, testMode = false)
+      SimTimeout(30 ms)
 
-      init(dut)
+      waitForOpeningWaitState(dut)
+      assert(!dut.io.screen_is_ready.toBoolean, "Opening screen should wait for game_start before reporting ready")
 
-      SimTimeout(20 ms) // adjust timeout as needed
-
-      //SimTimeout(10 ms)
-
-      dut.vgaClockDomain.waitSampling(10)
-      dut.vgaClockDomain.forkSimSpeedPrinter()
-
-
-
-      dut.vgaClockDomain.waitSampling(20)
-      dut.io.softRest #= false
-
-
-      dut.vgaClockDomain.waitSamplingWhere(dut.vgaArea.vgaSync.io.sof.toBoolean)
-      println(f"[DEBUG] @${simTime()} The 1st frame has been started now !")
-
-      println("@" + simTime() + " Draw Openning Screen" )
-      dut.coreClockDomain.waitSampling()
-
-      // Customize code
-      dut.coreClockDomain.waitSamplingWhere(dut.coreArea.drawController.setupRenderer.fsmDebug.toInt == 4    )  /* WAIT_GAME_START */
-
-      dut.coreClockDomain.waitSampling(10)
-      dut.io.game_start #= true
-      dut.coreClockDomain.waitSampling(10)
-      dut.io.game_start #= false
-      // Customize code
-      dut.coreClockDomain.waitSamplingWhere(dut.coreArea.drawController.setupRenderer.fsmDebug.toInt == 9   ) /* DRAW_SCORE */
-
-      // Testing Piece draw
-
-      dut.io.score_val.valid #= true
-      dut.io.score_val.payload #= 987
-      dut.coreClockDomain.waitSampling()
-      dut.io.score_val.valid #= false
-      dut.coreClockDomain.waitSampling(20)
-
-
-      val blocks_array = for {
-        row <- 0 until  rowBlocksNum
-        col <- 0 until colBlocksNum
-        draw_on = if ( row == 0 || row == (bottomRow-1) || col == 0 || col==(colBlocksNum-1)  )  {
-          true
-        } else {
-          Random.nextDouble() < 0.2
-        }
-        //if ( draw_on)
-      } yield (row, col, draw_on)
-
-      println(f"[DEBUG] @${simTime()} Start to send playfield to piece_draw_engine !")
-
-      val a = blocks_array.map(_._3).sliding(10,10).toList
-      val b = a.map { x =>   /* convert 10 bits in same row to Int */
-        val row_value = x.zipWithIndex.foldLeft(0)( (acc, y)  =>
-          if ( y._1 ) acc | 1<< y._2
-          else  acc )
-        row_value
-      }
-
-      b.foreach {  x =>  /* drive DUT by row_val stream */
-        dut.coreClockDomain.waitSampling()
-        println(s"[DEBUG] @${simTime()} Drive data = $x ")
-        dut.io.row_val.valid #= true
-        dut.io.row_val.payload #= x
-      }
-      dut.coreClockDomain.waitSampling()
-      dut.io.row_val.valid #= false
-
-      println(f"[DEBUG] @${simTime()} All playfield status has been sent. Be waiting for they being stored into FrameBuffer !")
-      dut.coreClockDomain.waitSampling(10)
-      dut.coreClockDomain.waitSamplingWhere(dut.io.draw_field_done.toBoolean)
-
-
-      dut.vgaClockDomain.waitSamplingWhere(dut.vgaArea.vgaSync.io.sof.toBoolean)
-      println(f"[DEBUG] @${simTime()} The 2nd frame has been started and then stop sim now !")
-
-
-      FlowMonitor(dut.vgaArea.pixel_debug, dut.vgaClockDomain) { payload =>
-        obs_mem.enqueue((payload.r.toInt, payload.g.toInt, payload.b.toInt))
-      }
-
-      dut.vgaClockDomain.waitSamplingWhere(dut.vgaArea.vgaSync.io.sof.toBoolean)
-      println(f"[DEBUG] @${simTime()} The 3nd frame has been started and then stop sim now !")
-
-      //*************************************************************
-      //        GUI Entry Point
-      //*************************************************************
-      GuiHelper.launchGui("game_openning_image.png")
-
-      println("simTime : " + simTime())
+      val imageFile = captureReferenceImage(dut, info)
+      logTestPass(info, imageFile, "Controller reached WAIT_GAME_START and produced a non-empty opening reference frame.")
       simSuccess()
-
-
     }
   }
 
-  test("Test : Stimulate that game fails and then screen is cleared ") {
-    compiled.doSimUntilVoid(seed = 42) { dut =>
+  test("controller running screen accepts score and playfield safely") {
+    val info = TestInfo(
+      name = "controller running screen accepts score and playfield safely",
+      purpose = "Verify score/playfield traffic is driven only after setup rendering is complete, avoiding display_controller start-collision assertions.",
+      strategy = "Wait for opening idle, pulse game_start, wait for screen_is_ready, send a complete no-gap playfield burst plus score, wait for frame-gated rendering, and capture one PNG.",
+      imageName = "display_top_controller_running_score_playfield_reference"
+    )
 
-      require(!debugMode, "<debugMode> must be false because this test uses draw_fsm to drawn screen")
-      dut.coreClockDomain.forkStimulus(4 ns)
-      dut.vgaClockDomain.forkStimulus(10 ns)
+    normalCompiled.doSimUntilVoid(seed = 42) { dut =>
+      logTestStart(info)
+      startClocksAndInit(dut, testMode = false)
+      SimTimeout(80 ms)
 
-      init(dut)
+      waitForOpeningWaitState(dut)
+      pulseGameStart(dut)
+      waitForScreenReady(dut)
 
-      SimTimeout(20 ms) // adjust timeout as needed
+      sendScore(dut, value = 987)
+      sendPlayfieldRows(dut, makePlayfieldRows(seed = 987, density = 0.25))
+      waitForRuntimeRenderDone(dut, "runtime score/playfield render did not finish")
 
-      FlowMonitor(dut.vgaArea.pixel_debug, dut.vgaClockDomain) { payload =>
-        obs_mem.enqueue((payload.r.toInt, payload.g.toInt, payload.b.toInt))
-      }
+      val imageFile = captureReferenceImage(dut, info)
+      logTestPass(info, imageFile, "Screen became ready before runtime inputs; complete row burst rendered with score value 987.")
+      simSuccess()
+    }
+  }
 
-      dut.vgaClockDomain.waitSampling(10)
-      // Customize code
-      dut.coreClockDomain.waitSamplingWhere(dut.coreArea.drawController.setupRenderer.fsmDebug.toInt == 4    )  /* WAIT_GAME_START */
+  test("controller restart clears stale runtime image and redraws reference screen") {
+    val info = TestInfo(
+      name = "controller restart clears stale runtime image and redraws reference screen",
+      purpose = "Verify game_restart after a runtime update does not replay stale playfield data and still produces a valid reference image.",
+      strategy = "Reach running state, render one score/playfield frame, pulse game_restart only after render completion, wait for a later frame, and capture the restarted screen.",
+      imageName = "display_top_controller_restart_reference"
+    )
 
-      dut.coreClockDomain.waitSamplingWhere(dut.io.sof.toBoolean)
-      dut.io.game_start #= true
-      dut.coreClockDomain.waitSampling(10)
-      dut.io.game_start #= false
+    normalCompiled.doSimUntilVoid(seed = 42) { dut =>
+      logTestStart(info)
+      startClocksAndInit(dut, testMode = false)
+      SimTimeout(100 ms)
 
-      // Wait a new Frame
-      dut.coreClockDomain.waitSamplingWhere(dut.io.sof.toBoolean)
-      dut.vgaClockDomain.waitSampling(10)
+      waitForOpeningWaitState(dut)
+      pulseGameStart(dut)
+      waitForScreenReady(dut)
 
-      // Assert input softReset
-      dut.io.game_restart #= true
-      dut.coreClockDomain.waitSampling(10)
-      dut.io.game_restart #= false
+      sendScore(dut, value = 321)
+      sendPlayfieldRows(dut, makePlayfieldRows(seed = 321, density = 0.3))
+      waitForRuntimeRenderDone(dut, "initial runtime render before restart did not finish")
 
-      // Wait a new Frame
-      dut.coreClockDomain.waitSamplingWhere(dut.io.sof.toBoolean)
-      println("[DEBUG] doSim is exited !!!")
-      println("simTime : " + simTime())
-      createScreenImg ()
+      sendScore(dut, value = 654)
+      sendPlayfieldRows(dut, makePlayfieldRows(seed = 654, density = 0.35))
+      logInfo("Pending runtime update prepared; restart will be asserted before the next frame consumes it")
+
+      pulseGameRestart(dut)
+      expectNoDrawFieldDoneAcrossNextFrame(dut)
+
+      val imageFile = captureReferenceImage(dut, info)
+      logTestPass(info, imageFile, "Restart cleared a pending runtime update; no stale draw_field_done was seen before the captured reference frame.")
       simSuccess()
 
     }
