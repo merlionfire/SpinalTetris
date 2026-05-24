@@ -14,7 +14,7 @@ class seven_bag_rng extends Component {
   }
 
   val lfsr = Reg(UInt(6 bits)) init 0x2D // 0b101101
-  val generatedNumbers = Vec(Reg(U(0, 3 bits)), 7)
+  val generatedNumbers = Vec(Reg(U(0, 3 bits)) init 7 , 7)
   val count = Reg(UInt(3 bits)) init 0
   val existed = Reg(Bool())
   val shift = Bool()
@@ -33,7 +33,7 @@ class seven_bag_rng extends Component {
 
   existed := False
   for (i <- 0 to 6) {
-    when(count > i && nextNumber === generatedNumbers(i)) {
+    when( nextNumber === generatedNumbers(i)) {
       existed := True
     }
   }
@@ -78,7 +78,7 @@ class seven_bag_rng extends Component {
         when(count === 7) {
           count := 0
           for (i <- 0 to 6) {
-            generatedNumbers(i) := 0
+            generatedNumbers(i) := 7
           }
         }
         goto(IDLE)
