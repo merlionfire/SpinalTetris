@@ -14,9 +14,9 @@ class seven_bag_rng extends Component {
   }
 
   val lfsr = Reg(UInt(6 bits)) init 0x2D // 0b101101
-  val generatedNumbers = Vec(Reg(U(0, 3 bits)) init 7 , 7)
+  val generatedNumbers = Vec(Reg(U(0, 3 bits)) init 7 , 8)
   val count = Reg(UInt(3 bits)) init 0
-  val existed = Reg(Bool())
+  val existedOrInvalid = Reg(Bool())
   val shift = Bool()
 
   //lfsr := Mux(io.enable, (lfsr(4 downto 0) ## (lfsr(5) ^ lfsr(3))).resized, lfsr) // LFSR update only when enable is high
@@ -28,13 +28,11 @@ class seven_bag_rng extends Component {
 
   val nextNumber = lfsr(2 downto 0)
 
+  existedOrInvalid := False
 
-  val invalid = RegNext( nextNumber === 7 )
-
-  existed := False
-  for (i <- 0 to 6) {
+  for (i <- 0 to 7) {
     when( nextNumber === generatedNumbers(i)) {
-      existed := True
+      existedOrInvalid := True
     }
   }
 
@@ -54,7 +52,7 @@ class seven_bag_rng extends Component {
 
     val CHECK : State = new State {
       whenIsActive {
-        when(existed || invalid ) {
+        when(existedOrInvalid  ) {
           goto(SHIFT)
         } otherwise {
           goto(OUTPUT)
@@ -95,7 +93,7 @@ class seven_bag_rng extends Component {
     }
 
     val ELEMENT : State = new State {
-      // Pipeline bubble: allows RegNext(invalid) and Reg(existed)
+      // Pipeline bubble: allows RegNext(invalid) and Reg(existedOrInvalid)
       // to settle for one full cycle after LFSR shift before CHECK evaluates them.
       whenIsActive {
         goto(CHECK)
