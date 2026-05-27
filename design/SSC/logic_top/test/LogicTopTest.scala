@@ -84,7 +84,12 @@ class LogicTopTest extends AnyFunSuite
   val lastCol = colNum - 1   /* 0 and 11 are col index of left and right wall */
   val bottomRow = rowNum - 1
 
-  val config = LogicTopConfig( rowNum, colNum , 1 )
+  val config = LogicTopConfig(
+    rowNum,
+    colNum,
+    levelFallInCycle = 1,
+    lockDownInCycle = 1
+  )
 
   // ***************************************
   //  CUSTOM CODE END

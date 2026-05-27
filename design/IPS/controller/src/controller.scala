@@ -16,7 +16,6 @@ import spinal.lib.fsm.{State, StateFsm, StateMachine}
 case class ControllerConfig (
                               rowNum : Int,
                               colNum : Int ,
-                              freeze_screen_in_frames : Int = 40,
                               levelFallInCycle : Int = 473 * 50000,
                               lockDownInCycle  : Int = 500 * 50000
                             ) {
@@ -51,8 +50,8 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
     val rotate = in Bool()
     val drop = in Bool()
     val screen_is_ready = in Bool()
-    val playfiedl_in_idle = in Bool()
-    val playfiedl_allow_action = in Bool()
+    val playfield_in_idle = in Bool()
+    val playfield_allow_action = in Bool()
     val game_restart = out Bool()
     val softReset = out Bool()
     val gen_piece_en = out Bool()
@@ -87,15 +86,23 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
   //              Motion request voter
   //***********************************************************
 
-//  val motion_is_allowed = fsm.isActive(fsm.FALLING)
 
   val motion_request = RegInit(B(0, 5 bit))
+
+  val clear_motion_request = Bool()
 
   /*
       priority  : Highest Priority
       b00000000 : LSB, 0 bit
+
+      when(motion_voted.orR) {
+         priority := motion_voted.rotateLeft(1)
+     }
+
   */
   val priority = cloneOf(motion_request) setAsReg() init B(1)  // LSB
+
+  assert(CountOne(priority) === 1, "priority must be one-hot")
 
   val drop, move_down, move_left, move_right, rotate = Bool()
 
@@ -111,7 +118,7 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
 //    when ( sig.rise(False) ) {
 //      motion_request(i) := True
 //    }
-    when ( io.game_start || io.game_restart ) {
+    when ( io.game_start || io.game_restart || clear_motion_request ) {
       motion_request(i) := False
     } .elsewhen( sig.rise(False) ) {
       motion_request(i) := True
@@ -120,6 +127,7 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
   }
 
   val motion_voted = OHMasking.roundRobin( requests = motion_request,ohPriority = priority  )
+
 
   for ( ( ( _, sig ), i ) <- motion_trans_with_indx ) {
     sig := motion_voted(i)
@@ -158,6 +166,7 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
     io.softReset := False
     io.game_restart := False
     io.lock := False
+    clear_motion_request := False
 
     val IDLE = makeInstantEntry()
     IDLE.whenIsActive {
@@ -208,25 +217,25 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
 
 
       whenIsActive {
-        when ( move_down & io.playfiedl_allow_action) {
+        when ( move_down & io.playfield_allow_action) {
           goto(DOWN)
         }
 
-        when ( drop & io.playfiedl_allow_action ) {
+        when ( drop & io.playfield_allow_action ) {
           goto(DROP)
         }
 
-        when ( move_left  & io.playfiedl_allow_action ) {
+        when ( move_left  & io.playfield_allow_action ) {
           io.move_out.left   := True
           goto(MOVE)
         }
 
-        when (  move_right  & io.playfiedl_allow_action ) {
+        when (  move_right  & io.playfield_allow_action ) {
           io.move_out.right  := True
           goto(MOVE)
         }
 
-        when (  rotate  & io.playfiedl_allow_action ) {
+        when (  rotate  & io.playfield_allow_action ) {
           io.move_out.rotate  := True
           goto(MOVE)
         }
@@ -237,7 +246,7 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
       }
 
       onExit(
-        motion_request.clearAll()
+        clear_motion_request := True
       )
 
     }
@@ -271,7 +280,7 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
 
     val WAIT_ALLOW_ACTION = new State {
       whenIsActive {
-        when ( io.playfiedl_allow_action )  {
+        when ( io.playfield_allow_action )  {
           goto(DROP)
         }
       }
@@ -318,7 +327,7 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
 
     val CLEAN :State = new State {
       whenIsActive {
-        when ( io.playfiedl_in_idle ) {
+        when ( io.playfield_in_idle ) {
           lock_timeout.clear()
           goto(WAIT_TIME)
         }

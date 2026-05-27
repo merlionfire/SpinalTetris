@@ -1,6 +1,6 @@
 // Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
 // Component : seven_bag_rng
-// Git hash  : 1966d2c2753e3d447f4de5f4d933de13c0cb6e6b
+// Git hash  : f3f46e1ae9170eb6a213ce0b3ec7f8de4ccf798e
 
 `timescale 1ns/1ps
 
@@ -18,7 +18,6 @@ module seven_bag_rng (
   localparam SHIFT = 3'd4;
   localparam ELEMENT = 3'd5;
 
-  wire                temp_when;
   reg        [5:0]    lfsr;
   reg        [2:0]    generatedNumbers_0;
   reg        [2:0]    generatedNumbers_1;
@@ -27,11 +26,11 @@ module seven_bag_rng (
   reg        [2:0]    generatedNumbers_4;
   reg        [2:0]    generatedNumbers_5;
   reg        [2:0]    generatedNumbers_6;
+  reg        [2:0]    generatedNumbers_7;
   reg        [2:0]    count;
-  reg                 existed;
+  reg                 existedOrInvalid;
   reg                 shift;
   wire       [2:0]    nextNumber;
-  reg                 invalid;
   wire                fsm_wantExit;
   reg                 fsm_wantStart;
   wire                fsm_wantKill;
@@ -56,7 +55,6 @@ module seven_bag_rng (
   `endif
 
 
-  assign temp_when = (count == 3'b111);
   `ifndef SYNTHESIS
   always @(*) begin
     case(fsm_stateReg)
@@ -92,7 +90,7 @@ module seven_bag_rng (
     fsm_stateNext = fsm_stateReg;
     case(fsm_stateReg)
       CHECK : begin
-        if((existed || invalid)) begin
+        if(existedOrInvalid) begin
           fsm_stateNext = SHIFT;
         end else begin
           fsm_stateNext = OUTPUT_1;
@@ -142,6 +140,14 @@ module seven_bag_rng (
   always @(posedge clk or posedge reset) begin
     if(reset) begin
       lfsr <= 6'h2d;
+      generatedNumbers_0 <= 3'b111;
+      generatedNumbers_1 <= 3'b111;
+      generatedNumbers_2 <= 3'b111;
+      generatedNumbers_3 <= 3'b111;
+      generatedNumbers_4 <= 3'b111;
+      generatedNumbers_5 <= 3'b111;
+      generatedNumbers_6 <= 3'b111;
+      generatedNumbers_7 <= 3'b111;
       count <= 3'b000;
       fsm_stateReg <= IDLE;
     end else begin
@@ -153,11 +159,42 @@ module seven_bag_rng (
         CHECK : begin
         end
         OUTPUT_1 : begin
+          if(temp_1[0]) begin
+            generatedNumbers_0 <= nextNumber;
+          end
+          if(temp_1[1]) begin
+            generatedNumbers_1 <= nextNumber;
+          end
+          if(temp_1[2]) begin
+            generatedNumbers_2 <= nextNumber;
+          end
+          if(temp_1[3]) begin
+            generatedNumbers_3 <= nextNumber;
+          end
+          if(temp_1[4]) begin
+            generatedNumbers_4 <= nextNumber;
+          end
+          if(temp_1[5]) begin
+            generatedNumbers_5 <= nextNumber;
+          end
+          if(temp_1[6]) begin
+            generatedNumbers_6 <= nextNumber;
+          end
+          if(temp_1[7]) begin
+            generatedNumbers_7 <= nextNumber;
+          end
           count <= (count + 3'b001);
         end
         DONE : begin
-          if(temp_when) begin
+          if((count == 3'b111)) begin
             count <= 3'b000;
+            generatedNumbers_0 <= 3'b111;
+            generatedNumbers_1 <= 3'b111;
+            generatedNumbers_2 <= 3'b111;
+            generatedNumbers_3 <= 3'b111;
+            generatedNumbers_4 <= 3'b111;
+            generatedNumbers_5 <= 3'b111;
+            generatedNumbers_6 <= 3'b111;
           end
         end
         SHIFT : begin
@@ -171,73 +208,31 @@ module seven_bag_rng (
   end
 
   always @(posedge clk) begin
-    invalid <= (nextNumber == 3'b111);
-    existed <= 1'b0;
-    if(((3'b000 < count) && (nextNumber == generatedNumbers_0))) begin
-      existed <= 1'b1;
+    existedOrInvalid <= 1'b0;
+    if((nextNumber == generatedNumbers_0)) begin
+      existedOrInvalid <= 1'b1;
     end
-    if(((3'b001 < count) && (nextNumber == generatedNumbers_1))) begin
-      existed <= 1'b1;
+    if((nextNumber == generatedNumbers_1)) begin
+      existedOrInvalid <= 1'b1;
     end
-    if(((3'b010 < count) && (nextNumber == generatedNumbers_2))) begin
-      existed <= 1'b1;
+    if((nextNumber == generatedNumbers_2)) begin
+      existedOrInvalid <= 1'b1;
     end
-    if(((3'b011 < count) && (nextNumber == generatedNumbers_3))) begin
-      existed <= 1'b1;
+    if((nextNumber == generatedNumbers_3)) begin
+      existedOrInvalid <= 1'b1;
     end
-    if(((3'b100 < count) && (nextNumber == generatedNumbers_4))) begin
-      existed <= 1'b1;
+    if((nextNumber == generatedNumbers_4)) begin
+      existedOrInvalid <= 1'b1;
     end
-    if(((3'b101 < count) && (nextNumber == generatedNumbers_5))) begin
-      existed <= 1'b1;
+    if((nextNumber == generatedNumbers_5)) begin
+      existedOrInvalid <= 1'b1;
     end
-    if(((3'b110 < count) && (nextNumber == generatedNumbers_6))) begin
-      existed <= 1'b1;
+    if((nextNumber == generatedNumbers_6)) begin
+      existedOrInvalid <= 1'b1;
     end
-    case(fsm_stateReg)
-      CHECK : begin
-      end
-      OUTPUT_1 : begin
-        if(temp_1[0]) begin
-          generatedNumbers_0 <= nextNumber;
-        end
-        if(temp_1[1]) begin
-          generatedNumbers_1 <= nextNumber;
-        end
-        if(temp_1[2]) begin
-          generatedNumbers_2 <= nextNumber;
-        end
-        if(temp_1[3]) begin
-          generatedNumbers_3 <= nextNumber;
-        end
-        if(temp_1[4]) begin
-          generatedNumbers_4 <= nextNumber;
-        end
-        if(temp_1[5]) begin
-          generatedNumbers_5 <= nextNumber;
-        end
-        if(temp_1[6]) begin
-          generatedNumbers_6 <= nextNumber;
-        end
-      end
-      DONE : begin
-        if(temp_when) begin
-          generatedNumbers_0 <= 3'b000;
-          generatedNumbers_1 <= 3'b000;
-          generatedNumbers_2 <= 3'b000;
-          generatedNumbers_3 <= 3'b000;
-          generatedNumbers_4 <= 3'b000;
-          generatedNumbers_5 <= 3'b000;
-          generatedNumbers_6 <= 3'b000;
-        end
-      end
-      SHIFT : begin
-      end
-      ELEMENT : begin
-      end
-      default : begin
-      end
-    endcase
+    if((nextNumber == generatedNumbers_7)) begin
+      existedOrInvalid <= 1'b1;
+    end
   end
 
 

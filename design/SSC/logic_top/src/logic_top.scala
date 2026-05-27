@@ -16,7 +16,6 @@ import spinal.lib.fsm.{State, StateFsm, StateMachine}
 
 case class  LogicTopConfig ( rowNum : Int,
                              colNum : Int ,
-                             freeze_screen_in_frames : Int = 40,
                              levelFallInCycle : Int = 473 * 50000,
                              lockDownInCycle  : Int = 500 * 50000
                            ) {
@@ -40,7 +39,6 @@ case class  LogicTopConfig ( rowNum : Int,
   val controllerConfig = ControllerConfig (
     rowNum = rowNum,
     colNum = colNum,
-    freeze_screen_in_frames = freeze_screen_in_frames,
     levelFallInCycle = levelFallInCycle,
     lockDownInCycle = lockDownInCycle
   )
@@ -135,8 +133,8 @@ class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends
 
 
   /* Input <- playfield_inst */
-  controller_inst.io.playfiedl_in_idle := playfield_inst.io.fsm_is_idle
-  controller_inst.io.playfiedl_allow_action := playfield_inst.io.motion_is_allowed
+  controller_inst.io.playfield_in_idle := playfield_inst.io.fsm_is_idle
+  controller_inst.io.playfield_allow_action := playfield_inst.io.motion_is_allowed
 //  controller_inst.io.collision_status << playfield_inst.io.status
   controller_inst.io.collision_status << playfield_inst.io.status.stage()
 
