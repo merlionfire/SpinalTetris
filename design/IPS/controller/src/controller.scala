@@ -7,7 +7,7 @@ import IPS.seven_bag_rng._
 import IPS.picoller._
 import IPS.play_field._
 import SSC.logic_top.LogicTopConfig
-import config.TYPE
+import config.{BuildConfig, DebugSignals, ElabProfiles, TYPE}
 import spinal.core
 import utils._
 import spinal.lib.fsm.{State, StateFsm, StateMachine}
@@ -38,8 +38,15 @@ case class ControllerConfig (
 //  val picollerConfig =  PicollerConfig( colBitsWidth, rowBitsWidth)
 }
 
+case class ControllerDebugIo() extends Bundle {
+  val debug_place_new = out Bool()
+  val controller_in_lockdown =  out Bool ()
+  val controller_in_end     =   out Bool ()
+  val controller_in_place   =   out Bool ()
+}
 
-class controller ( config : ControllerConfig, sim : Boolean = false     ) extends Component {
+
+class controller ( config : ControllerConfig) ( implicit  buildConfig: BuildConfig = ElabProfiles.Release ) extends Component {
   import config._
 
   val io = new Bundle {
@@ -63,10 +70,8 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
       val down = out Bool()
     }
     val lock = out Bool()
-    val debug_place_new = out Bool()
-    val controller_in_lockdown = sim generate( out Bool () )
-    val controller_in_end     = sim generate( out Bool () )
-    val controller_in_place   = sim generate( out Bool () )
+    val debug = buildConfig.has(DebugSignals)  generate ControllerDebugIo()
+
   }
 
 
@@ -77,8 +82,23 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
   //***********************************************************
 
 
-  val drop_timeout = Timeout( if ( sim ) 10000 else levelFallInCycle )  // Timeout who tick after 10 ms
-  val lock_timeout = Timeout( if ( sim ) 100 else lockDownInCycle  )  // Timeout who tick after 10 ms
+  private val debugLevelFallInCycle = 10000
+  private val debugLockDownInCycle = 100
+
+  private val dropTimeoutInCycle = if (buildConfig.has(DebugSignals)) {
+    levelFallInCycle min debugLevelFallInCycle
+  } else {
+    levelFallInCycle
+  }
+
+  private val lockTimeoutInCycle = if (buildConfig.has(DebugSignals)) {
+    lockDownInCycle min debugLockDownInCycle
+  } else {
+    lockDownInCycle
+  }
+
+  val drop_timeout = Timeout(dropTimeoutInCycle)  // Timeout who tick after 10 ms
+  val lock_timeout = Timeout(lockTimeoutInCycle)  // Timeout who tick after 10 ms
 
 
 
@@ -141,8 +161,10 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
 
   val debug_place_new_cnt = Counter(stateCount = 2  )
 
-  io.debug_place_new.addAttribute("keep")
-  io.debug_place_new  := debug_place_new_cnt.willOverflow
+  if (buildConfig.has(DebugSignals)) {
+    io.debug.debug_place_new.addAttribute("keep")
+    io.debug.debug_place_new := debug_place_new_cnt.willOverflow
+  }
 
 
 
@@ -346,10 +368,10 @@ class controller ( config : ControllerConfig, sim : Boolean = false     ) extend
   }
 
 
-  if ( sim ) {
-    io.controller_in_lockdown := fsm.isActive(fsm.LOCKDOWN)
-    io.controller_in_end      := fsm.isActive(fsm.END)
-    io.controller_in_place    := fsm.isActive(fsm.PLACE)
+  if (buildConfig.has(DebugSignals)) {
+    io.debug.controller_in_lockdown := fsm.isActive(fsm.LOCKDOWN)
+    io.debug.controller_in_end      := fsm.isActive(fsm.END)
+    io.debug.controller_in_place    := fsm.isActive(fsm.PLACE)
   }
 }
 
@@ -358,6 +380,11 @@ object controllerMain{
     val rowNum : Int = 23   // include bottom wall
     val colNum :Int = 12    // include left and right wall
     val config = ControllerConfig( rowNum, colNum )
+
+    implicit val buildConfig: BuildConfig = ElabProfiles.Debug
+    /* Change to ElabProfiles.Release for better performance and smaller area */
+    //implicit val buildConfig: BuildConfig = ElabProfiles.Release
+
     SpinalConfig(
       targetDirectory = PathUtils.getRtlOutputPath(getClass).toString,
       verbose = true,

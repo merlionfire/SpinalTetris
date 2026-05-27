@@ -1,6 +1,7 @@
 package SSC.logic_top
 
 import spinal.core._
+import config.{BuildConfig, ElabProfiles}
 import config.runSimConfig
 import spinal.core.sim._
 import org.scalatest.funsuite.AnyFunSuite
@@ -101,6 +102,7 @@ class LogicTopTest extends AnyFunSuite
   val runFolder : String = PathUtils.getRtlOutputPath(getClass, middlePath = "design/SSC", targetName = "sim").toString
   lazy val compiled : SimCompiled[logic_top] = runSimConfig(runFolder, compiler)
     .compile {
+      implicit val buildConfig: BuildConfig = ElabProfiles.Debug
       val c = new logic_top(config, sim= true)  /* Test = true is ONLY for standalone DUT test */
       c
     }

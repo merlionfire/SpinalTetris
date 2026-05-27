@@ -9,7 +9,7 @@ import IPS.seven_bag_rng._
 import IPS.picoller._
 import IPS.playfield._
 import IPS.controller._
-import config.TYPE
+import config.{BuildConfig, DebugSignals, ElabProfiles, TYPE}
 import utils._
 import spinal.lib.fsm.{State, StateFsm, StateMachine}
 
@@ -48,7 +48,17 @@ case class  LogicTopConfig ( rowNum : Int,
 
 }
 
-class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends Component {
+case class LogicTopDebugIo() extends Bundle {
+  val controller = ControllerDebugIo()
+  val new_piece_valid = out Bool()
+}
+
+class logic_top (
+                  val config : LogicTopConfig,
+                  sim  : Boolean = false
+                ) (
+                  implicit buildConfig: BuildConfig = ElabProfiles.Release
+                ) extends Component {
 
   import config._
 
@@ -68,11 +78,7 @@ class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends
     val ctrl_allowed = out Bool()
     val softReset = out Bool()
     val game_restart = out Bool()
-
-    val controller_in_lockdown = sim generate( out Bool () )
-    val controller_in_end      = sim generate( out Bool () )
-    val controller_in_place    = sim generate( out Bool () )
-    val new_piece_valid        = sim generate( out Bool () )
+    val debug = buildConfig.has(DebugSignals) generate LogicTopDebugIo()
   }
 
 
@@ -85,7 +91,7 @@ class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends
 
   val piece_gen_inst = new seven_bag_rng()
   val playfield_inst = new playfield(playFieldConfig, sim = false, enableCollisonReadout = sim )
-  val controller_inst = new controller(controllerConfig, sim = sim )
+  val controller_inst = new controller(controllerConfig)
 
 
 //  //***********************************************************
@@ -154,11 +160,12 @@ class logic_top ( val config : LogicTopConfig, sim  : Boolean = false  ) extends
   /* output -> IO */
   io.softReset := controller_inst.io.softReset
   io.game_restart := controller_inst.io.game_restart
-  if (sim ) {
-    io.controller_in_lockdown := controller_inst.io.controller_in_lockdown
-    io.controller_in_end      := controller_inst.io.controller_in_end
-    io.controller_in_place    := controller_inst.io.controller_in_place
-    io.new_piece_valid := controller_inst.io.gen_piece_en
+  if (buildConfig.has(DebugSignals)) {
+    io.debug.controller.debug_place_new := controller_inst.io.debug.debug_place_new
+    io.debug.controller.controller_in_lockdown := controller_inst.io.debug.controller_in_lockdown
+    io.debug.controller.controller_in_end := controller_inst.io.debug.controller_in_end
+    io.debug.controller.controller_in_place := controller_inst.io.debug.controller_in_place
+    io.debug.new_piece_valid := controller_inst.io.gen_piece_en
   }
 
   // Playfield Connection

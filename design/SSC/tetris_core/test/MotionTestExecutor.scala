@@ -82,7 +82,7 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
       dut.coreClockDomain.waitSamplingWhere(condAnd = dut.io.ctrl_allowed.toBoolean)
       dut.io.vga_rst #= false
 
-      println(s"[DEBUG]${simTime()} Checking if dut.io.controller_in_end is asserted ...  ")
+      println(s"[DEBUG] @[${simTime()}] Checking controller end-state progress...")
 
     }
 

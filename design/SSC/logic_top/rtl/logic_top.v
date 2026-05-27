@@ -96,8 +96,8 @@ module logic_top (
     .rotate                   (rotate                          ), //i
     .drop                     (drop                            ), //i
     .screen_is_ready          (screen_is_ready                 ), //i
-    .playfiedl_in_idle        (playfield_inst_fsm_is_idle      ), //i
-    .playfiedl_allow_action   (playfield_inst_motion_is_allowed), //i
+    .playfield_in_idle        (playfield_inst_fsm_is_idle      ), //i
+    .playfield_allow_action   (playfield_inst_motion_is_allowed), //i
     .game_restart             (controller_inst_game_restart    ), //o
     .softReset                (controller_inst_softReset       ), //o
     .gen_piece_en             (controller_inst_gen_piece_en    ), //o
@@ -160,8 +160,8 @@ module controller (
   input  wire          rotate,
   input  wire          drop,
   input  wire          screen_is_ready,
-  input  wire          playfiedl_in_idle,
-  input  wire          playfiedl_allow_action,
+  input  wire          playfield_in_idle,
+  input  wire          playfield_allow_action,
   output reg           game_restart,
   output reg           softReset,
   output reg           gen_piece_en,
@@ -373,21 +373,21 @@ module controller (
         end
       end
       FALLING : begin
-        if((move_down_1 && playfiedl_allow_action)) begin
+        if((move_down_1 && playfield_allow_action)) begin
           fsm_stateNext = DOWN;
         end
-        if((drop_1 && playfiedl_allow_action)) begin
+        if((drop_1 && playfield_allow_action)) begin
           fsm_stateNext = DROP;
         end
-        if((move_left_1 && playfiedl_allow_action)) begin
+        if((move_left_1 && playfield_allow_action)) begin
           move_out_left = 1'b1;
           fsm_stateNext = MOVE;
         end
-        if((move_right_1 && playfiedl_allow_action)) begin
+        if((move_right_1 && playfield_allow_action)) begin
           move_out_right = 1'b1;
           fsm_stateNext = MOVE;
         end
-        if((rotate_1 && playfiedl_allow_action)) begin
+        if((rotate_1 && playfield_allow_action)) begin
           move_out_rotate = 1'b1;
           fsm_stateNext = MOVE;
         end
@@ -414,7 +414,7 @@ module controller (
         end
       end
       WAIT_ALLOW_ACTION : begin
-        if(playfiedl_allow_action) begin
+        if(playfield_allow_action) begin
           fsm_stateNext = DROP;
         end
       end
@@ -441,7 +441,7 @@ module controller (
         end
       end
       CLEAN : begin
-        if(playfiedl_in_idle) begin
+        if(playfield_in_idle) begin
           lock_timeout_counter_willClear = 1'b1;
           lock_timeout_stateRise = 1'b0;
           fsm_stateNext = WAIT_TIME;
@@ -644,7 +644,7 @@ module controller (
         LOCKDOWN : begin
         end
         CLEAN : begin
-          if(playfiedl_in_idle) begin
+          if(playfield_in_idle) begin
             lock_timeout_state <= 1'b0;
           end
         end

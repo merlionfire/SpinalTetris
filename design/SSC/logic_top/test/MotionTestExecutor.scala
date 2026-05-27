@@ -67,7 +67,7 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
 
     var round = 0
 
-    dut.clockDomain.waitSamplingWhere(condAnd = dut.io.new_piece_valid.toBoolean)
+    dut.clockDomain.waitSamplingWhere(condAnd = dut.io.debug.new_piece_valid.toBoolean)
     // Main Body
 //    for ( ( round,  roundIndex  )  <- actions.zipWithIndex  ) { /* One round means one game round */
     for (  ( action, actionIndex )   <- actions.zipWithIndex  ) {
@@ -89,8 +89,8 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
       }
 
       // Wait until new piece is placed
-      //      dut.clockDomain.waitSamplingWhere(condAnd = dut.io.new_piece_valid.toBoolean)
-      dut.clockDomain.waitSamplingWhere(condAnd = dut.io.controller_in_place.toBoolean )
+      //      dut.clockDomain.waitSamplingWhere(condAnd = dut.io.debug.new_piece_valid.toBoolean)
+      dut.clockDomain.waitSamplingWhere(condAnd = dut.io.debug.controller.controller_in_place.toBoolean )
 
       val playfieldList = scbd.actualData.grouped(dut.config.rowBlocksNum).toList
 
@@ -108,15 +108,15 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
       visualizer.clear()
       scbd.clear()
 
-      println(s"[DEBUG]${simTime()} Checking if dut.io.controller_in_end is asserted ...  " )
+      println(s"[DEBUG] @[${simTime()}] Checking if dut.io.debug.controller.controller_in_end is asserted ...")
 
       // 25 cycles are enough for duration of piece generation + place collision check
-      val gameIsOver = !dut.clockDomain.waitSamplingWhere(25)(condAnd = dut.io.controller_in_end.toBoolean)
-      println(s"[DEBUG]${simTime()} gameIsOver = ${gameIsOver}" )
+      val gameIsOver = !dut.clockDomain.waitSamplingWhere(25)(condAnd = dut.io.debug.controller.controller_in_end.toBoolean)
+      println(s"[DEBUG] @[${simTime()}] gameIsOver = ${gameIsOver}")
 
       if (gameIsOver) {
         round = round + 1
-        println(s"[DEBUG]${simTime()} Restart game  !!" )
+        println(s"[DEBUG] @[${simTime()}] Restart game !!")
         startGame(dut)
       }
     }
@@ -224,7 +224,7 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
       dut.io.drop #= false
     }
 
-    dut.clockDomain.waitSamplingWhere(40)(condAnd = dut.io.controller_in_lockdown.toBoolean)
+    dut.clockDomain.waitSamplingWhere(40)(condAnd = dut.io.debug.controller.controller_in_lockdown.toBoolean)
 
   }
 
