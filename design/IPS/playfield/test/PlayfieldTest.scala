@@ -63,7 +63,8 @@ class PlayFieldTest extends AnyFunSuite
 
   lazy val compiled : SimCompiled[playfield]  = runSimConfig(runFolder, compiler)
     .compile {
-      val c = new playfield(config, sim= true)
+      implicit val buildConfig: BuildConfig = ElabProfiles.Sim
+      val c = new playfield(config)
       c
     }
 

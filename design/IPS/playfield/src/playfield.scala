@@ -1,5 +1,5 @@
 package IPS.playfield
-import config.{ACTION, TYPE}
+import config.{ACTION, BuildConfig, ElabProfiles, Simulation, TYPE}
 import spinal.core._
 import spinal.lib._
 import utils._
@@ -30,9 +30,16 @@ case  class flow_region_Data  (rowBitsWidth : Int, colBlocksNum : Int ) extends 
 }
 
 
-class playfield(val config : PlayfieldConfig, sim : Boolean = false, enableCollisonReadout : Boolean = false )  extends Component {
+class playfield(
+                 val config : PlayfieldConfig,
+                 enableCollisonReadout : Boolean = false
+               )(
+                 implicit buildConfig: BuildConfig = ElabProfiles.Release
+               )  extends Component {
 
   import config._
+
+  private val sim: Boolean = buildConfig.has(Simulation)
 
   val io = new Bundle {
     val piece_in = slave Flow TYPE()
@@ -1171,7 +1178,10 @@ object playfieldMain{
       anonymSignalPrefix = "temp",
       mergeAsyncProcess = true
     ).generateVerilog(
-      gen = new playfield(config, sim = true )
+      gen = {
+        implicit val buildConfig: BuildConfig = ElabProfiles.Sim
+        new playfield(config)
+      }
     )
   }
 }

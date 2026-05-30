@@ -74,6 +74,109 @@ case class UniDmaConfig(
 
 }
 
+/**
+  * Uni-directional DMA helper that fans a sequential address request stream into one or more
+  * data output channels.
+  *
+  * Functional description
+  * ----------------------
+  * `UniDma` generates a linear address sequence on `addr_port` starting from `base_addr` and
+  * continuing for `word_count` words after a start pulse is detected. Each generated request can
+  * drive one or more logical DMA channels described by `config.mappings`.
+  *
+  * - The address side uses a `Flow[UInt]` request port.
+  * - Each input source slot in `source` is associated with a logical port id from `mappings`.
+  * - Each mapping can replicate one input source into multiple output `sink` flows.
+  * - Read mappings delay the valid signal by one cycle (`delay`) to model data returning after the
+  *   address request.
+  * - Write mappings emit valid in the same cycle as the request.
+  * - Each output channel can be individually enabled/disabled through the channel control APIs.
+  *
+  * Parameters description
+  * ----------------------
+  * @param addr_port
+  *   Address request `Flow`. `payload` defines the address width used by the internal registers and
+  *   generated address counter. `valid` is asserted while a burst is active.
+  * @param config
+  *   DMA structural configuration.
+  *   - `dataWidth`: bit width of each data word driven through `source` and `sink`.
+  *   - `count`: default transfer length used to initialize `word_count`.
+  *   - `mappings`: relationship between logical data input ports and DMA output channels. Each entry
+  *     is `(DataPort(id, mode), PortMapping(out0, out1, ...))`, where `mode` is either `"read"` or
+  *     `"write"`.
+  *
+  * Methods as API
+  * --------------
+  * Configuration / control:
+  * - `setWordCount(n)`: program transfer length to `n` words.
+  * - `setBaseAddr(addr)`: program the first request address.
+  * - `startTrans()`: request a transfer start by asserting `start`.
+  * - `stopTrans()`: deassert `start`.
+  *
+  * Data path:
+  * - `<<(index, data)`: connect one producer data word into source slot `index`.
+  * - `apply(index)`: access output `Flow[Bits]` channel `index`.
+  *
+  * Channel gating:
+  * - `enableChannel(n)`: enable a specific output channel.
+  * - `disableChannel(n)`: disable a specific output channel.
+  * - `enableAllChannel()`: enable all output channels.
+  * - `disableAllChannel()`: disable all output channels.
+  *
+  * Integration example in ASCII
+  * ----------------------------
+  * {{
+  *   val addr_port = Flow(UInt(16 bits))
+  *   val config = UniDmaConfig(
+  *     dataWidth = 32,
+  *     count = 128,
+  *     mappings = Seq(
+  *       (0, "read")  -> (0, 1),
+  *       (1, "write") -> (2)
+  *     )
+  *   )
+  *
+  *   val dma = new UniDma(addr_port, config)
+  *   dma.setBaseAddr(U(0x1000, 16 bits))
+  *   dma.setWordCount(16)
+  *   dma.enableAllChannel()
+  *
+  *   dma << (0, read_data_bits)
+  *   dma << (1, write_data_bits)
+  *
+  *   val read_copy0 = dma(0)
+  *   val read_copy1 = dma(1)
+  *   val write_out  = dma(2)
+  * }}
+  *
+  *   +--------------------+        +---------------------------+
+  *   | address generator  |------->| addr_port : Flow[UInt]    |
+  *   +--------------------+        +---------------------------+
+  *              |                                   |
+  *              | mappings                          |
+  *              v                                   v
+  *   +--------------------+        +----------------------------------+
+  *   | source(0) read     |------->| sink(0), sink(1) delayed by 1cy |
+  *   +--------------------+        +----------------------------------+
+  *   +--------------------+        +---------------------------+
+  *   | source(1) write    |------->| sink(2) same-cycle valid  |
+  *   +--------------------+        +---------------------------+
+  *
+  * Timing example in ASCII
+  * -----------------------
+  * Example for one request burst with `base_addr = A0` and `word_count = 4`:
+  *
+  *   cycle        | 0 | 1 | 2 | 3 | 4 | 5 |
+  *   -------------+---+---+---+---+---+---
+  *   start        | 0 | 1 | 1 | 1 | 1 | 0 |
+  *   req_valid    | 0 | 1 | 1 | 1 | 1 | 0 |
+  *   addr_port    | - |A0 |A1 |A2 |A3 | - |
+  *   write.valid  | 0 | 1 | 1 | 1 | 1 | 0 |
+  *   read.valid   | 0 | 0 | 1 | 1 | 1 | 1 |
+  *
+  * This means write-mode outputs are aligned with the address request, while read-mode outputs are
+  * delayed by `delay` cycles to match returning data.
+ */
 class UniDma[T <: Data ](addr_port : Flow[UInt],config : UniDmaConfig ) extends ImplicitArea[Int] {
   import config._
 

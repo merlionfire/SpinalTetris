@@ -5,6 +5,7 @@ case object DebugSignals extends BuildFeature
 case object Assertions   extends BuildFeature
 case object Coverage     extends BuildFeature
 case object Formal       extends BuildFeature
+case object Simulation   extends BuildFeature
 
 case class BuildConfig(
                         features : Set[BuildFeature] = Set()
@@ -26,6 +27,10 @@ object ElabProfiles {
 
   val DV = BuildConfig(
     Set(Assertions, Coverage)
+  )
+
+  val Sim = BuildConfig(
+    Set(Simulation, DebugSignals, Assertions)
   )
 
 }
