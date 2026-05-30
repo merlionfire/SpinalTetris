@@ -23,10 +23,9 @@ case class Playfield_Row_Data(rowBitsWidth : Int, colBlocksNum : Int ) extends B
   val data = Bits( colBlocksNum bit )
 }
 
-case  class flow_region_Data  (rowBitsWidth : Int, colBlocksNum : Int ) extends Bundle {
-  val valid = in Bool()
-  val row  = in UInt( rowBitsWidth bit )
-  val data = in  Vec( Bits( colBlocksNum bit ), size = 4 )
+case class FlowRegionData(rowBitsWidth : Int, colBlocksNum : Int ) extends Bundle {
+  val row  = UInt( rowBitsWidth bit )
+  val data = Vec( Bits( colBlocksNum bit ), size = 4 )
 }
 
 
@@ -55,15 +54,15 @@ class playfield(
     val game_restart = in Bool()
     val row_val = master Flow (Bits(colBlocksNum bits))
     val score_val = master Flow (UInt( scoreBitsWidth bits))
-    val playfield_backdoor = if (sim) slave Flow (Playfield_Row_Data(rowBitsWidth, colBlocksNum)) else null
+    val playfield_backdoor = sim generate slave(Flow(Playfield_Row_Data(rowBitsWidth, colBlocksNum)))
     val motion_is_allowed = out Bool()
     val fsm_is_idle = out Bool()
-    val flow_backdoor = if (sim) flow_region_Data(rowBitsWidth, colBlocksNum) else null
-    val checker_backdoor = if (sim) flow_region_Data(rowBitsWidth, colBlocksNum) else null
-    val start_collision_check = if (sim) in Bool() else null
-    val fsm_reset = if (sim) in Bool() else null
-    val fsm_contrl = if (sim) in Bool() else null
-    val read = if ( sim ) in Bool() else null
+    val flow_backdoor = sim generate slave(Flow(FlowRegionData(rowBitsWidth, colBlocksNum)))
+    val checker_backdoor = sim generate slave(Flow(FlowRegionData(rowBitsWidth, colBlocksNum)))
+    val start_collision_check = sim generate in(Bool())
+    val fsm_reset = sim generate in(Bool())
+    val fsm_contrl = sim generate in(Bool())
+    val read = sim generate in(Bool())
 
   }
 
@@ -230,9 +229,9 @@ class playfield(
 
     if (sim) {
       when(io.checker_backdoor.valid) {
-        region := io.checker_backdoor.data
-        row := io.checker_backdoor.row
-        row_backup := io.checker_backdoor.row
+        region := io.checker_backdoor.payload.data
+        row := io.checker_backdoor.payload.row
+        row_backup := io.checker_backdoor.payload.row
       }
     }
 
@@ -469,8 +468,8 @@ class playfield(
 
     if (sim) {
       when(io.flow_backdoor.valid) {
-        region := io.flow_backdoor.data
-        row := io.flow_backdoor.row
+        region := io.flow_backdoor.payload.data
+        row := io.flow_backdoor.payload.row
       }
     }
   }
