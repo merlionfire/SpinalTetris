@@ -248,7 +248,7 @@ class dma ( start : Bool, data_in : Bits, word_count : UInt, address_reqs : Seq[
   val word_count_reg = RegNextWhen(word_count, start )
 
   //val req_counter = Reg( UInt( log2Up(word_count)  bit )  )
-  val req_counter = cloneOf(word_count) setAsReg()
+  val req_counter = cloneOf(word_count).setAsReg()
   val counter_is_last = req_counter ===  word_count_reg
 
   when ( start ) {
@@ -260,7 +260,7 @@ class dma ( start : Bool, data_in : Bits, word_count : UInt, address_reqs : Seq[
   req_valid   clearWhen( counter_is_last  ) setWhen( start )
 
   for ( ( addrBase, addrReq ) <- address_reqs ) {
-    val addr = cloneOf(addrReq.payload ) setAsReg()
+    val addr = cloneOf(addrReq.payload).setAsReg()
 
     when(start) {
       addr := addrBase

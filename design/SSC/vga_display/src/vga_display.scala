@@ -178,6 +178,7 @@ class vga_display( config :  VgaDisplayConfig  ) extends Component {
     fb.io.wr.en := draw_char_engine.io.out_valid
     fb.io.wr.addr := fb_addr_gen_inst.io.out_addr
     fb.io.wr.data := draw_char_engine.io.out_color.asBits
+    fb.io.clear_start := False
 
     io.draw_done := RegNext( draw_char_engine.io.done , init=False )
 

@@ -103,7 +103,7 @@ class play_field (config : PlayFieldConfig ) extends Component {
     val clear_done = out Bool()
     val block_val=  master Flow( Bool() )
     val row_val =  master Flow( Bits(colBlocksNum bits) )
-    val lines_cleared = master Flow(UInt(log2Up(rowBlocksNum) bits )) setAsReg()
+    val lines_cleared = master Flow(UInt(log2Up(rowBlocksNum) bits )).setAsReg()
   }
 
   noIoPrefix()

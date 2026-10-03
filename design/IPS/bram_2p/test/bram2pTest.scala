@@ -184,7 +184,7 @@ class bram2pTest extends AnyFunSuite {
 
     writeNext(0)
 
-    activityLog
+    activityLog.toSeq
   }
 
   private def readWord(dut: Bram2p, address: Int, burst: Boolean = false): Long = {
@@ -258,7 +258,7 @@ class bram2pTest extends AnyFunSuite {
     if (mismatches.isEmpty) {
       report.pass(successMessage)
     } else {
-      report.fail(failureMessage, mismatches)
+      report.fail(failureMessage, mismatches.toSeq)
     }
   }
 
@@ -332,8 +332,8 @@ class bram2pTest extends AnyFunSuite {
         report = scbd,
         failureMessage = "Read-after-write mismatches were detected.",
         successMessage = s"@${simTime()}ps All $memoryDepth read-after-write checks matched the written random pattern.",
-        requests = readRequests,
-        captures = readCaptures
+        requests = readRequests.toSeq,
+        captures = readCaptures.toSeq
       )
     }
 
@@ -375,8 +375,8 @@ class bram2pTest extends AnyFunSuite {
         report = report,
         failureMessage = "RAM clearing left unexpected contents in memory.",
         successMessage = s"All $memoryDepth addresses returned the default value ${formatHex(defaultValue)} after clear.",
-        requests = readRequests,
-        captures = readCaptures
+        requests = readRequests.toSeq,
+        captures = readCaptures.toSeq
       )
     }
   }
@@ -419,8 +419,8 @@ class bram2pTest extends AnyFunSuite {
         report = report,
         failureMessage = "Overlapped and follow-up reads mismatched expected data.",
         successMessage = "Overlapped read plus follow-up single reads matched expected data.",
-        requests = readRequests,
-        captures = readCaptures
+        requests = readRequests.toSeq,
+        captures = readCaptures.toSeq
       )
     }
   }

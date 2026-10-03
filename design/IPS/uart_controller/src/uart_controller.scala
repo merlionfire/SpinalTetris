@@ -84,13 +84,13 @@ class uart_controller(systemClockFrequency: HertzNumber = 50 MHz) extends Compon
       rotate_reg := False
       drop_reg := False
     } otherwise {
-//      // Default: clear all control signals (one-cycle pulse)
-//      game_start_reg := False
-//      move_left_reg := False
-//      move_right_reg := False
-//      move_down_reg := False
-//      rotate_reg := False
-//      drop_reg := False
+      // Default: clear all control signals (one-cycle pulse)
+      game_start_reg := False
+      move_left_reg := False
+      move_right_reg := False
+      move_down_reg := False
+      rotate_reg := False
+      drop_reg := False
 
       // Read from UART and decode keys
       when(uartCtrl.io.read.valid) {

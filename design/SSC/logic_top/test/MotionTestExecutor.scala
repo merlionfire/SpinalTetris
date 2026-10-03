@@ -97,7 +97,7 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
       playfieldList.foreach { playfieldState =>
 
         val motionName = if (motionNames.nonEmpty) motionNames.dequeue() else "DP"
-        visualizer.recordFrame(motionName, playfieldState)
+        visualizer.recordFrame(motionName, playfieldState.toSeq)
       }
 
       val targetName = s"sim/img/Motion_${round}/Action_${actionIndex}.png"
@@ -240,7 +240,7 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
     )
     scbd.actualData.remove(0,currentState.length )
 
-    currentState
+    currentState.toSeq
   }
 
 

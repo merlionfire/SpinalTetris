@@ -13,6 +13,33 @@ class ColorPaletteTest extends AnyFunSuite {
   //var compiler: String = "verilator"
   var compiler: String = "vcs"
 
+  // Old test-local workaround kept for reference. The preferred approach now is to place
+  // bash-compatible wrapper scripts directly inside `VCS_HOME/bin`.
+  //
+  // private lazy val ensureVcsBashWrappers: Unit = installVcsBashWrappers()
+  //
+  // private def installVcsBashWrappers(): Unit = {
+  //   val vcsHome = sys.env.get("VCS_HOME").map(Path.of(_))
+  //   vcsHome.foreach { home =>
+  //     val binDir = home.resolve("bin")
+  //     val wrappers = Seq("vlogan", "vcs", "vhdlan")
+  //
+	//     wrappers.foreach { toolName =>
+	//	val toolPath = binDir.resolve(toolName)
+	//	val backupPath = binDir.resolve(s".$toolName.spinaltetris.orig")
+  //
+	//	if (!Files.exists(backupPath)) {
+	//	  Files.move(toolPath, backupPath, StandardCopyOption.REPLACE_EXISTING)
+	//	}
+  //
+	//	val originalScript = Files.readString(backupPath, StandardCharsets.UTF_8)
+	//	val bashScript = originalScript.replaceFirst("(?m)^#!.*", "#!/usr/bin/env bash")
+	//	Files.writeString(toolPath, bashScript, StandardCharsets.UTF_8)
+	//	toolPath.toFile.setExecutable(true, false)
+	//     }
+	//   }
+  // }
+
   private def simulationTargetName(paletteName: String): String = {
 	val sanitizedName = paletteName.replaceAll("[^A-Za-z0-9]+", "_").replaceAll("_+", "_")
 	s"color_palette_$sanitizedName"

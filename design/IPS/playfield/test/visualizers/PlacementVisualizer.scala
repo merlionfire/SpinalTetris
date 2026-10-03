@@ -92,7 +92,7 @@ class PlacementVisualizer(
     ImageGenerator.fromGridLayout(
       totalWidth = 400,
       totalHeight = totalHeight,
-      gridData = drawTasks
+      gridData = drawTasks.toSeq
     ).buildAndSave(
       PathUtils.getRtlOutputPath(testClass, targetName = "sim/img").toString +
         s"/PlaceImg_${actionIndex}_${playfieldPattern}x${piecePattern}.png"

@@ -98,7 +98,7 @@ object BitPatternGenerators {
 
     // 3. Select the 'count' subset of positions for collision
     // Use Gen.pick to randomly select exactly 'count' indices from the candidates.
-    val selectedPositionsGen: Gen[Seq[Int]] = Gen.pick(count, candidatePositions)
+    val selectedPositionsGen = Gen.pick(count, candidatePositions)
 
     // 4. Transform the selected positions into the final Int value
     selectedPositionsGen.map { positions =>
@@ -419,8 +419,8 @@ object MotionPatternGenerators {
   def getMotionsDescription( that : Seq[Pattern] ) : String = that.map {
     case MotionPatternGenerators.Left(step) => s"← ${step}"
     case MotionPatternGenerators.Right(step) => s"→ ${step}"
-    case MotionPatternGenerators.Rotate(step) => s"↓ ${step}"
-    case MotionPatternGenerators.Down(step) => s"↺ ${step}"
+    case MotionPatternGenerators.Rotate(step) => s"↺ ${step}"
+    case MotionPatternGenerators.Down(step) => s"↓ ${step}"
     case MotionPatternGenerators.Drop => s"↓↓↓"
     case MotionPatternGenerators.Random => s"Randomized motions"
   }.mkString(", ")

@@ -86,6 +86,7 @@ class controller ( config : ControllerConfig) ( implicit  buildConfig: BuildConf
   private val debugLockDownInCycle = 100
 
   private val dropTimeoutInCycle = if (buildConfig.has(DebugSignals)) {
+    println(s"[DEBUG] levelFallInCycle = ${levelFallInCycle} , debugLevelFallInCycle = ${debugLevelFallInCycle} ")
     levelFallInCycle min debugLevelFallInCycle
   } else {
     levelFallInCycle
@@ -120,7 +121,7 @@ class controller ( config : ControllerConfig) ( implicit  buildConfig: BuildConf
      }
 
   */
-  val priority = cloneOf(motion_request) setAsReg() init B(1)  // LSB
+  val priority = cloneOf(motion_request).setAsReg() init B(1)  // LSB
 
   assert(CountOne(priority) === 1, "priority must be one-hot")
 
@@ -235,6 +236,10 @@ class controller ( config : ControllerConfig) ( implicit  buildConfig: BuildConf
       }
     }
 
+
+//    Throughout the Falling Phase, the player can move, rotate, Soft Drop, Hard Drop, and Hold a
+//    Tetrimino. The Tetrimino enters the Lock Phase once it lands on a Surface.
+
     val FALLING: State = new State {
 
 
@@ -263,7 +268,7 @@ class controller ( config : ControllerConfig) ( implicit  buildConfig: BuildConf
         }
 
         when ( drop_timeout  )  {
-          goto(LOCK)
+          goto(RRE_LOCK)
         }
       }
 
@@ -294,7 +299,7 @@ class controller ( config : ControllerConfig) ( implicit  buildConfig: BuildConf
         io.move_out.down := True
       }
 
-      whenIsActive(  // Once it drops on the botton and is locked )
+      whenIsActive(  // Once it drops on the bottom and is locked )
         transitionOnCollision( onCollision= LOCKDOWN, onNoCollision = WAIT_ALLOW_ACTION)
       )
 
@@ -317,12 +322,26 @@ class controller ( config : ControllerConfig) ( implicit  buildConfig: BuildConf
     }
 
 
+    val RRE_LOCK : State = new State {
+      whenIsActive(
+        when ( io.playfield_allow_action ) { goto(LOCK) }
+      )
+
+    }
+
+
+//    The player can perform the same actions on a Tetrimino in this phase as he/she can in the
+//    Falling Phase, as long as the Tetrimino is not yet Locked Down. A Tetrimino that is Hard Dropped
+//      Locks Down immediately. However, if a Tetrimino naturally falls or Soft Drops onto a landing
+//      Surface, it is given 0.5 seconds on a Lock Down Timer before it actually Locks Down
+
+
     val LOCK: State = new State {
       onEntry {
         io.move_out.down := True
       }
 
-      whenIsActive(  // Once it drops on the botton and is locked )
+      whenIsActive(  // Once it drops on the bottom and is locked )
 
         when(io.collision_status.valid) {
           when(io.collision_status.payload) {

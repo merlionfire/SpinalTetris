@@ -1,6 +1,6 @@
-// Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
+// Generator : SpinalHDL v1.15.0    git head : 05a01af3d3345aa0afcaad8e0186dde13a359db2
 // Component : logic_top
-// Git hash  : 39db3a2cb8f7a078d16a5dce7d14097771ef6fa2
+// Git hash  : 3d467bff18f916b687d55ae2a8e3528df145783c
 
 `timescale 1ns/1ps
 
@@ -14,23 +14,28 @@ module logic_top (
   output wire          row_val_valid,
   output wire [9:0]    row_val_payload,
   output wire          score_val_valid,
-  output wire [8:0]    score_val_payload,
+  output wire [9:0]    score_val_payload,
   input  wire          draw_field_done,
   input  wire          screen_is_ready,
   input  wire          vga_sof,
   output wire          ctrl_allowed,
   output wire          softReset,
   output wire          game_restart,
+  output wire          debug_controller_debug_place_new,
+  output wire          debug_controller_controller_in_lockdown,
+  output wire          debug_controller_controller_in_end,
+  output wire          debug_controller_controller_in_place,
+  output wire          debug_new_piece_valid,
   input  wire          clk,
   input  wire          reset
 );
-  localparam I = 3'd0;
-  localparam J = 3'd1;
-  localparam L = 3'd2;
-  localparam O = 3'd3;
-  localparam S = 3'd4;
-  localparam T = 3'd5;
-  localparam Z = 3'd6;
+  localparam TYPE_1_I = 3'd0;
+  localparam TYPE_1_J = 3'd1;
+  localparam TYPE_1_L = 3'd2;
+  localparam TYPE_1_O = 3'd3;
+  localparam TYPE_1_S = 3'd4;
+  localparam TYPE_1_T = 3'd5;
+  localparam TYPE_1_Z = 3'd6;
 
   wire                playfield_inst_piece_in_valid;
   wire                piece_gen_inst_io_shape_valid;
@@ -40,7 +45,7 @@ module logic_top (
   wire                playfield_inst_row_val_valid;
   wire       [9:0]    playfield_inst_row_val_payload;
   wire                playfield_inst_score_val_valid;
-  wire       [8:0]    playfield_inst_score_val_payload;
+  wire       [9:0]    playfield_inst_score_val_payload;
   wire                playfield_inst_motion_is_allowed;
   wire                playfield_inst_fsm_is_idle;
   wire                controller_inst_game_restart;
@@ -51,7 +56,10 @@ module logic_top (
   wire                controller_inst_move_out_rotate;
   wire                controller_inst_move_out_down;
   wire                controller_inst_lock;
-  wire                controller_inst_debug_place_new;
+  wire                controller_inst_debug_debug_place_new;
+  wire                controller_inst_debug_controller_in_lockdown;
+  wire                controller_inst_debug_controller_in_end;
+  wire                controller_inst_debug_controller_in_place;
   reg                 status_stage_valid;
   reg                 status_stage_payload;
   wire       [3:0]    temp_piece_in_valid;
@@ -82,46 +90,49 @@ module logic_top (
     .row_val_valid     (playfield_inst_row_val_valid         ), //o
     .row_val_payload   (playfield_inst_row_val_payload[9:0]  ), //o
     .score_val_valid   (playfield_inst_score_val_valid       ), //o
-    .score_val_payload (playfield_inst_score_val_payload[8:0]), //o
+    .score_val_payload (playfield_inst_score_val_payload[9:0]), //o
     .motion_is_allowed (playfield_inst_motion_is_allowed     ), //o
     .fsm_is_idle       (playfield_inst_fsm_is_idle           ), //o
     .clk               (clk                                  ), //i
     .reset             (reset                                )  //i
   );
   controller controller_inst (
-    .game_start               (game_start                      ), //i
-    .move_left                (move_left                       ), //i
-    .move_right               (move_right                      ), //i
-    .move_down                (move_down                       ), //i
-    .rotate                   (rotate                          ), //i
-    .drop                     (drop                            ), //i
-    .screen_is_ready          (screen_is_ready                 ), //i
-    .playfield_in_idle        (playfield_inst_fsm_is_idle      ), //i
-    .playfield_allow_action   (playfield_inst_motion_is_allowed), //i
-    .game_restart             (controller_inst_game_restart    ), //o
-    .softReset                (controller_inst_softReset       ), //o
-    .gen_piece_en             (controller_inst_gen_piece_en    ), //o
-    .collision_status_valid   (status_stage_valid              ), //i
-    .collision_status_payload (status_stage_payload            ), //i
-    .move_out_left            (controller_inst_move_out_left   ), //o
-    .move_out_right           (controller_inst_move_out_right  ), //o
-    .move_out_rotate          (controller_inst_move_out_rotate ), //o
-    .move_out_down            (controller_inst_move_out_down   ), //o
-    .lock                     (controller_inst_lock            ), //o
-    .debug_place_new          (controller_inst_debug_place_new ), //o
-    .clk                      (clk                             ), //i
-    .reset                    (reset                           )  //i
+    .game_start                   (game_start                                  ), //i
+    .move_left                    (move_left                                   ), //i
+    .move_right                   (move_right                                  ), //i
+    .move_down                    (move_down                                   ), //i
+    .rotate                       (rotate                                      ), //i
+    .drop                         (drop                                        ), //i
+    .screen_is_ready              (screen_is_ready                             ), //i
+    .playfield_in_idle            (playfield_inst_fsm_is_idle                  ), //i
+    .playfield_allow_action       (playfield_inst_motion_is_allowed            ), //i
+    .game_restart                 (controller_inst_game_restart                ), //o
+    .softReset                    (controller_inst_softReset                   ), //o
+    .gen_piece_en                 (controller_inst_gen_piece_en                ), //o
+    .collision_status_valid       (status_stage_valid                          ), //i
+    .collision_status_payload     (status_stage_payload                        ), //i
+    .move_out_left                (controller_inst_move_out_left               ), //o
+    .move_out_right               (controller_inst_move_out_right              ), //o
+    .move_out_rotate              (controller_inst_move_out_rotate             ), //o
+    .move_out_down                (controller_inst_move_out_down               ), //o
+    .lock                         (controller_inst_lock                        ), //o
+    .debug_debug_place_new        (controller_inst_debug_debug_place_new       ), //o
+    .debug_controller_in_lockdown (controller_inst_debug_controller_in_lockdown), //o
+    .debug_controller_in_end      (controller_inst_debug_controller_in_end     ), //o
+    .debug_controller_in_place    (controller_inst_debug_controller_in_place   ), //o
+    .clk                          (clk                                         ), //i
+    .reset                        (reset                                       )  //i
   );
   `ifndef SYNTHESIS
   always @(*) begin
     case(temp_piece_in_payload)
-      I : temp_piece_in_payload_string = "I";
-      J : temp_piece_in_payload_string = "J";
-      L : temp_piece_in_payload_string = "L";
-      O : temp_piece_in_payload_string = "O";
-      S : temp_piece_in_payload_string = "S";
-      T : temp_piece_in_payload_string = "T";
-      Z : temp_piece_in_payload_string = "Z";
+      TYPE_1_I : temp_piece_in_payload_string = "I";
+      TYPE_1_J : temp_piece_in_payload_string = "J";
+      TYPE_1_L : temp_piece_in_payload_string = "L";
+      TYPE_1_O : temp_piece_in_payload_string = "O";
+      TYPE_1_S : temp_piece_in_payload_string = "S";
+      TYPE_1_T : temp_piece_in_payload_string = "T";
+      TYPE_1_Z : temp_piece_in_payload_string = "Z";
       default : temp_piece_in_payload_string = "?";
     endcase
   end
@@ -132,6 +143,11 @@ module logic_top (
   assign temp_piece_in_payload = temp_piece_in_valid[3 : 1];
   assign softReset = controller_inst_softReset;
   assign game_restart = controller_inst_game_restart;
+  assign debug_controller_debug_place_new = controller_inst_debug_debug_place_new;
+  assign debug_controller_controller_in_lockdown = controller_inst_debug_controller_in_lockdown;
+  assign debug_controller_controller_in_end = controller_inst_debug_controller_in_end;
+  assign debug_controller_controller_in_place = controller_inst_debug_controller_in_place;
+  assign debug_new_piece_valid = controller_inst_gen_piece_en;
   assign row_val_valid = playfield_inst_row_val_valid;
   assign row_val_payload = playfield_inst_row_val_payload;
   assign score_val_valid = playfield_inst_score_val_valid;
@@ -172,29 +188,38 @@ module controller (
   output reg           move_out_rotate,
   output reg           move_out_down,
   output reg           lock,
-  (* keep *) output wire          debug_place_new,
+  (* keep *) output wire          debug_debug_place_new,
+  output wire          debug_controller_in_lockdown,
+  output wire          debug_controller_in_end,
+  output wire          debug_controller_in_place,
   input  wire          clk,
   input  wire          reset
 );
-  localparam IDLE = 4'd0;
-  localparam GAME_START = 4'd1;
-  localparam RANDOM_GEN = 4'd2;
-  localparam PLACE = 4'd3;
-  localparam END_1 = 4'd4;
-  localparam FALLING = 4'd5;
-  localparam DOWN = 4'd6;
-  localparam DROP = 4'd7;
-  localparam WAIT_ALLOW_ACTION = 4'd8;
-  localparam MOVE = 4'd9;
-  localparam LOCK = 4'd10;
-  localparam LOCKDOWN = 4'd11;
-  localparam CLEAN = 4'd12;
-  localparam WAIT_TIME = 4'd13;
+  localparam fsm_1_IDLE = 4'd0;
+  localparam fsm_1_GAME_START = 4'd1;
+  localparam fsm_1_RANDOM_GEN = 4'd2;
+  localparam fsm_1_PLACE = 4'd3;
+  localparam fsm_1_END_1 = 4'd4;
+  localparam fsm_1_FALLING = 4'd5;
+  localparam fsm_1_DOWN = 4'd6;
+  localparam fsm_1_DROP = 4'd7;
+  localparam fsm_1_WAIT_ALLOW_ACTION = 4'd8;
+  localparam fsm_1_MOVE = 4'd9;
+  localparam fsm_1_LOCK = 4'd10;
+  localparam fsm_1_LOCKDOWN = 4'd11;
+  localparam fsm_1_CLEAN = 4'd12;
+  localparam fsm_1_WAIT_TIME = 4'd13;
 
-  wire       [24:0]   temp_drop_timeout_counter_valueNext;
+  wire       [13:0]   temp_drop_timeout_counter_valueNext;
   wire       [0:0]    temp_drop_timeout_counter_valueNext_1;
-  wire       [24:0]   temp_lock_timeout_counter_valueNext;
+  wire       [6:0]    temp_lock_timeout_counter_valueNext;
   wire       [0:0]    temp_lock_timeout_counter_valueNext_1;
+  wire       [2:0]    temp_9;
+  reg        [2:0]    temp_10;
+  wire       [2:0]    temp_11;
+  reg        [2:0]    temp_12;
+  wire       [2:0]    temp_13;
+  wire       [1:0]    temp_14;
   wire       [9:0]    temp_temp_motion_voted_2;
   wire       [9:0]    temp_temp_motion_voted_2_1;
   wire       [4:0]    temp_temp_motion_voted_2_2;
@@ -202,21 +227,38 @@ module controller (
   reg                 drop_timeout_state;
   reg                 drop_timeout_stateRise;
   wire                drop_timeout_counter_willIncrement;
+  wire                drop_timeout_counter_willDecrement;
   reg                 drop_timeout_counter_willClear;
-  reg        [24:0]   drop_timeout_counter_valueNext;
-  reg        [24:0]   drop_timeout_counter_value;
+  wire                drop_timeout_counter_willLoad;
+  reg        [13:0]   drop_timeout_counter_valueNext;
+  reg        [13:0]   drop_timeout_counter_value;
   wire                drop_timeout_counter_willOverflowIfInc;
+  wire                drop_timeout_counter_willUnderflowIfDec;
   wire                drop_timeout_counter_willOverflow;
+  wire                drop_timeout_counter_willUnderflow;
   reg                 lock_timeout_state;
   reg                 lock_timeout_stateRise;
   wire                lock_timeout_counter_willIncrement;
+  wire                lock_timeout_counter_willDecrement;
   reg                 lock_timeout_counter_willClear;
-  reg        [24:0]   lock_timeout_counter_valueNext;
-  reg        [24:0]   lock_timeout_counter_value;
+  wire                lock_timeout_counter_willLoad;
+  reg        [6:0]    lock_timeout_counter_valueNext;
+  reg        [6:0]    lock_timeout_counter_value;
   wire                lock_timeout_counter_willOverflowIfInc;
+  wire                lock_timeout_counter_willUnderflowIfDec;
   wire                lock_timeout_counter_willOverflow;
+  wire                lock_timeout_counter_willUnderflow;
   reg        [4:0]    motion_request;
+  reg                 clear_motion_request;
   wire       [4:0]    priority_1;
+  wire       [2:0]    temp_1;
+  wire       [2:0]    temp_2;
+  wire       [2:0]    temp_3;
+  wire       [2:0]    temp_4;
+  wire       [2:0]    temp_5;
+  wire       [2:0]    temp_6;
+  wire       [2:0]    temp_7;
+  wire       [2:0]    temp_8;
   wire                drop_1;
   wire                move_down_1;
   wire                move_left_1;
@@ -232,44 +274,26 @@ module controller (
   wire       [9:0]    temp_motion_voted_2;
   wire       [4:0]    motion_voted;
   reg                 debug_place_new_cnt_willIncrement;
+  wire                debug_place_new_cnt_willDecrement;
   wire                debug_place_new_cnt_willClear;
+  wire                debug_place_new_cnt_willLoad;
   reg        [0:0]    debug_place_new_cnt_valueNext;
   reg        [0:0]    debug_place_new_cnt_value;
   wire                debug_place_new_cnt_willOverflowIfInc;
+  wire                debug_place_new_cnt_willUnderflowIfDec;
   wire                debug_place_new_cnt_willOverflow;
+  wire                debug_place_new_cnt_willUnderflow;
   wire                fsm_wantExit;
   reg                 fsm_wantStart;
   wire                fsm_wantKill;
   reg        [3:0]    fsm_stateReg;
   reg        [3:0]    fsm_stateNext;
-  wire                fsm_onExit_IDLE;
-  wire                fsm_onExit_GAME_START;
-  wire                fsm_onExit_RANDOM_GEN;
   wire                fsm_onExit_PLACE;
-  wire                fsm_onExit_END_1;
   wire                fsm_onExit_FALLING;
-  wire                fsm_onExit_DOWN;
-  wire                fsm_onExit_DROP;
-  wire                fsm_onExit_WAIT_ALLOW_ACTION;
-  wire                fsm_onExit_MOVE;
-  wire                fsm_onExit_LOCK;
-  wire                fsm_onExit_LOCKDOWN;
-  wire                fsm_onExit_CLEAN;
-  wire                fsm_onExit_WAIT_TIME;
-  wire                fsm_onEntry_IDLE;
-  wire                fsm_onEntry_GAME_START;
-  wire                fsm_onEntry_RANDOM_GEN;
-  wire                fsm_onEntry_PLACE;
-  wire                fsm_onEntry_END_1;
-  wire                fsm_onEntry_FALLING;
   wire                fsm_onEntry_DOWN;
   wire                fsm_onEntry_DROP;
-  wire                fsm_onEntry_WAIT_ALLOW_ACTION;
-  wire                fsm_onEntry_MOVE;
   wire                fsm_onEntry_LOCK;
   wire                fsm_onEntry_LOCKDOWN;
-  wire                fsm_onEntry_CLEAN;
-  wire                fsm_onEntry_WAIT_TIME;
   `ifndef SYNTHESIS
   reg [135:0] fsm_stateReg_string;
   reg [135:0] fsm_stateNext_string;
@@ -278,48 +302,78 @@ module controller (
 
   assign temp_when = (! collision_status_payload);
   assign temp_drop_timeout_counter_valueNext_1 = drop_timeout_counter_willIncrement;
-  assign temp_drop_timeout_counter_valueNext = {24'd0, temp_drop_timeout_counter_valueNext_1};
+  assign temp_drop_timeout_counter_valueNext = {13'd0, temp_drop_timeout_counter_valueNext_1};
   assign temp_lock_timeout_counter_valueNext_1 = lock_timeout_counter_willIncrement;
-  assign temp_lock_timeout_counter_valueNext = {24'd0, temp_lock_timeout_counter_valueNext_1};
+  assign temp_lock_timeout_counter_valueNext = {6'd0, temp_lock_timeout_counter_valueNext_1};
+  assign temp_9 = (temp_10 + temp_12);
+  assign temp_14 = {priority_1[4],priority_1[3]};
+  assign temp_13 = {1'd0, temp_14};
   assign temp_temp_motion_voted_2 = (temp_motion_voted_1 - temp_temp_motion_voted_2_1);
   assign temp_temp_motion_voted_2_2 = priority_1;
   assign temp_temp_motion_voted_2_1 = {5'd0, temp_temp_motion_voted_2_2};
+  assign temp_11 = {priority_1[2],{priority_1[1],priority_1[0]}};
+  always @(*) begin
+    case(temp_11)
+      3'b000 : temp_10 = temp_1;
+      3'b001 : temp_10 = temp_2;
+      3'b010 : temp_10 = temp_3;
+      3'b011 : temp_10 = temp_4;
+      3'b100 : temp_10 = temp_5;
+      3'b101 : temp_10 = temp_6;
+      3'b110 : temp_10 = temp_7;
+      default : temp_10 = temp_8;
+    endcase
+  end
+
+  always @(*) begin
+    case(temp_13)
+      3'b000 : temp_12 = temp_1;
+      3'b001 : temp_12 = temp_2;
+      3'b010 : temp_12 = temp_3;
+      3'b011 : temp_12 = temp_4;
+      3'b100 : temp_12 = temp_5;
+      3'b101 : temp_12 = temp_6;
+      3'b110 : temp_12 = temp_7;
+      default : temp_12 = temp_8;
+    endcase
+  end
+
   `ifndef SYNTHESIS
   always @(*) begin
     case(fsm_stateReg)
-      IDLE : fsm_stateReg_string = "IDLE             ";
-      GAME_START : fsm_stateReg_string = "GAME_START       ";
-      RANDOM_GEN : fsm_stateReg_string = "RANDOM_GEN       ";
-      PLACE : fsm_stateReg_string = "PLACE            ";
-      END_1 : fsm_stateReg_string = "END_1            ";
-      FALLING : fsm_stateReg_string = "FALLING          ";
-      DOWN : fsm_stateReg_string = "DOWN             ";
-      DROP : fsm_stateReg_string = "DROP             ";
-      WAIT_ALLOW_ACTION : fsm_stateReg_string = "WAIT_ALLOW_ACTION";
-      MOVE : fsm_stateReg_string = "MOVE             ";
-      LOCK : fsm_stateReg_string = "LOCK             ";
-      LOCKDOWN : fsm_stateReg_string = "LOCKDOWN         ";
-      CLEAN : fsm_stateReg_string = "CLEAN            ";
-      WAIT_TIME : fsm_stateReg_string = "WAIT_TIME        ";
+      fsm_1_IDLE : fsm_stateReg_string = "IDLE             ";
+      fsm_1_GAME_START : fsm_stateReg_string = "GAME_START       ";
+      fsm_1_RANDOM_GEN : fsm_stateReg_string = "RANDOM_GEN       ";
+      fsm_1_PLACE : fsm_stateReg_string = "PLACE            ";
+      fsm_1_END_1 : fsm_stateReg_string = "END_1            ";
+      fsm_1_FALLING : fsm_stateReg_string = "FALLING          ";
+      fsm_1_DOWN : fsm_stateReg_string = "DOWN             ";
+      fsm_1_DROP : fsm_stateReg_string = "DROP             ";
+      fsm_1_WAIT_ALLOW_ACTION : fsm_stateReg_string = "WAIT_ALLOW_ACTION";
+      fsm_1_MOVE : fsm_stateReg_string = "MOVE             ";
+      fsm_1_LOCK : fsm_stateReg_string = "LOCK             ";
+      fsm_1_LOCKDOWN : fsm_stateReg_string = "LOCKDOWN         ";
+      fsm_1_CLEAN : fsm_stateReg_string = "CLEAN            ";
+      fsm_1_WAIT_TIME : fsm_stateReg_string = "WAIT_TIME        ";
       default : fsm_stateReg_string = "?????????????????";
     endcase
   end
   always @(*) begin
     case(fsm_stateNext)
-      IDLE : fsm_stateNext_string = "IDLE             ";
-      GAME_START : fsm_stateNext_string = "GAME_START       ";
-      RANDOM_GEN : fsm_stateNext_string = "RANDOM_GEN       ";
-      PLACE : fsm_stateNext_string = "PLACE            ";
-      END_1 : fsm_stateNext_string = "END_1            ";
-      FALLING : fsm_stateNext_string = "FALLING          ";
-      DOWN : fsm_stateNext_string = "DOWN             ";
-      DROP : fsm_stateNext_string = "DROP             ";
-      WAIT_ALLOW_ACTION : fsm_stateNext_string = "WAIT_ALLOW_ACTION";
-      MOVE : fsm_stateNext_string = "MOVE             ";
-      LOCK : fsm_stateNext_string = "LOCK             ";
-      LOCKDOWN : fsm_stateNext_string = "LOCKDOWN         ";
-      CLEAN : fsm_stateNext_string = "CLEAN            ";
-      WAIT_TIME : fsm_stateNext_string = "WAIT_TIME        ";
+      fsm_1_IDLE : fsm_stateNext_string = "IDLE             ";
+      fsm_1_GAME_START : fsm_stateNext_string = "GAME_START       ";
+      fsm_1_RANDOM_GEN : fsm_stateNext_string = "RANDOM_GEN       ";
+      fsm_1_PLACE : fsm_stateNext_string = "PLACE            ";
+      fsm_1_END_1 : fsm_stateNext_string = "END_1            ";
+      fsm_1_FALLING : fsm_stateNext_string = "FALLING          ";
+      fsm_1_DOWN : fsm_stateNext_string = "DOWN             ";
+      fsm_1_DROP : fsm_stateNext_string = "DROP             ";
+      fsm_1_WAIT_ALLOW_ACTION : fsm_stateNext_string = "WAIT_ALLOW_ACTION";
+      fsm_1_MOVE : fsm_stateNext_string = "MOVE             ";
+      fsm_1_LOCK : fsm_stateNext_string = "LOCK             ";
+      fsm_1_LOCKDOWN : fsm_stateNext_string = "LOCKDOWN         ";
+      fsm_1_CLEAN : fsm_stateNext_string = "CLEAN            ";
+      fsm_1_WAIT_TIME : fsm_stateNext_string = "WAIT_TIME        ";
       default : fsm_stateNext_string = "?????????????????";
     endcase
   end
@@ -347,114 +401,114 @@ module controller (
     lock = 1'b0;
     fsm_stateNext = fsm_stateReg;
     case(fsm_stateReg)
-      GAME_START : begin
+      fsm_1_GAME_START : begin
         if(screen_is_ready) begin
-          fsm_stateNext = RANDOM_GEN;
+          fsm_stateNext = fsm_1_RANDOM_GEN;
         end
       end
-      RANDOM_GEN : begin
+      fsm_1_RANDOM_GEN : begin
         gen_piece_en = 1'b1;
-        fsm_stateNext = PLACE;
+        fsm_stateNext = fsm_1_PLACE;
       end
-      PLACE : begin
+      fsm_1_PLACE : begin
         if(collision_status_valid) begin
           if(collision_status_payload) begin
-            fsm_stateNext = END_1;
+            fsm_stateNext = fsm_1_END_1;
           end else begin
-            fsm_stateNext = FALLING;
+            fsm_stateNext = fsm_1_FALLING;
           end
         end
       end
-      END_1 : begin
+      fsm_1_END_1 : begin
         if(game_start) begin
           softReset = 1'b1;
           game_restart = 1'b1;
-          fsm_stateNext = GAME_START;
+          fsm_stateNext = fsm_1_GAME_START;
         end
       end
-      FALLING : begin
+      fsm_1_FALLING : begin
         if((move_down_1 && playfield_allow_action)) begin
-          fsm_stateNext = DOWN;
+          fsm_stateNext = fsm_1_DOWN;
         end
         if((drop_1 && playfield_allow_action)) begin
-          fsm_stateNext = DROP;
+          fsm_stateNext = fsm_1_DROP;
         end
         if((move_left_1 && playfield_allow_action)) begin
           move_out_left = 1'b1;
-          fsm_stateNext = MOVE;
+          fsm_stateNext = fsm_1_MOVE;
         end
         if((move_right_1 && playfield_allow_action)) begin
           move_out_right = 1'b1;
-          fsm_stateNext = MOVE;
+          fsm_stateNext = fsm_1_MOVE;
         end
         if((rotate_1 && playfield_allow_action)) begin
           move_out_rotate = 1'b1;
-          fsm_stateNext = MOVE;
+          fsm_stateNext = fsm_1_MOVE;
         end
         if(drop_timeout_state) begin
-          fsm_stateNext = LOCK;
+          fsm_stateNext = fsm_1_LOCK;
         end
       end
-      DOWN : begin
+      fsm_1_DOWN : begin
         if(collision_status_valid) begin
           if(temp_when) begin
             drop_timeout_counter_willClear = 1'b1;
             drop_timeout_stateRise = 1'b0;
           end
-          fsm_stateNext = FALLING;
+          fsm_stateNext = fsm_1_FALLING;
         end
       end
-      DROP : begin
+      fsm_1_DROP : begin
         if(collision_status_valid) begin
           if(collision_status_payload) begin
-            fsm_stateNext = LOCKDOWN;
+            fsm_stateNext = fsm_1_LOCKDOWN;
           end else begin
-            fsm_stateNext = WAIT_ALLOW_ACTION;
+            fsm_stateNext = fsm_1_WAIT_ALLOW_ACTION;
           end
         end
       end
-      WAIT_ALLOW_ACTION : begin
+      fsm_1_WAIT_ALLOW_ACTION : begin
         if(playfield_allow_action) begin
-          fsm_stateNext = DROP;
+          fsm_stateNext = fsm_1_DROP;
         end
       end
-      MOVE : begin
+      fsm_1_MOVE : begin
         if(collision_status_valid) begin
-          fsm_stateNext = FALLING;
+          fsm_stateNext = fsm_1_FALLING;
         end
       end
-      LOCK : begin
+      fsm_1_LOCK : begin
         if(collision_status_valid) begin
           if(collision_status_payload) begin
-            fsm_stateNext = LOCKDOWN;
+            fsm_stateNext = fsm_1_LOCKDOWN;
           end else begin
             drop_timeout_counter_willClear = 1'b1;
             drop_timeout_stateRise = 1'b0;
-            fsm_stateNext = FALLING;
+            fsm_stateNext = fsm_1_FALLING;
           end
         end
       end
-      LOCKDOWN : begin
+      fsm_1_LOCKDOWN : begin
         if(lock_timeout_state) begin
           lock = 1'b1;
-          fsm_stateNext = CLEAN;
+          fsm_stateNext = fsm_1_CLEAN;
         end
       end
-      CLEAN : begin
+      fsm_1_CLEAN : begin
         if(playfield_in_idle) begin
           lock_timeout_counter_willClear = 1'b1;
           lock_timeout_stateRise = 1'b0;
-          fsm_stateNext = WAIT_TIME;
+          fsm_stateNext = fsm_1_WAIT_TIME;
         end
       end
-      WAIT_TIME : begin
+      fsm_1_WAIT_TIME : begin
         if(lock_timeout_state) begin
-          fsm_stateNext = RANDOM_GEN;
+          fsm_stateNext = fsm_1_RANDOM_GEN;
         end
       end
       default : begin
         if(game_start) begin
-          fsm_stateNext = GAME_START;
+          fsm_stateNext = fsm_1_GAME_START;
         end
         fsm_wantStart = 1'b1;
       end
@@ -469,39 +523,53 @@ module controller (
       lock_timeout_stateRise = 1'b0;
     end
     if(fsm_wantKill) begin
-      fsm_stateNext = IDLE;
+      fsm_stateNext = fsm_1_IDLE;
     end
   end
 
-  assign drop_timeout_counter_willOverflowIfInc = (drop_timeout_counter_value == 25'h168decf);
+  assign drop_timeout_counter_willDecrement = 1'b0;
+  assign drop_timeout_counter_willLoad = 1'b0;
+  assign drop_timeout_counter_willOverflowIfInc = (drop_timeout_counter_value == 14'h270f);
+  assign drop_timeout_counter_willUnderflowIfDec = (drop_timeout_counter_value == 14'h0);
   assign drop_timeout_counter_willOverflow = (drop_timeout_counter_willOverflowIfInc && drop_timeout_counter_willIncrement);
   always @(*) begin
+    drop_timeout_counter_valueNext = (drop_timeout_counter_value + temp_drop_timeout_counter_valueNext);
     if(drop_timeout_counter_willOverflow) begin
-      drop_timeout_counter_valueNext = 25'h0;
-    end else begin
-      drop_timeout_counter_valueNext = (drop_timeout_counter_value + temp_drop_timeout_counter_valueNext);
+      drop_timeout_counter_valueNext = 14'h0;
     end
     if(drop_timeout_counter_willClear) begin
-      drop_timeout_counter_valueNext = 25'h0;
+      drop_timeout_counter_valueNext = 14'h0;
     end
   end
 
+  assign drop_timeout_counter_willUnderflow = (drop_timeout_counter_willUnderflowIfDec && drop_timeout_counter_willDecrement);
   assign drop_timeout_counter_willIncrement = 1'b1;
-  assign lock_timeout_counter_willOverflowIfInc = (lock_timeout_counter_value == 25'h17d783f);
+  assign lock_timeout_counter_willDecrement = 1'b0;
+  assign lock_timeout_counter_willLoad = 1'b0;
+  assign lock_timeout_counter_willOverflowIfInc = (lock_timeout_counter_value == 7'h63);
+  assign lock_timeout_counter_willUnderflowIfDec = (lock_timeout_counter_value == 7'h0);
   assign lock_timeout_counter_willOverflow = (lock_timeout_counter_willOverflowIfInc && lock_timeout_counter_willIncrement);
   always @(*) begin
+    lock_timeout_counter_valueNext = (lock_timeout_counter_value + temp_lock_timeout_counter_valueNext);
     if(lock_timeout_counter_willOverflow) begin
-      lock_timeout_counter_valueNext = 25'h0;
-    end else begin
-      lock_timeout_counter_valueNext = (lock_timeout_counter_value + temp_lock_timeout_counter_valueNext);
+      lock_timeout_counter_valueNext = 7'h0;
     end
     if(lock_timeout_counter_willClear) begin
-      lock_timeout_counter_valueNext = 25'h0;
+      lock_timeout_counter_valueNext = 7'h0;
     end
   end
 
+  assign lock_timeout_counter_willUnderflow = (lock_timeout_counter_willUnderflowIfDec && lock_timeout_counter_willDecrement);
   assign lock_timeout_counter_willIncrement = 1'b1;
   assign priority_1 = 5'h01;
+  assign temp_1 = 3'b000;
+  assign temp_2 = 3'b001;
+  assign temp_3 = 3'b001;
+  assign temp_4 = 3'b010;
+  assign temp_5 = 3'b001;
+  assign temp_6 = 3'b010;
+  assign temp_7 = 3'b010;
+  assign temp_8 = 3'b011;
   assign temp_motion_voted = motion_request;
   assign temp_motion_voted_1 = {temp_motion_voted,temp_motion_voted};
   assign temp_motion_voted_2 = (temp_motion_voted_1 & (~ temp_temp_motion_voted_2));
@@ -511,8 +579,11 @@ module controller (
   assign move_left_1 = motion_voted[2];
   assign move_right_1 = motion_voted[3];
   assign rotate_1 = motion_voted[4];
+  assign debug_place_new_cnt_willDecrement = 1'b0;
   assign debug_place_new_cnt_willClear = 1'b0;
+  assign debug_place_new_cnt_willLoad = 1'b0;
   assign debug_place_new_cnt_willOverflowIfInc = (debug_place_new_cnt_value == 1'b1);
+  assign debug_place_new_cnt_willUnderflowIfDec = (debug_place_new_cnt_value == 1'b0);
   assign debug_place_new_cnt_willOverflow = (debug_place_new_cnt_willOverflowIfInc && debug_place_new_cnt_willIncrement);
   always @(*) begin
     debug_place_new_cnt_valueNext = (debug_place_new_cnt_value + debug_place_new_cnt_willIncrement);
@@ -521,7 +592,8 @@ module controller (
     end
   end
 
-  assign debug_place_new = debug_place_new_cnt_willOverflow;
+  assign debug_place_new_cnt_willUnderflow = (debug_place_new_cnt_willUnderflowIfDec && debug_place_new_cnt_willDecrement);
+  assign debug_debug_place_new = debug_place_new_cnt_willOverflow;
   assign fsm_wantExit = 1'b0;
   assign fsm_wantKill = 1'b0;
   always @(*) begin
@@ -537,40 +609,28 @@ module controller (
     end
   end
 
-  assign fsm_onExit_IDLE = ((fsm_stateNext != IDLE) && (fsm_stateReg == IDLE));
-  assign fsm_onExit_GAME_START = ((fsm_stateNext != GAME_START) && (fsm_stateReg == GAME_START));
-  assign fsm_onExit_RANDOM_GEN = ((fsm_stateNext != RANDOM_GEN) && (fsm_stateReg == RANDOM_GEN));
-  assign fsm_onExit_PLACE = ((fsm_stateNext != PLACE) && (fsm_stateReg == PLACE));
-  assign fsm_onExit_END_1 = ((fsm_stateNext != END_1) && (fsm_stateReg == END_1));
-  assign fsm_onExit_FALLING = ((fsm_stateNext != FALLING) && (fsm_stateReg == FALLING));
-  assign fsm_onExit_DOWN = ((fsm_stateNext != DOWN) && (fsm_stateReg == DOWN));
-  assign fsm_onExit_DROP = ((fsm_stateNext != DROP) && (fsm_stateReg == DROP));
-  assign fsm_onExit_WAIT_ALLOW_ACTION = ((fsm_stateNext != WAIT_ALLOW_ACTION) && (fsm_stateReg == WAIT_ALLOW_ACTION));
-  assign fsm_onExit_MOVE = ((fsm_stateNext != MOVE) && (fsm_stateReg == MOVE));
-  assign fsm_onExit_LOCK = ((fsm_stateNext != LOCK) && (fsm_stateReg == LOCK));
-  assign fsm_onExit_LOCKDOWN = ((fsm_stateNext != LOCKDOWN) && (fsm_stateReg == LOCKDOWN));
-  assign fsm_onExit_CLEAN = ((fsm_stateNext != CLEAN) && (fsm_stateReg == CLEAN));
-  assign fsm_onExit_WAIT_TIME = ((fsm_stateNext != WAIT_TIME) && (fsm_stateReg == WAIT_TIME));
-  assign fsm_onEntry_IDLE = ((fsm_stateNext == IDLE) && (fsm_stateReg != IDLE));
-  assign fsm_onEntry_GAME_START = ((fsm_stateNext == GAME_START) && (fsm_stateReg != GAME_START));
-  assign fsm_onEntry_RANDOM_GEN = ((fsm_stateNext == RANDOM_GEN) && (fsm_stateReg != RANDOM_GEN));
-  assign fsm_onEntry_PLACE = ((fsm_stateNext == PLACE) && (fsm_stateReg != PLACE));
-  assign fsm_onEntry_END_1 = ((fsm_stateNext == END_1) && (fsm_stateReg != END_1));
-  assign fsm_onEntry_FALLING = ((fsm_stateNext == FALLING) && (fsm_stateReg != FALLING));
-  assign fsm_onEntry_DOWN = ((fsm_stateNext == DOWN) && (fsm_stateReg != DOWN));
-  assign fsm_onEntry_DROP = ((fsm_stateNext == DROP) && (fsm_stateReg != DROP));
-  assign fsm_onEntry_WAIT_ALLOW_ACTION = ((fsm_stateNext == WAIT_ALLOW_ACTION) && (fsm_stateReg != WAIT_ALLOW_ACTION));
-  assign fsm_onEntry_MOVE = ((fsm_stateNext == MOVE) && (fsm_stateReg != MOVE));
-  assign fsm_onEntry_LOCK = ((fsm_stateNext == LOCK) && (fsm_stateReg != LOCK));
-  assign fsm_onEntry_LOCKDOWN = ((fsm_stateNext == LOCKDOWN) && (fsm_stateReg != LOCKDOWN));
-  assign fsm_onEntry_CLEAN = ((fsm_stateNext == CLEAN) && (fsm_stateReg != CLEAN));
-  assign fsm_onEntry_WAIT_TIME = ((fsm_stateNext == WAIT_TIME) && (fsm_stateReg != WAIT_TIME));
+  always @(*) begin
+    clear_motion_request = 1'b0;
+    if(fsm_onExit_FALLING) begin
+      clear_motion_request = 1'b1;
+    end
+  end
+
+  assign debug_controller_in_lockdown = (fsm_stateReg == fsm_1_LOCKDOWN);
+  assign debug_controller_in_end = (fsm_stateReg == fsm_1_END_1);
+  assign debug_controller_in_place = (fsm_stateReg == fsm_1_PLACE);
+  assign fsm_onExit_PLACE = ((fsm_stateNext != fsm_1_PLACE) && (fsm_stateReg == fsm_1_PLACE));
+  assign fsm_onExit_FALLING = ((fsm_stateNext != fsm_1_FALLING) && (fsm_stateReg == fsm_1_FALLING));
+  assign fsm_onEntry_DOWN = ((fsm_stateNext == fsm_1_DOWN) && (fsm_stateReg != fsm_1_DOWN));
+  assign fsm_onEntry_DROP = ((fsm_stateNext == fsm_1_DROP) && (fsm_stateReg != fsm_1_DROP));
+  assign fsm_onEntry_LOCK = ((fsm_stateNext == fsm_1_LOCK) && (fsm_stateReg != fsm_1_LOCK));
+  assign fsm_onEntry_LOCKDOWN = ((fsm_stateNext == fsm_1_LOCKDOWN) && (fsm_stateReg != fsm_1_LOCKDOWN));
   always @(posedge clk or posedge reset) begin
     if(reset) begin
       drop_timeout_state <= 1'b0;
-      drop_timeout_counter_value <= 25'h0;
+      drop_timeout_counter_value <= 14'h0;
       lock_timeout_state <= 1'b0;
-      lock_timeout_counter_value <= 25'h0;
+      lock_timeout_counter_value <= 7'h0;
       motion_request <= 5'h0;
       drop_regNext <= 1'b0;
       move_down_regNext <= 1'b0;
@@ -578,7 +638,7 @@ module controller (
       move_right_regNext <= 1'b0;
       rotate_regNext <= 1'b0;
       debug_place_new_cnt_value <= 1'b0;
-      fsm_stateReg <= IDLE;
+      fsm_stateReg <= fsm_1_IDLE;
     end else begin
       drop_timeout_counter_value <= drop_timeout_counter_valueNext;
       if(drop_timeout_counter_willOverflow) begin
@@ -588,76 +648,103 @@ module controller (
       if(lock_timeout_counter_willOverflow) begin
         lock_timeout_state <= 1'b1;
       end
+      `ifndef SYNTHESIS
+        `ifdef FORMAL
+          assert((temp_9 == 3'b001)); // controller.scala:L126
+        `else
+          if(!(temp_9 == 3'b001)) begin
+            $display("FAILURE priority must be one-hot"); // controller.scala:L126
+            $finish;
+          end
+        `endif
+      `endif
+      if(((game_start || game_restart) || clear_motion_request)) begin
+        motion_request[0] <= 1'b0;
+      end else begin
+        if((drop && (! drop_regNext))) begin
+          motion_request[0] <= 1'b1;
+        end
+      end
       drop_regNext <= drop;
-      if((drop && (! drop_regNext))) begin
-        motion_request[0] <= 1'b1;
+      if(((game_start || game_restart) || clear_motion_request)) begin
+        motion_request[1] <= 1'b0;
+      end else begin
+        if((move_down && (! move_down_regNext))) begin
+          motion_request[1] <= 1'b1;
+        end
       end
       move_down_regNext <= move_down;
-      if((move_down && (! move_down_regNext))) begin
-        motion_request[1] <= 1'b1;
+      if(((game_start || game_restart) || clear_motion_request)) begin
+        motion_request[2] <= 1'b0;
+      end else begin
+        if((move_left && (! move_left_regNext))) begin
+          motion_request[2] <= 1'b1;
+        end
       end
       move_left_regNext <= move_left;
-      if((move_left && (! move_left_regNext))) begin
-        motion_request[2] <= 1'b1;
+      if(((game_start || game_restart) || clear_motion_request)) begin
+        motion_request[3] <= 1'b0;
+      end else begin
+        if((move_right && (! move_right_regNext))) begin
+          motion_request[3] <= 1'b1;
+        end
       end
       move_right_regNext <= move_right;
-      if((move_right && (! move_right_regNext))) begin
-        motion_request[3] <= 1'b1;
+      if(((game_start || game_restart) || clear_motion_request)) begin
+        motion_request[4] <= 1'b0;
+      end else begin
+        if((rotate && (! rotate_regNext))) begin
+          motion_request[4] <= 1'b1;
+        end
       end
       rotate_regNext <= rotate;
-      if((rotate && (! rotate_regNext))) begin
-        motion_request[4] <= 1'b1;
-      end
       debug_place_new_cnt_value <= debug_place_new_cnt_valueNext;
       fsm_stateReg <= fsm_stateNext;
       case(fsm_stateReg)
-        GAME_START : begin
+        fsm_1_GAME_START : begin
         end
-        RANDOM_GEN : begin
+        fsm_1_RANDOM_GEN : begin
         end
-        PLACE : begin
+        fsm_1_PLACE : begin
         end
-        END_1 : begin
+        fsm_1_END_1 : begin
         end
-        FALLING : begin
+        fsm_1_FALLING : begin
         end
-        DOWN : begin
+        fsm_1_DOWN : begin
           if(collision_status_valid) begin
             if(temp_when) begin
               drop_timeout_state <= 1'b0;
             end
           end
         end
-        DROP : begin
+        fsm_1_DROP : begin
         end
-        WAIT_ALLOW_ACTION : begin
+        fsm_1_WAIT_ALLOW_ACTION : begin
         end
-        MOVE : begin
+        fsm_1_MOVE : begin
         end
-        LOCK : begin
+        fsm_1_LOCK : begin
           if(collision_status_valid) begin
             if(!collision_status_payload) begin
               drop_timeout_state <= 1'b0;
             end
           end
         end
-        LOCKDOWN : begin
+        fsm_1_LOCKDOWN : begin
         end
-        CLEAN : begin
+        fsm_1_CLEAN : begin
           if(playfield_in_idle) begin
             lock_timeout_state <= 1'b0;
           end
         end
-        WAIT_TIME : begin
+        fsm_1_WAIT_TIME : begin
         end
         default : begin
         end
       endcase
       if(fsm_onExit_PLACE) begin
         drop_timeout_state <= 1'b0;
-      end
-      if(fsm_onExit_FALLING) begin
-        motion_request <= 5'h0;
       end
       if(fsm_onEntry_LOCKDOWN) begin
         lock_timeout_state <= 1'b0;
@@ -682,44 +769,44 @@ module playfield (
   output wire          row_val_valid,
   output reg  [9:0]    row_val_payload,
   output wire          score_val_valid,
-  output wire [8:0]    score_val_payload,
+  output wire [9:0]    score_val_payload,
   output wire          motion_is_allowed,
   output wire          fsm_is_idle,
   input  wire          clk,
   input  wire          reset
 );
-  localparam I = 3'd0;
-  localparam J = 3'd1;
-  localparam L = 3'd2;
-  localparam O = 3'd3;
-  localparam S = 3'd4;
-  localparam T = 3'd5;
-  localparam Z = 3'd6;
-  localparam NO = 3'd0;
-  localparam LEFT = 3'd1;
-  localparam RIGHT = 3'd2;
-  localparam DOWN = 3'd3;
-  localparam ROTATE = 3'd4;
-  localparam PLACE = 3'd5;
-  localparam IDLE = 5'd0;
-  localparam READOUT = 5'd1;
-  localparam LOAD_TO_CHECKER = 5'd2;
-  localparam COLLISION_CHECK = 5'd3;
-  localparam REPORT_COLLISION = 5'd4;
-  localparam END_OF_COLLISION = 5'd5;
-  localparam PASS = 5'd6;
-  localparam WAIT_CONTROL = 5'd7;
-  localparam ROTATION = 5'd8;
-  localparam PRE_CHECK = 5'd9;
-  localparam LOCKER_WRITE_0 = 5'd10;
-  localparam LOCKER_WRITE_1 = 5'd11;
-  localparam WAIT_LOCKER_WRITE_DONE = 5'd12;
-  localparam LOCKER_READ = 5'd13;
-  localparam WAIT_LOCKER_READ_DONE = 5'd14;
-  localparam CLEAR_REGION = 5'd15;
-  localparam CHECK_ROW_FULL = 5'd16;
-  localparam ROW_REMOVE = 5'd17;
-  localparam ROW_REMOVE_DONE = 5'd18;
+  localparam TYPE_1_I = 3'd0;
+  localparam TYPE_1_J = 3'd1;
+  localparam TYPE_1_L = 3'd2;
+  localparam TYPE_1_O = 3'd3;
+  localparam TYPE_1_S = 3'd4;
+  localparam TYPE_1_T = 3'd5;
+  localparam TYPE_1_Z = 3'd6;
+  localparam ACTION_NO = 3'd0;
+  localparam ACTION_LEFT = 3'd1;
+  localparam ACTION_RIGHT = 3'd2;
+  localparam ACTION_DOWN = 3'd3;
+  localparam ACTION_ROTATE = 3'd4;
+  localparam ACTION_PLACE = 3'd5;
+  localparam main_fsm_IDLE = 5'd0;
+  localparam main_fsm_READOUT = 5'd1;
+  localparam main_fsm_LOAD_TO_CHECKER = 5'd2;
+  localparam main_fsm_COLLISION_CHECK = 5'd3;
+  localparam main_fsm_REPORT_COLLISION = 5'd4;
+  localparam main_fsm_END_OF_COLLISION = 5'd5;
+  localparam main_fsm_PASS = 5'd6;
+  localparam main_fsm_WAIT_CONTROL = 5'd7;
+  localparam main_fsm_ROTATION = 5'd8;
+  localparam main_fsm_PRE_CHECK = 5'd9;
+  localparam main_fsm_LOCKER_WRITE_0 = 5'd10;
+  localparam main_fsm_LOCKER_WRITE_1 = 5'd11;
+  localparam main_fsm_WAIT_LOCKER_WRITE_DONE = 5'd12;
+  localparam main_fsm_LOCKER_READ = 5'd13;
+  localparam main_fsm_WAIT_LOCKER_READ_DONE = 5'd14;
+  localparam main_fsm_CLEAR_REGION = 5'd15;
+  localparam main_fsm_CHECK_ROW_FULL = 5'd16;
+  localparam main_fsm_ROW_REMOVE = 5'd17;
+  localparam main_fsm_ROW_REMOVE_DONE = 5'd18;
 
   reg        [9:0]    locker_region_spinal_port1;
   wire       [1:0]    temp_piece_buffer_pieces_0_overflow;
@@ -755,7 +842,7 @@ module playfield (
   wire       [2:0]    temp_playfield_count_29;
   wire       [0:0]    temp_playfield_count_30;
   wire       [21:0]   temp_playfield_lowestOne;
-  wire       [8:0]    temp_playfield_total_score;
+  wire       [9:0]    temp_playfield_total_score;
   reg        [9:0]    temp_flow_readout;
   wire                temp_locker_region_port;
   reg        [9:0]    temp_checker_region_0;
@@ -886,8 +973,10 @@ module playfield (
   wire                playfield_isRowFull;
   wire       [21:0]   playfield_lowestOne;
   wire       [21:0]   playfield_rows_to_clear;
-  reg        [8:0]    playfield_total_score;
-  reg                 playfield_update_score_regNext;
+  reg        [9:0]    playfield_total_score;
+  reg                 playfield_update_score_delay_1;
+  reg                 playfield_lock_score;
+  reg                 playfield_lock_score_1d;
   reg                 game_restart_regNext;
   reg        [4:0]    flow_row;
   wire                flow_read_req;
@@ -1066,44 +1155,16 @@ module playfield (
   reg        [4:0]    main_fsm_stateReg;
   reg        [4:0]    main_fsm_stateNext;
   wire       [39:0]   temp_flow_region_0;
-  wire                main_fsm_onExit_IDLE;
   wire                main_fsm_onExit_READOUT;
-  wire                main_fsm_onExit_LOAD_TO_CHECKER;
   wire                main_fsm_onExit_COLLISION_CHECK;
-  wire                main_fsm_onExit_REPORT_COLLISION;
-  wire                main_fsm_onExit_END_OF_COLLISION;
   wire                main_fsm_onExit_PASS;
-  wire                main_fsm_onExit_WAIT_CONTROL;
-  wire                main_fsm_onExit_ROTATION;
-  wire                main_fsm_onExit_PRE_CHECK;
-  wire                main_fsm_onExit_LOCKER_WRITE_0;
-  wire                main_fsm_onExit_LOCKER_WRITE_1;
   wire                main_fsm_onExit_WAIT_LOCKER_WRITE_DONE;
-  wire                main_fsm_onExit_LOCKER_READ;
   wire                main_fsm_onExit_WAIT_LOCKER_READ_DONE;
-  wire                main_fsm_onExit_CLEAR_REGION;
-  wire                main_fsm_onExit_CHECK_ROW_FULL;
-  wire                main_fsm_onExit_ROW_REMOVE;
-  wire                main_fsm_onExit_ROW_REMOVE_DONE;
-  wire                main_fsm_onEntry_IDLE;
   wire                main_fsm_onEntry_READOUT;
-  wire                main_fsm_onEntry_LOAD_TO_CHECKER;
   wire                main_fsm_onEntry_COLLISION_CHECK;
-  wire                main_fsm_onEntry_REPORT_COLLISION;
-  wire                main_fsm_onEntry_END_OF_COLLISION;
   wire                main_fsm_onEntry_PASS;
-  wire                main_fsm_onEntry_WAIT_CONTROL;
-  wire                main_fsm_onEntry_ROTATION;
-  wire                main_fsm_onEntry_PRE_CHECK;
   wire                main_fsm_onEntry_LOCKER_WRITE_0;
-  wire                main_fsm_onEntry_LOCKER_WRITE_1;
-  wire                main_fsm_onEntry_WAIT_LOCKER_WRITE_DONE;
   wire                main_fsm_onEntry_LOCKER_READ;
-  wire                main_fsm_onEntry_WAIT_LOCKER_READ_DONE;
-  wire                main_fsm_onEntry_CLEAR_REGION;
-  wire                main_fsm_onEntry_CHECK_ROW_FULL;
-  wire                main_fsm_onEntry_ROW_REMOVE;
-  wire                main_fsm_onEntry_ROW_REMOVE_DONE;
   `ifndef SYNTHESIS
   reg [7:0] piece_in_payload_string;
   reg [7:0] piece_payload_string;
@@ -1114,9 +1175,9 @@ module playfield (
 
   (* ram_style = "distributed" *) reg [9:0] locker_region [0:3];
 
-  assign temp_when = (action_1 == PLACE);
-  assign temp_when_1 = (action_1 == DOWN);
-  assign temp_when_2 = (action_1 == ROTATE);
+  assign temp_when = (action_1 == ACTION_PLACE);
+  assign temp_when_1 = (action_1 == ACTION_DOWN);
+  assign temp_when_2 = (action_1 == ACTION_ROTATE);
   assign temp_playfield_count_8 = (temp_playfield_count_9 + temp_playfield_count_14);
   assign temp_playfield_count_9 = (temp_playfield_count_10 + temp_playfield_count_12);
   assign temp_playfield_count_14 = (temp_playfield_count_15 + temp_playfield_count_17);
@@ -1126,7 +1187,7 @@ module playfield (
   assign temp_playfield_count_30 = playfield_ones[21];
   assign temp_playfield_count_29 = {2'd0, temp_playfield_count_30};
   assign temp_playfield_lowestOne = (playfield_ones - 22'h000001);
-  assign temp_playfield_total_score = {4'd0, playfield_count};
+  assign temp_playfield_total_score = {5'd0, playfield_count};
   assign temp_locker_region_port = (locker_addr_access_port_valid && locker_data_in_port_valid);
   assign temp_playfield_count_11 = {playfield_ones[2],{playfield_ones[1],playfield_ones[0]}};
   assign temp_playfield_count_13 = {playfield_ones[5],{playfield_ones[4],playfield_ones[3]}};
@@ -1313,84 +1374,84 @@ module playfield (
   `ifndef SYNTHESIS
   always @(*) begin
     case(piece_in_payload)
-      I : piece_in_payload_string = "I";
-      J : piece_in_payload_string = "J";
-      L : piece_in_payload_string = "L";
-      O : piece_in_payload_string = "O";
-      S : piece_in_payload_string = "S";
-      T : piece_in_payload_string = "T";
-      Z : piece_in_payload_string = "Z";
+      TYPE_1_I : piece_in_payload_string = "I";
+      TYPE_1_J : piece_in_payload_string = "J";
+      TYPE_1_L : piece_in_payload_string = "L";
+      TYPE_1_O : piece_in_payload_string = "O";
+      TYPE_1_S : piece_in_payload_string = "S";
+      TYPE_1_T : piece_in_payload_string = "T";
+      TYPE_1_Z : piece_in_payload_string = "Z";
       default : piece_in_payload_string = "?";
     endcase
   end
   always @(*) begin
     case(piece_payload)
-      I : piece_payload_string = "I";
-      J : piece_payload_string = "J";
-      L : piece_payload_string = "L";
-      O : piece_payload_string = "O";
-      S : piece_payload_string = "S";
-      T : piece_payload_string = "T";
-      Z : piece_payload_string = "Z";
+      TYPE_1_I : piece_payload_string = "I";
+      TYPE_1_J : piece_payload_string = "J";
+      TYPE_1_L : piece_payload_string = "L";
+      TYPE_1_O : piece_payload_string = "O";
+      TYPE_1_S : piece_payload_string = "S";
+      TYPE_1_T : piece_payload_string = "T";
+      TYPE_1_Z : piece_payload_string = "Z";
       default : piece_payload_string = "?";
     endcase
   end
   always @(*) begin
     case(action_1)
-      NO : action_1_string = "NO    ";
-      LEFT : action_1_string = "LEFT  ";
-      RIGHT : action_1_string = "RIGHT ";
-      DOWN : action_1_string = "DOWN  ";
-      ROTATE : action_1_string = "ROTATE";
-      PLACE : action_1_string = "PLACE ";
+      ACTION_NO : action_1_string = "NO    ";
+      ACTION_LEFT : action_1_string = "LEFT  ";
+      ACTION_RIGHT : action_1_string = "RIGHT ";
+      ACTION_DOWN : action_1_string = "DOWN  ";
+      ACTION_ROTATE : action_1_string = "ROTATE";
+      ACTION_PLACE : action_1_string = "PLACE ";
       default : action_1_string = "??????";
     endcase
   end
   always @(*) begin
     case(main_fsm_stateReg)
-      IDLE : main_fsm_stateReg_string = "IDLE                  ";
-      READOUT : main_fsm_stateReg_string = "READOUT               ";
-      LOAD_TO_CHECKER : main_fsm_stateReg_string = "LOAD_TO_CHECKER       ";
-      COLLISION_CHECK : main_fsm_stateReg_string = "COLLISION_CHECK       ";
-      REPORT_COLLISION : main_fsm_stateReg_string = "REPORT_COLLISION      ";
-      END_OF_COLLISION : main_fsm_stateReg_string = "END_OF_COLLISION      ";
-      PASS : main_fsm_stateReg_string = "PASS                  ";
-      WAIT_CONTROL : main_fsm_stateReg_string = "WAIT_CONTROL          ";
-      ROTATION : main_fsm_stateReg_string = "ROTATION              ";
-      PRE_CHECK : main_fsm_stateReg_string = "PRE_CHECK             ";
-      LOCKER_WRITE_0 : main_fsm_stateReg_string = "LOCKER_WRITE_0        ";
-      LOCKER_WRITE_1 : main_fsm_stateReg_string = "LOCKER_WRITE_1        ";
-      WAIT_LOCKER_WRITE_DONE : main_fsm_stateReg_string = "WAIT_LOCKER_WRITE_DONE";
-      LOCKER_READ : main_fsm_stateReg_string = "LOCKER_READ           ";
-      WAIT_LOCKER_READ_DONE : main_fsm_stateReg_string = "WAIT_LOCKER_READ_DONE ";
-      CLEAR_REGION : main_fsm_stateReg_string = "CLEAR_REGION          ";
-      CHECK_ROW_FULL : main_fsm_stateReg_string = "CHECK_ROW_FULL        ";
-      ROW_REMOVE : main_fsm_stateReg_string = "ROW_REMOVE            ";
-      ROW_REMOVE_DONE : main_fsm_stateReg_string = "ROW_REMOVE_DONE       ";
+      main_fsm_IDLE : main_fsm_stateReg_string = "IDLE                  ";
+      main_fsm_READOUT : main_fsm_stateReg_string = "READOUT               ";
+      main_fsm_LOAD_TO_CHECKER : main_fsm_stateReg_string = "LOAD_TO_CHECKER       ";
+      main_fsm_COLLISION_CHECK : main_fsm_stateReg_string = "COLLISION_CHECK       ";
+      main_fsm_REPORT_COLLISION : main_fsm_stateReg_string = "REPORT_COLLISION      ";
+      main_fsm_END_OF_COLLISION : main_fsm_stateReg_string = "END_OF_COLLISION      ";
+      main_fsm_PASS : main_fsm_stateReg_string = "PASS                  ";
+      main_fsm_WAIT_CONTROL : main_fsm_stateReg_string = "WAIT_CONTROL          ";
+      main_fsm_ROTATION : main_fsm_stateReg_string = "ROTATION              ";
+      main_fsm_PRE_CHECK : main_fsm_stateReg_string = "PRE_CHECK             ";
+      main_fsm_LOCKER_WRITE_0 : main_fsm_stateReg_string = "LOCKER_WRITE_0        ";
+      main_fsm_LOCKER_WRITE_1 : main_fsm_stateReg_string = "LOCKER_WRITE_1        ";
+      main_fsm_WAIT_LOCKER_WRITE_DONE : main_fsm_stateReg_string = "WAIT_LOCKER_WRITE_DONE";
+      main_fsm_LOCKER_READ : main_fsm_stateReg_string = "LOCKER_READ           ";
+      main_fsm_WAIT_LOCKER_READ_DONE : main_fsm_stateReg_string = "WAIT_LOCKER_READ_DONE ";
+      main_fsm_CLEAR_REGION : main_fsm_stateReg_string = "CLEAR_REGION          ";
+      main_fsm_CHECK_ROW_FULL : main_fsm_stateReg_string = "CHECK_ROW_FULL        ";
+      main_fsm_ROW_REMOVE : main_fsm_stateReg_string = "ROW_REMOVE            ";
+      main_fsm_ROW_REMOVE_DONE : main_fsm_stateReg_string = "ROW_REMOVE_DONE       ";
       default : main_fsm_stateReg_string = "??????????????????????";
     endcase
   end
   always @(*) begin
     case(main_fsm_stateNext)
-      IDLE : main_fsm_stateNext_string = "IDLE                  ";
-      READOUT : main_fsm_stateNext_string = "READOUT               ";
-      LOAD_TO_CHECKER : main_fsm_stateNext_string = "LOAD_TO_CHECKER       ";
-      COLLISION_CHECK : main_fsm_stateNext_string = "COLLISION_CHECK       ";
-      REPORT_COLLISION : main_fsm_stateNext_string = "REPORT_COLLISION      ";
-      END_OF_COLLISION : main_fsm_stateNext_string = "END_OF_COLLISION      ";
-      PASS : main_fsm_stateNext_string = "PASS                  ";
-      WAIT_CONTROL : main_fsm_stateNext_string = "WAIT_CONTROL          ";
-      ROTATION : main_fsm_stateNext_string = "ROTATION              ";
-      PRE_CHECK : main_fsm_stateNext_string = "PRE_CHECK             ";
-      LOCKER_WRITE_0 : main_fsm_stateNext_string = "LOCKER_WRITE_0        ";
-      LOCKER_WRITE_1 : main_fsm_stateNext_string = "LOCKER_WRITE_1        ";
-      WAIT_LOCKER_WRITE_DONE : main_fsm_stateNext_string = "WAIT_LOCKER_WRITE_DONE";
-      LOCKER_READ : main_fsm_stateNext_string = "LOCKER_READ           ";
-      WAIT_LOCKER_READ_DONE : main_fsm_stateNext_string = "WAIT_LOCKER_READ_DONE ";
-      CLEAR_REGION : main_fsm_stateNext_string = "CLEAR_REGION          ";
-      CHECK_ROW_FULL : main_fsm_stateNext_string = "CHECK_ROW_FULL        ";
-      ROW_REMOVE : main_fsm_stateNext_string = "ROW_REMOVE            ";
-      ROW_REMOVE_DONE : main_fsm_stateNext_string = "ROW_REMOVE_DONE       ";
+      main_fsm_IDLE : main_fsm_stateNext_string = "IDLE                  ";
+      main_fsm_READOUT : main_fsm_stateNext_string = "READOUT               ";
+      main_fsm_LOAD_TO_CHECKER : main_fsm_stateNext_string = "LOAD_TO_CHECKER       ";
+      main_fsm_COLLISION_CHECK : main_fsm_stateNext_string = "COLLISION_CHECK       ";
+      main_fsm_REPORT_COLLISION : main_fsm_stateNext_string = "REPORT_COLLISION      ";
+      main_fsm_END_OF_COLLISION : main_fsm_stateNext_string = "END_OF_COLLISION      ";
+      main_fsm_PASS : main_fsm_stateNext_string = "PASS                  ";
+      main_fsm_WAIT_CONTROL : main_fsm_stateNext_string = "WAIT_CONTROL          ";
+      main_fsm_ROTATION : main_fsm_stateNext_string = "ROTATION              ";
+      main_fsm_PRE_CHECK : main_fsm_stateNext_string = "PRE_CHECK             ";
+      main_fsm_LOCKER_WRITE_0 : main_fsm_stateNext_string = "LOCKER_WRITE_0        ";
+      main_fsm_LOCKER_WRITE_1 : main_fsm_stateNext_string = "LOCKER_WRITE_1        ";
+      main_fsm_WAIT_LOCKER_WRITE_DONE : main_fsm_stateNext_string = "WAIT_LOCKER_WRITE_DONE";
+      main_fsm_LOCKER_READ : main_fsm_stateNext_string = "LOCKER_READ           ";
+      main_fsm_WAIT_LOCKER_READ_DONE : main_fsm_stateNext_string = "WAIT_LOCKER_READ_DONE ";
+      main_fsm_CLEAR_REGION : main_fsm_stateNext_string = "CLEAR_REGION          ";
+      main_fsm_CHECK_ROW_FULL : main_fsm_stateNext_string = "CHECK_ROW_FULL        ";
+      main_fsm_ROW_REMOVE : main_fsm_stateNext_string = "ROW_REMOVE            ";
+      main_fsm_ROW_REMOVE_DONE : main_fsm_stateNext_string = "ROW_REMOVE_DONE       ";
       default : main_fsm_stateNext_string = "??????????????????????";
     endcase
   end
@@ -1417,56 +1478,56 @@ module playfield (
     status_payload = 1'b0;
     main_fsm_stateNext = main_fsm_stateReg;
     case(main_fsm_stateReg)
-      READOUT : begin
+      main_fsm_READOUT : begin
         output_en = 1'b1;
         if((playfield_addr_access_port_payload == flow_row)) begin
           dma_flow_dma_start = 1'b1;
         end
         if(row_out_done) begin
           if(main_fsm_will_goto_idle) begin
-            main_fsm_stateNext = IDLE;
+            main_fsm_stateNext = main_fsm_IDLE;
           end else begin
-            main_fsm_stateNext = WAIT_CONTROL;
+            main_fsm_stateNext = main_fsm_WAIT_CONTROL;
           end
         end
       end
-      LOAD_TO_CHECKER : begin
+      main_fsm_LOAD_TO_CHECKER : begin
         load_piece = 1'b1;
-        main_fsm_stateNext = COLLISION_CHECK;
+        main_fsm_stateNext = main_fsm_COLLISION_CHECK;
       end
-      COLLISION_CHECK : begin
+      main_fsm_COLLISION_CHECK : begin
         if(collision_checker_is_collision_valid) begin
           if(collision_checker_is_collision_payload) begin
-            main_fsm_stateNext = REPORT_COLLISION;
+            main_fsm_stateNext = main_fsm_REPORT_COLLISION;
           end else begin
-            main_fsm_stateNext = PASS;
+            main_fsm_stateNext = main_fsm_PASS;
           end
         end
       end
-      REPORT_COLLISION : begin
+      main_fsm_REPORT_COLLISION : begin
         status_valid = 1'b1;
         status_payload = 1'b1;
         if(temp_when) begin
-          main_fsm_stateNext = IDLE;
+          main_fsm_stateNext = main_fsm_IDLE;
         end else begin
-          main_fsm_stateNext = END_OF_COLLISION;
+          main_fsm_stateNext = main_fsm_END_OF_COLLISION;
         end
       end
-      END_OF_COLLISION : begin
-        if((((action_1 == LEFT) || (action_1 == RIGHT)) || (action_1 == ROTATE))) begin
+      main_fsm_END_OF_COLLISION : begin
+        if((((action_1 == ACTION_LEFT) || (action_1 == ACTION_RIGHT)) || (action_1 == ACTION_ROTATE))) begin
           load_piece = 1'b1;
         end
-        main_fsm_stateNext = WAIT_CONTROL;
+        main_fsm_stateNext = main_fsm_READOUT;
       end
-      PASS : begin
-        if((action_1 == PLACE)) begin
+      main_fsm_PASS : begin
+        if((action_1 == ACTION_PLACE)) begin
           flow_update = 1'b1;
         end
-        if((action_1 == LEFT)) begin
+        if((action_1 == ACTION_LEFT)) begin
           flow_update = 1'b1;
           piece_buffer_left_shift_all = 1'b1;
         end
-        if((action_1 == RIGHT)) begin
+        if((action_1 == ACTION_RIGHT)) begin
           flow_update = 1'b1;
           piece_buffer_right_shift_all = 1'b1;
         end
@@ -1476,94 +1537,94 @@ module playfield (
         if(temp_when_2) begin
           flow_update = 1'b1;
         end
-        main_fsm_stateNext = READOUT;
+        main_fsm_stateNext = main_fsm_READOUT;
       end
-      WAIT_CONTROL : begin
+      main_fsm_WAIT_CONTROL : begin
         if(move_in_left) begin
           if(checker_overflowIfLeft) begin
-            main_fsm_stateNext = REPORT_COLLISION;
+            main_fsm_stateNext = main_fsm_REPORT_COLLISION;
           end else begin
             checker_left_shift = 1'b1;
-            main_fsm_stateNext = PRE_CHECK;
+            main_fsm_stateNext = main_fsm_PRE_CHECK;
           end
         end
         if(move_in_right) begin
           if(checker_overflowIfRight) begin
-            main_fsm_stateNext = REPORT_COLLISION;
+            main_fsm_stateNext = main_fsm_REPORT_COLLISION;
           end else begin
             checker_right_shift = 1'b1;
-            main_fsm_stateNext = PRE_CHECK;
+            main_fsm_stateNext = main_fsm_PRE_CHECK;
           end
         end
         if(move_in_down) begin
           if(checker_overflowIfDown) begin
-            main_fsm_stateNext = REPORT_COLLISION;
+            main_fsm_stateNext = main_fsm_REPORT_COLLISION;
           end else begin
-            main_fsm_stateNext = PRE_CHECK;
+            main_fsm_stateNext = main_fsm_PRE_CHECK;
           end
         end
         if(move_in_rotate) begin
-          main_fsm_stateNext = ROTATION;
+          main_fsm_stateNext = main_fsm_ROTATION;
         end
         if(lock) begin
-          main_fsm_stateNext = LOCKER_WRITE_0;
+          main_fsm_stateNext = main_fsm_LOCKER_WRITE_0;
         end
       end
-      ROTATION : begin
+      main_fsm_ROTATION : begin
         if(temp_when_3) begin
-          main_fsm_stateNext = REPORT_COLLISION;
+          main_fsm_stateNext = main_fsm_REPORT_COLLISION;
         end else begin
           load_piece = 1'b1;
-          main_fsm_stateNext = PRE_CHECK;
+          main_fsm_stateNext = main_fsm_PRE_CHECK;
         end
       end
-      PRE_CHECK : begin
-        main_fsm_stateNext = COLLISION_CHECK;
+      main_fsm_PRE_CHECK : begin
+        main_fsm_stateNext = main_fsm_COLLISION_CHECK;
       end
-      LOCKER_WRITE_0 : begin
+      main_fsm_LOCKER_WRITE_0 : begin
         dma_flow_dma_start = 1'b1;
-        main_fsm_stateNext = LOCKER_WRITE_1;
+        main_fsm_stateNext = main_fsm_LOCKER_WRITE_1;
       end
-      LOCKER_WRITE_1 : begin
+      main_fsm_LOCKER_WRITE_1 : begin
         dma_locker_dma_start = 1'b1;
-        main_fsm_stateNext = WAIT_LOCKER_WRITE_DONE;
+        main_fsm_stateNext = main_fsm_WAIT_LOCKER_WRITE_DONE;
       end
-      WAIT_LOCKER_WRITE_DONE : begin
+      main_fsm_WAIT_LOCKER_WRITE_DONE : begin
         if(row_out_done) begin
-          main_fsm_stateNext = LOCKER_READ;
+          main_fsm_stateNext = main_fsm_LOCKER_READ;
         end
       end
-      LOCKER_READ : begin
+      main_fsm_LOCKER_READ : begin
         dma_playfield_dma_start = 1'b1;
-        main_fsm_stateNext = WAIT_LOCKER_READ_DONE;
+        main_fsm_stateNext = main_fsm_WAIT_LOCKER_READ_DONE;
       end
-      WAIT_LOCKER_READ_DONE : begin
+      main_fsm_WAIT_LOCKER_READ_DONE : begin
         playfield_freeze = 1'b1;
         if(locker_readou_is_done) begin
-          main_fsm_stateNext = CLEAR_REGION;
+          main_fsm_stateNext = main_fsm_CLEAR_REGION;
         end
       end
-      CLEAR_REGION : begin
+      main_fsm_CLEAR_REGION : begin
         playfield_update_score = 1'b1;
-        main_fsm_stateNext = CHECK_ROW_FULL;
+        main_fsm_stateNext = main_fsm_CHECK_ROW_FULL;
       end
-      CHECK_ROW_FULL : begin
+      main_fsm_CHECK_ROW_FULL : begin
         if(playfield_isRowFull) begin
-          main_fsm_stateNext = ROW_REMOVE;
+          main_fsm_stateNext = main_fsm_ROW_REMOVE;
         end else begin
-          main_fsm_stateNext = READOUT;
+          main_fsm_stateNext = main_fsm_READOUT;
         end
       end
-      ROW_REMOVE : begin
+      main_fsm_ROW_REMOVE : begin
         playfield_clear = 1'b1;
-        main_fsm_stateNext = ROW_REMOVE_DONE;
+        main_fsm_stateNext = main_fsm_ROW_REMOVE_DONE;
       end
-      ROW_REMOVE_DONE : begin
-        main_fsm_stateNext = CHECK_ROW_FULL;
+      main_fsm_ROW_REMOVE_DONE : begin
+        main_fsm_stateNext = main_fsm_CHECK_ROW_FULL;
       end
       default : begin
         if(piece_valid) begin
-          main_fsm_stateNext = LOAD_TO_CHECKER;
+          main_fsm_stateNext = main_fsm_LOAD_TO_CHECKER;
         end
         main_fsm_wantStart = 1'b1;
       end
@@ -1605,7 +1666,7 @@ module playfield (
       playfield_freeze = 1'b1;
     end
     if(main_fsm_wantKill) begin
-      main_fsm_stateNext = IDLE;
+      main_fsm_stateNext = main_fsm_IDLE;
     end
   end
 
@@ -1735,7 +1796,7 @@ module playfield (
   assign playfield_isRowFull = (|playfield_ones);
   assign playfield_lowestOne = (playfield_ones & (~ temp_playfield_lowestOne));
   assign playfield_rows_to_clear = (playfield_lowestOne - 22'h000001);
-  assign score_val_valid = (playfield_update_score_regNext && ((! game_restart) && game_restart_regNext));
+  assign score_val_valid = (playfield_lock_score_1d || ((! game_restart) && game_restart_regNext));
   assign score_val_payload = playfield_total_score;
   assign flow_read_req = 1'b0;
   always @(*) begin
@@ -1875,51 +1936,23 @@ module playfield (
   assign src_2_payload = dma_locker_dma_sink_1_payload;
   assign main_fsm_wantExit = 1'b0;
   assign main_fsm_wantKill = 1'b0;
-  assign motion_is_allowed = (main_fsm_stateReg == WAIT_CONTROL);
-  assign fsm_is_idle = (main_fsm_stateReg == IDLE);
+  assign motion_is_allowed = (main_fsm_stateReg == main_fsm_WAIT_CONTROL);
+  assign fsm_is_idle = (main_fsm_stateReg == main_fsm_IDLE);
   assign temp_flow_region_0 = 40'h0;
-  assign main_fsm_onExit_IDLE = ((main_fsm_stateNext != IDLE) && (main_fsm_stateReg == IDLE));
-  assign main_fsm_onExit_READOUT = ((main_fsm_stateNext != READOUT) && (main_fsm_stateReg == READOUT));
-  assign main_fsm_onExit_LOAD_TO_CHECKER = ((main_fsm_stateNext != LOAD_TO_CHECKER) && (main_fsm_stateReg == LOAD_TO_CHECKER));
-  assign main_fsm_onExit_COLLISION_CHECK = ((main_fsm_stateNext != COLLISION_CHECK) && (main_fsm_stateReg == COLLISION_CHECK));
-  assign main_fsm_onExit_REPORT_COLLISION = ((main_fsm_stateNext != REPORT_COLLISION) && (main_fsm_stateReg == REPORT_COLLISION));
-  assign main_fsm_onExit_END_OF_COLLISION = ((main_fsm_stateNext != END_OF_COLLISION) && (main_fsm_stateReg == END_OF_COLLISION));
-  assign main_fsm_onExit_PASS = ((main_fsm_stateNext != PASS) && (main_fsm_stateReg == PASS));
-  assign main_fsm_onExit_WAIT_CONTROL = ((main_fsm_stateNext != WAIT_CONTROL) && (main_fsm_stateReg == WAIT_CONTROL));
-  assign main_fsm_onExit_ROTATION = ((main_fsm_stateNext != ROTATION) && (main_fsm_stateReg == ROTATION));
-  assign main_fsm_onExit_PRE_CHECK = ((main_fsm_stateNext != PRE_CHECK) && (main_fsm_stateReg == PRE_CHECK));
-  assign main_fsm_onExit_LOCKER_WRITE_0 = ((main_fsm_stateNext != LOCKER_WRITE_0) && (main_fsm_stateReg == LOCKER_WRITE_0));
-  assign main_fsm_onExit_LOCKER_WRITE_1 = ((main_fsm_stateNext != LOCKER_WRITE_1) && (main_fsm_stateReg == LOCKER_WRITE_1));
-  assign main_fsm_onExit_WAIT_LOCKER_WRITE_DONE = ((main_fsm_stateNext != WAIT_LOCKER_WRITE_DONE) && (main_fsm_stateReg == WAIT_LOCKER_WRITE_DONE));
-  assign main_fsm_onExit_LOCKER_READ = ((main_fsm_stateNext != LOCKER_READ) && (main_fsm_stateReg == LOCKER_READ));
-  assign main_fsm_onExit_WAIT_LOCKER_READ_DONE = ((main_fsm_stateNext != WAIT_LOCKER_READ_DONE) && (main_fsm_stateReg == WAIT_LOCKER_READ_DONE));
-  assign main_fsm_onExit_CLEAR_REGION = ((main_fsm_stateNext != CLEAR_REGION) && (main_fsm_stateReg == CLEAR_REGION));
-  assign main_fsm_onExit_CHECK_ROW_FULL = ((main_fsm_stateNext != CHECK_ROW_FULL) && (main_fsm_stateReg == CHECK_ROW_FULL));
-  assign main_fsm_onExit_ROW_REMOVE = ((main_fsm_stateNext != ROW_REMOVE) && (main_fsm_stateReg == ROW_REMOVE));
-  assign main_fsm_onExit_ROW_REMOVE_DONE = ((main_fsm_stateNext != ROW_REMOVE_DONE) && (main_fsm_stateReg == ROW_REMOVE_DONE));
-  assign main_fsm_onEntry_IDLE = ((main_fsm_stateNext == IDLE) && (main_fsm_stateReg != IDLE));
-  assign main_fsm_onEntry_READOUT = ((main_fsm_stateNext == READOUT) && (main_fsm_stateReg != READOUT));
-  assign main_fsm_onEntry_LOAD_TO_CHECKER = ((main_fsm_stateNext == LOAD_TO_CHECKER) && (main_fsm_stateReg != LOAD_TO_CHECKER));
-  assign main_fsm_onEntry_COLLISION_CHECK = ((main_fsm_stateNext == COLLISION_CHECK) && (main_fsm_stateReg != COLLISION_CHECK));
-  assign main_fsm_onEntry_REPORT_COLLISION = ((main_fsm_stateNext == REPORT_COLLISION) && (main_fsm_stateReg != REPORT_COLLISION));
-  assign main_fsm_onEntry_END_OF_COLLISION = ((main_fsm_stateNext == END_OF_COLLISION) && (main_fsm_stateReg != END_OF_COLLISION));
-  assign main_fsm_onEntry_PASS = ((main_fsm_stateNext == PASS) && (main_fsm_stateReg != PASS));
-  assign main_fsm_onEntry_WAIT_CONTROL = ((main_fsm_stateNext == WAIT_CONTROL) && (main_fsm_stateReg != WAIT_CONTROL));
-  assign main_fsm_onEntry_ROTATION = ((main_fsm_stateNext == ROTATION) && (main_fsm_stateReg != ROTATION));
-  assign main_fsm_onEntry_PRE_CHECK = ((main_fsm_stateNext == PRE_CHECK) && (main_fsm_stateReg != PRE_CHECK));
-  assign main_fsm_onEntry_LOCKER_WRITE_0 = ((main_fsm_stateNext == LOCKER_WRITE_0) && (main_fsm_stateReg != LOCKER_WRITE_0));
-  assign main_fsm_onEntry_LOCKER_WRITE_1 = ((main_fsm_stateNext == LOCKER_WRITE_1) && (main_fsm_stateReg != LOCKER_WRITE_1));
-  assign main_fsm_onEntry_WAIT_LOCKER_WRITE_DONE = ((main_fsm_stateNext == WAIT_LOCKER_WRITE_DONE) && (main_fsm_stateReg != WAIT_LOCKER_WRITE_DONE));
-  assign main_fsm_onEntry_LOCKER_READ = ((main_fsm_stateNext == LOCKER_READ) && (main_fsm_stateReg != LOCKER_READ));
-  assign main_fsm_onEntry_WAIT_LOCKER_READ_DONE = ((main_fsm_stateNext == WAIT_LOCKER_READ_DONE) && (main_fsm_stateReg != WAIT_LOCKER_READ_DONE));
-  assign main_fsm_onEntry_CLEAR_REGION = ((main_fsm_stateNext == CLEAR_REGION) && (main_fsm_stateReg != CLEAR_REGION));
-  assign main_fsm_onEntry_CHECK_ROW_FULL = ((main_fsm_stateNext == CHECK_ROW_FULL) && (main_fsm_stateReg != CHECK_ROW_FULL));
-  assign main_fsm_onEntry_ROW_REMOVE = ((main_fsm_stateNext == ROW_REMOVE) && (main_fsm_stateReg != ROW_REMOVE));
-  assign main_fsm_onEntry_ROW_REMOVE_DONE = ((main_fsm_stateNext == ROW_REMOVE_DONE) && (main_fsm_stateReg != ROW_REMOVE_DONE));
+  assign main_fsm_onExit_READOUT = ((main_fsm_stateNext != main_fsm_READOUT) && (main_fsm_stateReg == main_fsm_READOUT));
+  assign main_fsm_onExit_COLLISION_CHECK = ((main_fsm_stateNext != main_fsm_COLLISION_CHECK) && (main_fsm_stateReg == main_fsm_COLLISION_CHECK));
+  assign main_fsm_onExit_PASS = ((main_fsm_stateNext != main_fsm_PASS) && (main_fsm_stateReg == main_fsm_PASS));
+  assign main_fsm_onExit_WAIT_LOCKER_WRITE_DONE = ((main_fsm_stateNext != main_fsm_WAIT_LOCKER_WRITE_DONE) && (main_fsm_stateReg == main_fsm_WAIT_LOCKER_WRITE_DONE));
+  assign main_fsm_onExit_WAIT_LOCKER_READ_DONE = ((main_fsm_stateNext != main_fsm_WAIT_LOCKER_READ_DONE) && (main_fsm_stateReg == main_fsm_WAIT_LOCKER_READ_DONE));
+  assign main_fsm_onEntry_READOUT = ((main_fsm_stateNext == main_fsm_READOUT) && (main_fsm_stateReg != main_fsm_READOUT));
+  assign main_fsm_onEntry_COLLISION_CHECK = ((main_fsm_stateNext == main_fsm_COLLISION_CHECK) && (main_fsm_stateReg != main_fsm_COLLISION_CHECK));
+  assign main_fsm_onEntry_PASS = ((main_fsm_stateNext == main_fsm_PASS) && (main_fsm_stateReg != main_fsm_PASS));
+  assign main_fsm_onEntry_LOCKER_WRITE_0 = ((main_fsm_stateNext == main_fsm_LOCKER_WRITE_0) && (main_fsm_stateReg != main_fsm_LOCKER_WRITE_0));
+  assign main_fsm_onEntry_LOCKER_READ = ((main_fsm_stateNext == main_fsm_LOCKER_READ) && (main_fsm_stateReg != main_fsm_LOCKER_READ));
   always @(posedge clk or posedge reset) begin
     if(reset) begin
       piece_valid <= 1'b0;
-      action_1 <= NO;
+      action_1 <= ACTION_NO;
       piece_buffer_rot_cur <= 2'b00;
       piece_buffer_rot_backup <= 2'b00;
       checker_row <= 5'h0;
@@ -1948,8 +1981,10 @@ module playfield (
       playfield_region_21 <= 10'h0;
       playfield_ones <= 22'h0;
       playfield_count <= 5'h0;
-      playfield_total_score <= 9'h0;
-      playfield_update_score_regNext <= 1'b0;
+      playfield_total_score <= 10'h0;
+      playfield_update_score_delay_1 <= 1'b0;
+      playfield_lock_score <= 1'b0;
+      playfield_lock_score_1d <= 1'b0;
       flow_row <= 5'h0;
       flow_region_0 <= 10'h0;
       flow_region_1 <= 10'h0;
@@ -1991,7 +2026,7 @@ module playfield (
       dma_locker_dma_channel_0_enable <= 1'b0;
       dma_locker_dma_channel_1_enable <= 1'b0;
       main_fsm_will_goto_idle <= 1'b0;
-      main_fsm_stateReg <= IDLE;
+      main_fsm_stateReg <= main_fsm_IDLE;
     end else begin
       piece_valid <= piece_in_valid;
       if(!playfield_address_beyond_limit) begin
@@ -2219,14 +2254,16 @@ module playfield (
       if(playfield_clear) begin
         playfield_region_0 <= 10'h0;
       end
+      playfield_update_score_delay_1 <= playfield_update_score;
+      playfield_lock_score <= playfield_update_score_delay_1;
+      playfield_lock_score_1d <= playfield_lock_score;
       if(game_restart) begin
-        playfield_total_score <= 9'h0;
+        playfield_total_score <= 10'h0;
       end else begin
-        if(playfield_update_score) begin
+        if(playfield_lock_score) begin
           playfield_total_score <= (playfield_total_score + temp_playfield_total_score);
         end
       end
-      playfield_update_score_regNext <= playfield_update_score;
       if(flow_update) begin
         flow_region_0 <= checker_region_0;
         flow_region_1 <= checker_region_1;
@@ -2311,23 +2348,23 @@ module playfield (
       dma_locker_dma_req_valid_1d <= dma_locker_dma_req_valid;
       main_fsm_stateReg <= main_fsm_stateNext;
       case(main_fsm_stateReg)
-        READOUT : begin
+        main_fsm_READOUT : begin
         end
-        LOAD_TO_CHECKER : begin
+        main_fsm_LOAD_TO_CHECKER : begin
         end
-        COLLISION_CHECK : begin
+        main_fsm_COLLISION_CHECK : begin
         end
-        REPORT_COLLISION : begin
+        main_fsm_REPORT_COLLISION : begin
           if(!temp_when) begin
-            if((action_1 == ROTATE)) begin
+            if((action_1 == ACTION_ROTATE)) begin
               piece_buffer_rot_cur <= piece_buffer_rot_backup;
             end
           end
         end
-        END_OF_COLLISION : begin
-          action_1 <= NO;
+        main_fsm_END_OF_COLLISION : begin
+          action_1 <= ACTION_NO;
         end
-        PASS : begin
+        main_fsm_PASS : begin
           if(temp_when_1) begin
             checker_row_backup <= checker_row;
           end
@@ -2335,49 +2372,49 @@ module playfield (
             piece_buffer_rot_backup <= piece_buffer_rot_cur;
           end
         end
-        WAIT_CONTROL : begin
+        main_fsm_WAIT_CONTROL : begin
           if(move_in_left) begin
             if(!checker_overflowIfLeft) begin
-              action_1 <= LEFT;
+              action_1 <= ACTION_LEFT;
             end
           end
           if(move_in_right) begin
             if(!checker_overflowIfRight) begin
-              action_1 <= RIGHT;
+              action_1 <= ACTION_RIGHT;
             end
           end
           if(move_in_down) begin
             if(!checker_overflowIfDown) begin
               checker_row <= (checker_row + 5'h01);
-              action_1 <= DOWN;
+              action_1 <= ACTION_DOWN;
             end
           end
           if(move_in_rotate) begin
             piece_buffer_rot_cur <= (piece_buffer_rot_cur + 2'b01);
           end
         end
-        ROTATION : begin
+        main_fsm_ROTATION : begin
           if(!temp_when_3) begin
-            action_1 <= ROTATE;
+            action_1 <= ACTION_ROTATE;
           end
         end
-        PRE_CHECK : begin
+        main_fsm_PRE_CHECK : begin
         end
-        LOCKER_WRITE_0 : begin
+        main_fsm_LOCKER_WRITE_0 : begin
         end
-        LOCKER_WRITE_1 : begin
+        main_fsm_LOCKER_WRITE_1 : begin
           dma_locker_dma_channel_0_enable <= 1'b1;
         end
-        WAIT_LOCKER_WRITE_DONE : begin
+        main_fsm_WAIT_LOCKER_WRITE_DONE : begin
         end
-        LOCKER_READ : begin
+        main_fsm_LOCKER_READ : begin
           dma_playfield_dma_channel_2_enable <= 1'b1;
           dma_playfield_dma_base_addr <= flow_row;
           dma_playfield_dma_word_count <= 5'h03;
         end
-        WAIT_LOCKER_READ_DONE : begin
+        main_fsm_WAIT_LOCKER_READ_DONE : begin
         end
-        CLEAR_REGION : begin
+        main_fsm_CLEAR_REGION : begin
           piece_buffer_rot_cur <= 2'b00;
           piece_buffer_rot_backup <= 2'b00;
           flow_region_0 <= temp_flow_region_0[9 : 0];
@@ -2388,21 +2425,21 @@ module playfield (
           checker_row <= 5'h0;
           checker_row_backup <= 5'h0;
         end
-        CHECK_ROW_FULL : begin
+        main_fsm_CHECK_ROW_FULL : begin
           if(!playfield_isRowFull) begin
             main_fsm_will_goto_idle <= 1'b1;
           end
         end
-        ROW_REMOVE : begin
+        main_fsm_ROW_REMOVE : begin
         end
-        ROW_REMOVE_DONE : begin
+        main_fsm_ROW_REMOVE_DONE : begin
         end
         default : begin
           dma_flow_dma_channel_0_enable <= 1'b1;
           dma_checker_dma_channel_0_enable <= 1'b1;
           main_fsm_will_goto_idle <= 1'b0;
           if(piece_valid) begin
-            action_1 <= PLACE;
+            action_1 <= ACTION_PLACE;
           end
         end
       endcase
@@ -2413,7 +2450,7 @@ module playfield (
         dma_playfield_dma_channel_0_enable <= 1'b0;
       end
       if(main_fsm_onExit_PASS) begin
-        action_1 <= NO;
+        action_1 <= ACTION_NO;
       end
       if(main_fsm_onExit_WAIT_LOCKER_WRITE_DONE) begin
         dma_playfield_dma_channel_1_enable <= 1'b0;
@@ -2450,7 +2487,7 @@ module playfield (
     end
     if(piece_valid) begin
       case(piece_payload)
-        I : begin
+        TYPE_1_I : begin
           piece_buffer_pieces_0_region_extra_0 <= 14'h0;
           piece_buffer_pieces_0_region_extra_1 <= 14'h01e0;
           piece_buffer_pieces_0_region_extra_2 <= 14'h0;
@@ -2468,7 +2505,7 @@ module playfield (
           piece_buffer_pieces_3_region_extra_2 <= 14'h0080;
           piece_buffer_pieces_3_region_extra_3 <= 14'h0080;
         end
-        J : begin
+        TYPE_1_J : begin
           piece_buffer_pieces_0_region_extra_0 <= 14'h0100;
           piece_buffer_pieces_0_region_extra_1 <= 14'h01c0;
           piece_buffer_pieces_0_region_extra_2 <= 14'h0;
@@ -2486,7 +2523,7 @@ module playfield (
           piece_buffer_pieces_3_region_extra_2 <= 14'h0180;
           piece_buffer_pieces_3_region_extra_3 <= 14'h0;
         end
-        L : begin
+        TYPE_1_L : begin
           piece_buffer_pieces_0_region_extra_0 <= 14'h0040;
           piece_buffer_pieces_0_region_extra_1 <= 14'h01c0;
           piece_buffer_pieces_0_region_extra_2 <= 14'h0;
@@ -2504,7 +2541,7 @@ module playfield (
           piece_buffer_pieces_3_region_extra_2 <= 14'h0080;
           piece_buffer_pieces_3_region_extra_3 <= 14'h0;
         end
-        O : begin
+        TYPE_1_O : begin
           piece_buffer_pieces_0_region_extra_0 <= 14'h00c0;
           piece_buffer_pieces_0_region_extra_1 <= 14'h00c0;
           piece_buffer_pieces_0_region_extra_2 <= 14'h0;
@@ -2522,7 +2559,7 @@ module playfield (
           piece_buffer_pieces_3_region_extra_2 <= 14'h0;
           piece_buffer_pieces_3_region_extra_3 <= 14'h0;
         end
-        S : begin
+        TYPE_1_S : begin
           piece_buffer_pieces_0_region_extra_0 <= 14'h00c0;
           piece_buffer_pieces_0_region_extra_1 <= 14'h0180;
           piece_buffer_pieces_0_region_extra_2 <= 14'h0;
@@ -2540,7 +2577,7 @@ module playfield (
           piece_buffer_pieces_3_region_extra_2 <= 14'h0080;
           piece_buffer_pieces_3_region_extra_3 <= 14'h0;
         end
-        T : begin
+        TYPE_1_T : begin
           piece_buffer_pieces_0_region_extra_0 <= 14'h0080;
           piece_buffer_pieces_0_region_extra_1 <= 14'h01c0;
           piece_buffer_pieces_0_region_extra_2 <= 14'h0;
@@ -2749,14 +2786,13 @@ module seven_bag_rng (
   input  wire          clk,
   input  wire          reset
 );
-  localparam IDLE = 3'd0;
-  localparam CHECK = 3'd1;
-  localparam OUTPUT_1 = 3'd2;
-  localparam DONE = 3'd3;
-  localparam SHIFT = 3'd4;
-  localparam ELEMENT = 3'd5;
+  localparam fsm_IDLE = 3'd0;
+  localparam fsm_CHECK = 3'd1;
+  localparam fsm_OUTPUT_1 = 3'd2;
+  localparam fsm_DONE = 3'd3;
+  localparam fsm_SHIFT = 3'd4;
+  localparam fsm_ELEMENT = 3'd5;
 
-  wire                temp_when;
   reg        [5:0]    lfsr;
   reg        [2:0]    generatedNumbers_0;
   reg        [2:0]    generatedNumbers_1;
@@ -2765,56 +2801,43 @@ module seven_bag_rng (
   reg        [2:0]    generatedNumbers_4;
   reg        [2:0]    generatedNumbers_5;
   reg        [2:0]    generatedNumbers_6;
+  reg        [2:0]    generatedNumbers_7;
   reg        [2:0]    count;
-  reg                 existed;
+  reg                 existedOrInvalid;
   reg                 shift;
   wire       [2:0]    nextNumber;
-  reg                 invalid;
   wire                fsm_wantExit;
   reg                 fsm_wantStart;
   wire                fsm_wantKill;
   reg        [2:0]    fsm_stateReg;
   reg        [2:0]    fsm_stateNext;
   wire       [7:0]    temp_1;
-  wire                fsm_onExit_IDLE;
-  wire                fsm_onExit_CHECK;
-  wire                fsm_onExit_OUTPUT_1;
-  wire                fsm_onExit_DONE;
-  wire                fsm_onExit_SHIFT;
-  wire                fsm_onExit_ELEMENT;
-  wire                fsm_onEntry_IDLE;
-  wire                fsm_onEntry_CHECK;
-  wire                fsm_onEntry_OUTPUT_1;
-  wire                fsm_onEntry_DONE;
-  wire                fsm_onEntry_SHIFT;
-  wire                fsm_onEntry_ELEMENT;
   `ifndef SYNTHESIS
   reg [63:0] fsm_stateReg_string;
   reg [63:0] fsm_stateNext_string;
   `endif
 
 
-  assign temp_when = (count == 3'b111);
   `ifndef SYNTHESIS
   always @(*) begin
     case(fsm_stateReg)
-      IDLE : fsm_stateReg_string = "IDLE    ";
-      CHECK : fsm_stateReg_string = "CHECK   ";
-      OUTPUT_1 : fsm_stateReg_string = "OUTPUT_1";
-      DONE : fsm_stateReg_string = "DONE    ";
-      SHIFT : fsm_stateReg_string = "SHIFT   ";
-      ELEMENT : fsm_stateReg_string = "ELEMENT ";
+      fsm_IDLE : fsm_stateReg_string = "IDLE    ";
+      fsm_CHECK : fsm_stateReg_string = "CHECK   ";
+      fsm_OUTPUT_1 : fsm_stateReg_string = "OUTPUT_1";
+      fsm_DONE : fsm_stateReg_string = "DONE    ";
+      fsm_SHIFT : fsm_stateReg_string = "SHIFT   ";
+      fsm_ELEMENT : fsm_stateReg_string = "ELEMENT ";
       default : fsm_stateReg_string = "????????";
     endcase
   end
   always @(*) begin
     case(fsm_stateNext)
-      IDLE : fsm_stateNext_string = "IDLE    ";
-      CHECK : fsm_stateNext_string = "CHECK   ";
-      OUTPUT_1 : fsm_stateNext_string = "OUTPUT_1";
-      DONE : fsm_stateNext_string = "DONE    ";
-      SHIFT : fsm_stateNext_string = "SHIFT   ";
-      ELEMENT : fsm_stateNext_string = "ELEMENT ";
+      fsm_IDLE : fsm_stateNext_string = "IDLE    ";
+      fsm_CHECK : fsm_stateNext_string = "CHECK   ";
+      fsm_OUTPUT_1 : fsm_stateNext_string = "OUTPUT_1";
+      fsm_DONE : fsm_stateNext_string = "DONE    ";
+      fsm_SHIFT : fsm_stateNext_string = "SHIFT   ";
+      fsm_ELEMENT : fsm_stateNext_string = "ELEMENT ";
       default : fsm_stateNext_string = "????????";
     endcase
   end
@@ -2829,78 +2852,115 @@ module seven_bag_rng (
     io_shape_valid = 1'b0;
     fsm_stateNext = fsm_stateReg;
     case(fsm_stateReg)
-      CHECK : begin
-        if((existed || invalid)) begin
-          fsm_stateNext = SHIFT;
+      fsm_CHECK : begin
+        if(existedOrInvalid) begin
+          fsm_stateNext = fsm_SHIFT;
         end else begin
-          fsm_stateNext = OUTPUT_1;
+          fsm_stateNext = fsm_OUTPUT_1;
         end
       end
-      OUTPUT_1 : begin
+      fsm_OUTPUT_1 : begin
         io_shape_valid = 1'b1;
         shift = 1'b1;
-        fsm_stateNext = DONE;
+        fsm_stateNext = fsm_DONE;
       end
-      DONE : begin
-        fsm_stateNext = IDLE;
+      fsm_DONE : begin
+        fsm_stateNext = fsm_IDLE;
       end
-      SHIFT : begin
+      fsm_SHIFT : begin
         shift = 1'b1;
-        fsm_stateNext = ELEMENT;
+        fsm_stateNext = fsm_ELEMENT;
       end
-      ELEMENT : begin
-        fsm_stateNext = CHECK;
+      fsm_ELEMENT : begin
+        fsm_stateNext = fsm_CHECK;
       end
       default : begin
         if(io_enable) begin
-          fsm_stateNext = CHECK;
+          fsm_stateNext = fsm_CHECK;
         end
         fsm_wantStart = 1'b1;
       end
     endcase
     if(fsm_wantKill) begin
-      fsm_stateNext = IDLE;
+      fsm_stateNext = fsm_IDLE;
     end
   end
 
   assign fsm_wantKill = 1'b0;
   assign temp_1 = ({7'd0,1'b1} <<< count);
-  assign fsm_onExit_IDLE = ((fsm_stateNext != IDLE) && (fsm_stateReg == IDLE));
-  assign fsm_onExit_CHECK = ((fsm_stateNext != CHECK) && (fsm_stateReg == CHECK));
-  assign fsm_onExit_OUTPUT_1 = ((fsm_stateNext != OUTPUT_1) && (fsm_stateReg == OUTPUT_1));
-  assign fsm_onExit_DONE = ((fsm_stateNext != DONE) && (fsm_stateReg == DONE));
-  assign fsm_onExit_SHIFT = ((fsm_stateNext != SHIFT) && (fsm_stateReg == SHIFT));
-  assign fsm_onExit_ELEMENT = ((fsm_stateNext != ELEMENT) && (fsm_stateReg == ELEMENT));
-  assign fsm_onEntry_IDLE = ((fsm_stateNext == IDLE) && (fsm_stateReg != IDLE));
-  assign fsm_onEntry_CHECK = ((fsm_stateNext == CHECK) && (fsm_stateReg != CHECK));
-  assign fsm_onEntry_OUTPUT_1 = ((fsm_stateNext == OUTPUT_1) && (fsm_stateReg != OUTPUT_1));
-  assign fsm_onEntry_DONE = ((fsm_stateNext == DONE) && (fsm_stateReg != DONE));
-  assign fsm_onEntry_SHIFT = ((fsm_stateNext == SHIFT) && (fsm_stateReg != SHIFT));
-  assign fsm_onEntry_ELEMENT = ((fsm_stateNext == ELEMENT) && (fsm_stateReg != ELEMENT));
   always @(posedge clk or posedge reset) begin
     if(reset) begin
       lfsr <= 6'h2d;
+      generatedNumbers_0 <= 3'b111;
+      generatedNumbers_1 <= 3'b111;
+      generatedNumbers_2 <= 3'b111;
+      generatedNumbers_3 <= 3'b111;
+      generatedNumbers_4 <= 3'b111;
+      generatedNumbers_5 <= 3'b111;
+      generatedNumbers_6 <= 3'b111;
+      generatedNumbers_7 <= 3'b111;
       count <= 3'b000;
-      fsm_stateReg <= IDLE;
+      fsm_stateReg <= fsm_IDLE;
     end else begin
       if(shift) begin
         lfsr <= {lfsr[4 : 0],(lfsr[5] ^ lfsr[3])};
       end
+      `ifndef SYNTHESIS
+        `ifdef FORMAL
+          assert((! (io_shape_valid && (io_shape_payload == 3'b111)))); // seven_bag_rng.scala:L41
+        `else
+          if(!(! (io_shape_valid && (io_shape_payload == 3'b111)))) begin
+            $display("FAILURE seven_bag_rng: valid shape must never be 7"); // seven_bag_rng.scala:L41
+            $finish;
+          end
+        `endif
+      `endif
       fsm_stateReg <= fsm_stateNext;
       case(fsm_stateReg)
-        CHECK : begin
+        fsm_CHECK : begin
         end
-        OUTPUT_1 : begin
+        fsm_OUTPUT_1 : begin
+          if(temp_1[0]) begin
+            generatedNumbers_0 <= nextNumber;
+          end
+          if(temp_1[1]) begin
+            generatedNumbers_1 <= nextNumber;
+          end
+          if(temp_1[2]) begin
+            generatedNumbers_2 <= nextNumber;
+          end
+          if(temp_1[3]) begin
+            generatedNumbers_3 <= nextNumber;
+          end
+          if(temp_1[4]) begin
+            generatedNumbers_4 <= nextNumber;
+          end
+          if(temp_1[5]) begin
+            generatedNumbers_5 <= nextNumber;
+          end
+          if(temp_1[6]) begin
+            generatedNumbers_6 <= nextNumber;
+          end
+          if(temp_1[7]) begin
+            generatedNumbers_7 <= nextNumber;
+          end
           count <= (count + 3'b001);
         end
-        DONE : begin
-          if(temp_when) begin
+        fsm_DONE : begin
+          if((count == 3'b111)) begin
             count <= 3'b000;
+            generatedNumbers_0 <= 3'b111;
+            generatedNumbers_1 <= 3'b111;
+            generatedNumbers_2 <= 3'b111;
+            generatedNumbers_3 <= 3'b111;
+            generatedNumbers_4 <= 3'b111;
+            generatedNumbers_5 <= 3'b111;
+            generatedNumbers_6 <= 3'b111;
           end
         end
-        SHIFT : begin
+        fsm_SHIFT : begin
         end
-        ELEMENT : begin
+        fsm_ELEMENT : begin
         end
         default : begin
         end
@@ -2909,73 +2969,31 @@ module seven_bag_rng (
   end
 
   always @(posedge clk) begin
-    invalid <= (nextNumber == 3'b111);
-    existed <= 1'b0;
-    if(((3'b000 < count) && (nextNumber == generatedNumbers_0))) begin
-      existed <= 1'b1;
+    existedOrInvalid <= 1'b0;
+    if((nextNumber == generatedNumbers_0)) begin
+      existedOrInvalid <= 1'b1;
     end
-    if(((3'b001 < count) && (nextNumber == generatedNumbers_1))) begin
-      existed <= 1'b1;
+    if((nextNumber == generatedNumbers_1)) begin
+      existedOrInvalid <= 1'b1;
     end
-    if(((3'b010 < count) && (nextNumber == generatedNumbers_2))) begin
-      existed <= 1'b1;
+    if((nextNumber == generatedNumbers_2)) begin
+      existedOrInvalid <= 1'b1;
     end
-    if(((3'b011 < count) && (nextNumber == generatedNumbers_3))) begin
-      existed <= 1'b1;
+    if((nextNumber == generatedNumbers_3)) begin
+      existedOrInvalid <= 1'b1;
     end
-    if(((3'b100 < count) && (nextNumber == generatedNumbers_4))) begin
-      existed <= 1'b1;
+    if((nextNumber == generatedNumbers_4)) begin
+      existedOrInvalid <= 1'b1;
     end
-    if(((3'b101 < count) && (nextNumber == generatedNumbers_5))) begin
-      existed <= 1'b1;
+    if((nextNumber == generatedNumbers_5)) begin
+      existedOrInvalid <= 1'b1;
     end
-    if(((3'b110 < count) && (nextNumber == generatedNumbers_6))) begin
-      existed <= 1'b1;
+    if((nextNumber == generatedNumbers_6)) begin
+      existedOrInvalid <= 1'b1;
     end
-    case(fsm_stateReg)
-      CHECK : begin
-      end
-      OUTPUT_1 : begin
-        if(temp_1[0]) begin
-          generatedNumbers_0 <= nextNumber;
-        end
-        if(temp_1[1]) begin
-          generatedNumbers_1 <= nextNumber;
-        end
-        if(temp_1[2]) begin
-          generatedNumbers_2 <= nextNumber;
-        end
-        if(temp_1[3]) begin
-          generatedNumbers_3 <= nextNumber;
-        end
-        if(temp_1[4]) begin
-          generatedNumbers_4 <= nextNumber;
-        end
-        if(temp_1[5]) begin
-          generatedNumbers_5 <= nextNumber;
-        end
-        if(temp_1[6]) begin
-          generatedNumbers_6 <= nextNumber;
-        end
-      end
-      DONE : begin
-        if(temp_when) begin
-          generatedNumbers_0 <= 3'b000;
-          generatedNumbers_1 <= 3'b000;
-          generatedNumbers_2 <= 3'b000;
-          generatedNumbers_3 <= 3'b000;
-          generatedNumbers_4 <= 3'b000;
-          generatedNumbers_5 <= 3'b000;
-          generatedNumbers_6 <= 3'b000;
-        end
-      end
-      SHIFT : begin
-      end
-      ELEMENT : begin
-      end
-      default : begin
-      end
-    endcase
+    if((nextNumber == generatedNumbers_7)) begin
+      existedOrInvalid <= 1'b1;
+    end
   end
 
 

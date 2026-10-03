@@ -1,6 +1,6 @@
-// Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
+// Generator : SpinalHDL v1.15.0    git head : 05a01af3d3345aa0afcaad8e0186dde13a359db2
 // Component : vga_display
-// Git hash  : 1966d2c2753e3d447f4de5f4d933de13c0cb6e6b
+// Git hash  : 3d467bff18f916b687d55ae2a8e3528df145783c
 
 `timescale 1ns/1ps
 
@@ -11,7 +11,7 @@ module vga_display (
   output reg  [3:0]    vga_color_r,
   output reg  [3:0]    vga_color_g,
   output reg  [3:0]    vga_color_b,
-  input  wire          game_restart,
+  input  wire          softRest,
   input  wire          core_clk,
   input  wire          core_rst,
   input  wire          vga_clk,
@@ -29,8 +29,10 @@ module vga_display (
   wire       [8:0]    rb_y;
   wire       [8:0]    sp_y;
   wire       [8:0]    ascii_y;
-  wire       [3:0]    lbcp_io_addr;
-  wire       [3:0]    core_fb_rd_data;
+  wire       [3:0]    lbcp_addr;
+  wire                core_fb_rd_data_valid;
+  wire       [3:0]    core_fb_rd_data_payload;
+  wire                core_fb_clear_done;
   wire       [7:0]    core_draw_char_engine_h_cnt;
   wire       [6:0]    core_draw_char_engine_v_cnt;
   wire                core_draw_char_engine_is_running;
@@ -53,14 +55,14 @@ module vga_display (
   wire       [3:0]    rb_color_payload_b_1;
   wire                sp_pix_valid;
   wire       [3:0]    sp_pix_payload;
-  wire                cp_io_color_valid;
-  wire       [11:0]   cp_io_color_payload;
+  wire                cp_color_valid;
+  wire       [11:0]   cp_color_payload;
   wire                ascii_color_valid;
   wire       [3:0]    ascii_color_payload_r;
   wire       [3:0]    ascii_color_payload_g;
   wire       [3:0]    ascii_color_payload_b;
-  wire                lbcp_io_color_valid;
-  wire       [11:0]   lbcp_io_color_payload;
+  wire                lbcp_color_valid;
+  wire       [11:0]   lbcp_color_payload;
   wire                lb_rd_out_valid;
   wire       [3:0]    lb_rd_out_payload;
   wire                io_sol_buffercc_io_dataOut;
@@ -76,11 +78,15 @@ module vga_display (
   reg                 lb_row_valid;
   reg                 io_colorEn_regNext;
   reg                 fb_scale_cnt_willIncrement;
+  wire                fb_scale_cnt_willDecrement;
   wire                fb_scale_cnt_willClear;
+  wire                fb_scale_cnt_willLoad;
   reg        [1:0]    fb_scale_cnt_valueNext;
   reg        [1:0]    fb_scale_cnt_value;
   wire                fb_scale_cnt_willOverflowIfInc;
+  wire                fb_scale_cnt_willUnderflowIfDec;
   wire                fb_scale_cnt_willOverflow;
+  wire                fb_scale_cnt_willUnderflow;
   wire                lb_load_valid;
   reg                 lb_rd_start;
   reg                 io_hSync_delay_1;
@@ -109,20 +115,25 @@ module vga_display (
   wire                dma_row_valid;
   reg                 dma_fb_fetch_en;
   reg                 dma_fb_fetch_en_cnt_willIncrement;
+  wire                dma_fb_fetch_en_cnt_willDecrement;
   reg                 dma_fb_fetch_en_cnt_willClear;
+  wire                dma_fb_fetch_en_cnt_willLoad;
   reg        [7:0]    dma_fb_fetch_en_cnt_valueNext;
   reg        [7:0]    dma_fb_fetch_en_cnt_value;
   wire                dma_fb_fetch_en_cnt_willOverflowIfInc;
+  wire                dma_fb_fetch_en_cnt_willUnderflowIfDec;
   wire                dma_fb_fetch_en_cnt_willOverflow;
+  wire                dma_fb_fetch_en_cnt_willUnderflow;
   reg                 dma_fb_fetch_addr_willIncrement;
+  wire                dma_fb_fetch_addr_willDecrement;
   reg                 dma_fb_fetch_addr_willClear;
+  wire                dma_fb_fetch_addr_willLoad;
   reg        [14:0]   dma_fb_fetch_addr_valueNext;
   reg        [14:0]   dma_fb_fetch_addr_value;
   wire                dma_fb_fetch_addr_willOverflowIfInc;
+  wire                dma_fb_fetch_addr_willUnderflowIfDec;
   wire                dma_fb_fetch_addr_willOverflow;
-  wire                dma_lb_wr_valid;
-  wire       [3:0]    dma_lb_wr_payload;
-  reg                 dma_fb_fetch_en_regNext;
+  wire                dma_fb_fetch_addr_willUnderflow;
 
   assign temp_fb_scale_cnt_valueNext_1 = fb_scale_cnt_willIncrement;
   assign temp_fb_scale_cnt_valueNext = {1'd0, temp_fb_scale_cnt_valueNext_1};
@@ -130,15 +141,18 @@ module vga_display (
   assign temp_dma_fb_fetch_en_cnt_valueNext = {7'd0, temp_dma_fb_fetch_en_cnt_valueNext_1};
   assign temp_dma_fb_fetch_addr_valueNext_1 = dma_fb_fetch_addr_willIncrement;
   assign temp_dma_fb_fetch_addr_valueNext = {14'd0, temp_dma_fb_fetch_addr_valueNext_1};
-  bram_2p core_fb (
-    .wr_en    (core_draw_char_engine_out_valid     ), //i
-    .wr_addr  (core_fb_addr_gen_inst_out_addr[14:0]), //i
-    .wr_data  (core_fb_wr_data[3:0]                ), //i
-    .rd_en    (dma_fb_fetch_en                     ), //i
-    .rd_addr  (dma_fb_fetch_addr_value[14:0]       ), //i
-    .rd_data  (core_fb_rd_data[3:0]                ), //o
-    .core_clk (core_clk                            ), //i
-    .core_rst (core_rst                            )  //i
+  Bram2p_4x19200 core_fb (
+    .wr_en           (core_draw_char_engine_out_valid     ), //i
+    .wr_addr         (core_fb_addr_gen_inst_out_addr[14:0]), //i
+    .wr_data         (core_fb_wr_data[3:0]                ), //i
+    .rd_en           (dma_fb_fetch_en                     ), //i
+    .rd_addr         (dma_fb_fetch_addr_value[14:0]       ), //i
+    .rd_data_valid   (core_fb_rd_data_valid               ), //o
+    .rd_data_payload (core_fb_rd_data_payload[3:0]        ), //o
+    .clear_start     (1'b0                                ), //i
+    .clear_done      (core_fb_clear_done                  ), //o
+    .core_rst        (core_rst                            ), //i
+    .core_clk        (core_clk                            )  //i
   );
   draw_char_engine core_draw_char_engine (
     .start      (draw_char_start                     ), //i
@@ -165,7 +179,7 @@ module vga_display (
     .core_rst (core_rst                            )  //i
   );
   vga_sync_gen vga_sync (
-    .io_softReset (game_restart            ), //i
+    .io_softReset (softRest            ), //i
     .io_sof       (vga_sync_io_sof     ), //o
     .io_sol       (vga_sync_io_sol     ), //o
     .io_sos       (vga_sync_io_sos     ), //o
@@ -201,13 +215,13 @@ module vga_display (
     .vga_clk     (vga_clk            ), //i
     .vga_rst     (vga_rst            )  //i
   );
-  color_palettes cp (
-    .io_addr          (sp_pix_payload[3:0]      ), //i
-    .io_rd_en         (sp_pix_valid             ), //i
-    .io_color_valid   (cp_io_color_valid        ), //o
-    .io_color_payload (cp_io_color_payload[11:0]), //o
-    .vga_clk          (vga_clk                  ), //i
-    .vga_rst          (vga_rst                  )  //i
+  color_palette cp (
+    .addr          (sp_pix_payload[3:0]   ), //i
+    .rd_en         (sp_pix_valid          ), //i
+    .color_valid   (cp_color_valid        ), //o
+    .color_payload (cp_color_payload[11:0]), //o
+    .vga_clk       (vga_clk               ), //i
+    .vga_rst       (vga_rst               )  //i
   );
   char_tile ascii (
     .x               (vga_sync_io_x[9:0]        ), //i
@@ -223,24 +237,24 @@ module vga_display (
     .vga_clk         (vga_clk                   ), //i
     .vga_rst         (vga_rst                   )  //i
   );
-  color_palettes_1 lbcp (
-    .io_addr          (lbcp_io_addr[3:0]          ), //i
-    .io_rd_en         (lb_rd_out_valid            ), //i
-    .io_color_valid   (lbcp_io_color_valid        ), //o
-    .io_color_payload (lbcp_io_color_payload[11:0]), //o
-    .vga_clk          (vga_clk                    ), //i
-    .vga_rst          (vga_rst                    )  //i
+  color_palette_1 lbcp (
+    .addr          (lbcp_addr[3:0]          ), //i
+    .rd_en         (lb_rd_out_valid         ), //i
+    .color_valid   (lbcp_color_valid        ), //o
+    .color_payload (lbcp_color_payload[11:0]), //o
+    .vga_clk       (vga_clk                 ), //i
+    .vga_rst       (vga_rst                 )  //i
   );
   linebuffer lb (
-    .wr_in_valid    (dma_lb_wr_valid       ), //i
-    .wr_in_payload  (dma_lb_wr_payload[3:0]), //i
-    .rd_start       (lb_rd_start           ), //i
-    .rd_out_valid   (lb_rd_out_valid       ), //o
-    .rd_out_payload (lb_rd_out_payload[3:0]), //o
-    .core_clk       (core_clk              ), //i
-    .core_rst       (core_rst              ), //i
-    .vga_clk        (vga_clk               ), //i
-    .vga_rst        (vga_rst               )  //i
+    .wr_in_valid    (core_fb_rd_data_valid       ), //i
+    .wr_in_payload  (core_fb_rd_data_payload[3:0]), //i
+    .rd_start       (lb_rd_start                 ), //i
+    .rd_out_valid   (lb_rd_out_valid             ), //o
+    .rd_out_payload (lb_rd_out_payload[3:0]      ), //o
+    .core_clk       (core_clk                    ), //i
+    .core_rst       (core_rst                    ), //i
+    .vga_clk        (vga_clk                     ), //i
+    .vga_rst        (vga_rst                     )  //i
   );
   (* keep_hierarchy = "TRUE" *) BufferCC io_sol_buffercc (
     .io_dataIn  (vga_sync_io_sol           ), //i
@@ -272,8 +286,11 @@ module vga_display (
     end
   end
 
+  assign fb_scale_cnt_willDecrement = 1'b0;
   assign fb_scale_cnt_willClear = 1'b0;
+  assign fb_scale_cnt_willLoad = 1'b0;
   assign fb_scale_cnt_willOverflowIfInc = (fb_scale_cnt_value == 2'b11);
+  assign fb_scale_cnt_willUnderflowIfDec = (fb_scale_cnt_value == 2'b00);
   assign fb_scale_cnt_willOverflow = (fb_scale_cnt_willOverflowIfInc && fb_scale_cnt_willIncrement);
   always @(*) begin
     fb_scale_cnt_valueNext = (fb_scale_cnt_value + temp_fb_scale_cnt_valueNext);
@@ -282,26 +299,27 @@ module vga_display (
     end
   end
 
+  assign fb_scale_cnt_willUnderflow = (fb_scale_cnt_willUnderflowIfDec && fb_scale_cnt_willDecrement);
   assign lb_load_valid = ((fb_scale_cnt_value == 2'b00) && lb_row_valid);
-  assign lbcp_io_addr = lb_rd_out_payload;
+  assign lbcp_addr = lb_rd_out_payload;
   assign vga_hSync = io_hSync_delay_3;
   assign vga_vSync = io_vSync_delay_3;
   assign vga_colorEn = io_colorEn_delay_3;
   always @(*) begin
-    if(lbcp_io_color_valid) begin
-      vga_color_b = lbcp_io_color_payload[3 : 0];
-      vga_color_g = lbcp_io_color_payload[7 : 4];
-      vga_color_r = lbcp_io_color_payload[11 : 8];
+    if(lbcp_color_valid) begin
+      vga_color_b = lbcp_color_payload[3 : 0];
+      vga_color_g = lbcp_color_payload[7 : 4];
+      vga_color_r = lbcp_color_payload[11 : 8];
     end else begin
       if(ascii_color_valid) begin
         vga_color_r = ascii_color_payload_r;
         vga_color_g = ascii_color_payload_g;
         vga_color_b = ascii_color_payload_b;
       end else begin
-        if(cp_io_color_valid) begin
-          vga_color_b = cp_io_color_payload[3 : 0];
-          vga_color_g = cp_io_color_payload[7 : 4];
-          vga_color_r = cp_io_color_payload[11 : 8];
+        if(cp_color_valid) begin
+          vga_color_b = cp_color_payload[3 : 0];
+          vga_color_g = cp_color_payload[7 : 4];
+          vga_color_r = cp_color_payload[11 : 8];
         end else begin
           vga_color_r = rb_color_payload_r;
           vga_color_g = rb_color_payload_g;
@@ -325,6 +343,7 @@ module vga_display (
     end
   end
 
+  assign dma_fb_fetch_en_cnt_willDecrement = 1'b0;
   always @(*) begin
     dma_fb_fetch_en_cnt_willClear = 1'b0;
     if(dma_row_valid) begin
@@ -334,19 +353,21 @@ module vga_display (
     end
   end
 
+  assign dma_fb_fetch_en_cnt_willLoad = 1'b0;
   assign dma_fb_fetch_en_cnt_willOverflowIfInc = (dma_fb_fetch_en_cnt_value == 8'h9f);
+  assign dma_fb_fetch_en_cnt_willUnderflowIfDec = (dma_fb_fetch_en_cnt_value == 8'h0);
   assign dma_fb_fetch_en_cnt_willOverflow = (dma_fb_fetch_en_cnt_willOverflowIfInc && dma_fb_fetch_en_cnt_willIncrement);
   always @(*) begin
+    dma_fb_fetch_en_cnt_valueNext = (dma_fb_fetch_en_cnt_value + temp_dma_fb_fetch_en_cnt_valueNext);
     if(dma_fb_fetch_en_cnt_willOverflow) begin
       dma_fb_fetch_en_cnt_valueNext = 8'h0;
-    end else begin
-      dma_fb_fetch_en_cnt_valueNext = (dma_fb_fetch_en_cnt_value + temp_dma_fb_fetch_en_cnt_valueNext);
     end
     if(dma_fb_fetch_en_cnt_willClear) begin
       dma_fb_fetch_en_cnt_valueNext = 8'h0;
     end
   end
 
+  assign dma_fb_fetch_en_cnt_willUnderflow = (dma_fb_fetch_en_cnt_willUnderflowIfDec && dma_fb_fetch_en_cnt_willDecrement);
   always @(*) begin
     dma_fb_fetch_addr_willIncrement = 1'b0;
     if(dma_fb_fetch_en) begin
@@ -354,6 +375,7 @@ module vga_display (
     end
   end
 
+  assign dma_fb_fetch_addr_willDecrement = 1'b0;
   always @(*) begin
     dma_fb_fetch_addr_willClear = 1'b0;
     if(dma_sof) begin
@@ -361,28 +383,27 @@ module vga_display (
     end
   end
 
+  assign dma_fb_fetch_addr_willLoad = 1'b0;
   assign dma_fb_fetch_addr_willOverflowIfInc = (dma_fb_fetch_addr_value == 15'h4aff);
+  assign dma_fb_fetch_addr_willUnderflowIfDec = (dma_fb_fetch_addr_value == 15'h0);
   assign dma_fb_fetch_addr_willOverflow = (dma_fb_fetch_addr_willOverflowIfInc && dma_fb_fetch_addr_willIncrement);
   always @(*) begin
+    dma_fb_fetch_addr_valueNext = (dma_fb_fetch_addr_value + temp_dma_fb_fetch_addr_valueNext);
     if(dma_fb_fetch_addr_willOverflow) begin
       dma_fb_fetch_addr_valueNext = 15'h0;
-    end else begin
-      dma_fb_fetch_addr_valueNext = (dma_fb_fetch_addr_value + temp_dma_fb_fetch_addr_valueNext);
     end
     if(dma_fb_fetch_addr_willClear) begin
       dma_fb_fetch_addr_valueNext = 15'h0;
     end
   end
 
-  assign dma_lb_wr_valid = dma_fb_fetch_en_regNext;
-  assign dma_lb_wr_payload = core_fb_rd_data;
+  assign dma_fb_fetch_addr_willUnderflow = (dma_fb_fetch_addr_willUnderflowIfDec && dma_fb_fetch_addr_willDecrement);
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
       done_regNext <= 1'b0;
       dma_fb_fetch_en <= 1'b0;
       dma_fb_fetch_en_cnt_value <= 8'h0;
       dma_fb_fetch_addr_value <= 15'h0;
-      dma_fb_fetch_en_regNext <= 1'b0;
     end else begin
       done_regNext <= core_draw_char_engine_done;
       dma_fb_fetch_en_cnt_value <= dma_fb_fetch_en_cnt_valueNext;
@@ -395,7 +416,6 @@ module vga_display (
           dma_fb_fetch_en <= 1'b0;
         end
       end
-      dma_fb_fetch_en_regNext <= dma_fb_fetch_en;
     end
   end
 
@@ -482,18 +502,22 @@ module linebuffer (
   reg        [7:0]    rd_addr;
   reg                 rd_enable;
   reg                 rd_scale_cnt_willIncrement;
+  wire                rd_scale_cnt_willDecrement;
   reg                 rd_scale_cnt_willClear;
+  wire                rd_scale_cnt_willLoad;
   reg        [1:0]    rd_scale_cnt_valueNext;
   reg        [1:0]    rd_scale_cnt_value;
   wire                rd_scale_cnt_willOverflowIfInc;
+  wire                rd_scale_cnt_willUnderflowIfDec;
   wire                rd_scale_cnt_willOverflow;
+  wire                rd_scale_cnt_willUnderflow;
   wire                rd_valid;
   wire                rd_inc_enable;
   wire                rd_data_valid;
   wire       [3:0]    rd_data_payload;
   wire       [3:0]    rd_rd_data;
-  reg                 rd_valid_regNext;
-  reg [3:0] ram [0:159];
+  reg                 rd_enable_regNext;
+  (* ram_style = "distributed" *) reg [3:0] ram [0:159];
 
   assign temp_rd_scale_cnt_valueNext_1 = rd_scale_cnt_willIncrement;
   assign temp_rd_scale_cnt_valueNext = {1'd0, temp_rd_scale_cnt_valueNext_1};
@@ -516,6 +540,7 @@ module linebuffer (
     end
   end
 
+  assign rd_scale_cnt_willDecrement = 1'b0;
   always @(*) begin
     rd_scale_cnt_willClear = 1'b0;
     if(rd_start) begin
@@ -523,7 +548,9 @@ module linebuffer (
     end
   end
 
+  assign rd_scale_cnt_willLoad = 1'b0;
   assign rd_scale_cnt_willOverflowIfInc = (rd_scale_cnt_value == 2'b11);
+  assign rd_scale_cnt_willUnderflowIfDec = (rd_scale_cnt_value == 2'b00);
   assign rd_scale_cnt_willOverflow = (rd_scale_cnt_willOverflowIfInc && rd_scale_cnt_willIncrement);
   always @(*) begin
     rd_scale_cnt_valueNext = (rd_scale_cnt_value + temp_rd_scale_cnt_valueNext);
@@ -532,10 +559,11 @@ module linebuffer (
     end
   end
 
+  assign rd_scale_cnt_willUnderflow = (rd_scale_cnt_willUnderflowIfDec && rd_scale_cnt_willDecrement);
   assign rd_valid = ((rd_scale_cnt_value == 2'b00) && rd_enable);
   assign rd_inc_enable = (rd_scale_cnt_willOverflowIfInc && rd_enable);
   assign rd_rd_data = ram_spinal_port1;
-  assign rd_data_valid = rd_valid_regNext;
+  assign rd_data_valid = rd_enable_regNext;
   assign rd_data_payload = rd_rd_data;
   assign rd_out_valid = rd_data_valid;
   assign rd_out_payload = rd_data_payload;
@@ -558,7 +586,7 @@ module linebuffer (
       rd_addr <= 8'h0;
       rd_enable <= 1'b0;
       rd_scale_cnt_value <= 2'b00;
-      rd_valid_regNext <= 1'b0;
+      rd_enable_regNext <= 1'b0;
     end else begin
       rd_scale_cnt_value <= rd_scale_cnt_valueNext;
       if(rd_start) begin
@@ -575,39 +603,43 @@ module linebuffer (
           rd_addr <= (rd_addr + 8'h01);
         end
       end
-      rd_valid_regNext <= rd_valid;
+      rd_enable_regNext <= rd_enable;
     end
   end
 
 
 endmodule
 
-module color_palettes_1 (
-  input  wire [3:0]    io_addr,
-  input  wire          io_rd_en,
-  output wire          io_color_valid,
-  output wire [11:0]   io_color_payload,
+module color_palette_1 (
+  input  wire [3:0]    addr,
+  input  wire          rd_en,
+  output wire          color_valid,
+  output wire [11:0]   color_payload,
   input  wire          vga_clk,
   input  wire          vga_rst
 );
 
   reg        [11:0]   rom_spinal_port0;
-  reg                 io_rd_en_regNext;
-  reg [11:0] rom [0:15];
+  reg                 rd_en_regNext;
+  (* ram_style = "distributed" *) reg [11:0] rom [0:15];
 
   initial begin
     $readmemb("vga_display.v_toplevel_lbcp_rom.bin",rom);
   end
   always @(posedge vga_clk) begin
-    if(io_rd_en) begin
-      rom_spinal_port0 <= rom[io_addr];
+    if(rd_en) begin
+      rom_spinal_port0 <= rom[addr];
     end
   end
 
-  assign io_color_payload = rom_spinal_port0;
-  assign io_color_valid = io_rd_en_regNext;
-  always @(posedge vga_clk) begin
-    io_rd_en_regNext <= io_rd_en;
+  assign color_payload = rom_spinal_port0;
+  assign color_valid = rd_en_regNext;
+  always @(posedge vga_clk or posedge vga_rst) begin
+    if(vga_rst) begin
+      rd_en_regNext <= 1'b0;
+    end else begin
+      rd_en_regNext <= rd_en;
+    end
   end
 
 
@@ -627,11 +659,11 @@ module char_tile (
   input  wire          vga_clk,
   input  wire          vga_rst
 );
-  localparam IDLE = 3'd0;
-  localparam LINE_START = 3'd1;
-  localparam WAIT_POS = 3'd2;
-  localparam FETCG_PIXEL = 3'd3;
-  localparam LINE_END = 3'd4;
+  localparam fsm_1_IDLE = 3'd0;
+  localparam fsm_1_LINE_START = 3'd1;
+  localparam fsm_1_WAIT_POS = 3'd2;
+  localparam fsm_1_FETCG_PIXEL = 3'd3;
+  localparam fsm_1_LINE_END = 3'd4;
 
   wire       [7:0]    ascii_font16X8_inst_font_bitmap_byte;
   wire       [9:0]    temp_y_diff;
@@ -656,17 +688,25 @@ module char_tile (
   reg        [10:0]   rom_addr;
   reg                 draw_running;
   reg                 scale_cnt_willIncrement;
+  wire                scale_cnt_willDecrement;
   reg                 scale_cnt_willClear;
+  wire                scale_cnt_willLoad;
   reg        [0:0]    scale_cnt_valueNext;
   reg        [0:0]    scale_cnt_value;
   wire                scale_cnt_willOverflowIfInc;
+  wire                scale_cnt_willUnderflowIfDec;
   wire                scale_cnt_willOverflow;
+  wire                scale_cnt_willUnderflow;
   reg                 x_cnt_willIncrement;
+  wire                x_cnt_willDecrement;
   reg                 x_cnt_willClear;
+  wire                x_cnt_willLoad;
   reg        [6:0]    x_cnt_valueNext;
   reg        [6:0]    x_cnt_value;
   wire                x_cnt_willOverflowIfInc;
+  wire                x_cnt_willUnderflowIfDec;
   wire                x_cnt_willOverflow;
+  wire                x_cnt_willUnderflow;
   wire                fsm_wantExit;
   reg                 fsm_wantStart;
   wire                fsm_wantKill;
@@ -681,16 +721,6 @@ module char_tile (
   reg        [2:0]    fsm_stateReg;
   reg        [2:0]    fsm_stateNext;
   wire       [8:0]    temp_rom_addr_block;
-  wire                fsm_onExit_IDLE;
-  wire                fsm_onExit_LINE_START;
-  wire                fsm_onExit_WAIT_POS;
-  wire                fsm_onExit_FETCG_PIXEL;
-  wire                fsm_onExit_LINE_END;
-  wire                fsm_onEntry_IDLE;
-  wire                fsm_onEntry_LINE_START;
-  wire                fsm_onEntry_WAIT_POS;
-  wire                fsm_onEntry_FETCG_PIXEL;
-  wire                fsm_onEntry_LINE_END;
   `ifndef SYNTHESIS
   reg [87:0] fsm_stateReg_string;
   reg [87:0] fsm_stateNext_string;
@@ -721,21 +751,21 @@ module char_tile (
   `ifndef SYNTHESIS
   always @(*) begin
     case(fsm_stateReg)
-      IDLE : fsm_stateReg_string = "IDLE       ";
-      LINE_START : fsm_stateReg_string = "LINE_START ";
-      WAIT_POS : fsm_stateReg_string = "WAIT_POS   ";
-      FETCG_PIXEL : fsm_stateReg_string = "FETCG_PIXEL";
-      LINE_END : fsm_stateReg_string = "LINE_END   ";
+      fsm_1_IDLE : fsm_stateReg_string = "IDLE       ";
+      fsm_1_LINE_START : fsm_stateReg_string = "LINE_START ";
+      fsm_1_WAIT_POS : fsm_stateReg_string = "WAIT_POS   ";
+      fsm_1_FETCG_PIXEL : fsm_stateReg_string = "FETCG_PIXEL";
+      fsm_1_LINE_END : fsm_stateReg_string = "LINE_END   ";
       default : fsm_stateReg_string = "???????????";
     endcase
   end
   always @(*) begin
     case(fsm_stateNext)
-      IDLE : fsm_stateNext_string = "IDLE       ";
-      LINE_START : fsm_stateNext_string = "LINE_START ";
-      WAIT_POS : fsm_stateNext_string = "WAIT_POS   ";
-      FETCG_PIXEL : fsm_stateNext_string = "FETCG_PIXEL";
-      LINE_END : fsm_stateNext_string = "LINE_END   ";
+      fsm_1_IDLE : fsm_stateNext_string = "IDLE       ";
+      fsm_1_LINE_START : fsm_stateNext_string = "LINE_START ";
+      fsm_1_WAIT_POS : fsm_stateNext_string = "WAIT_POS   ";
+      fsm_1_FETCG_PIXEL : fsm_stateNext_string = "FETCG_PIXEL";
+      fsm_1_LINE_END : fsm_stateNext_string = "LINE_END   ";
       default : fsm_stateNext_string = "???????????";
     endcase
   end
@@ -752,6 +782,7 @@ module char_tile (
     end
   end
 
+  assign scale_cnt_willDecrement = 1'b0;
   always @(*) begin
     scale_cnt_willClear = 1'b0;
     x_cnt_willClear = 1'b0;
@@ -759,42 +790,44 @@ module char_tile (
     draw_running = 1'b0;
     fsm_stateNext = fsm_stateReg;
     case(fsm_stateReg)
-      LINE_START : begin
+      fsm_1_LINE_START : begin
         if(y_valid) begin
-          fsm_stateNext = WAIT_POS;
+          fsm_stateNext = fsm_1_WAIT_POS;
         end else begin
-          fsm_stateNext = IDLE;
+          fsm_stateNext = fsm_1_IDLE;
         end
       end
-      WAIT_POS : begin
+      fsm_1_WAIT_POS : begin
         if(sop) begin
           x_cnt_willClear = 1'b1;
           scale_cnt_willClear = 1'b1;
-          fsm_stateNext = FETCG_PIXEL;
+          fsm_stateNext = fsm_1_FETCG_PIXEL;
         end
       end
-      FETCG_PIXEL : begin
+      fsm_1_FETCG_PIXEL : begin
         draw_running = 1'b1;
         if((x_cnt_willOverflowIfInc && scale_cnt_willOverflowIfInc)) begin
-          fsm_stateNext = LINE_END;
+          fsm_stateNext = fsm_1_LINE_END;
         end
       end
-      LINE_END : begin
-        fsm_stateNext = IDLE;
+      fsm_1_LINE_END : begin
+        fsm_stateNext = fsm_1_IDLE;
       end
       default : begin
         if(sol) begin
-          fsm_stateNext = LINE_START;
+          fsm_stateNext = fsm_1_LINE_START;
         end
         fsm_wantStart = 1'b1;
       end
     endcase
     if(fsm_wantKill) begin
-      fsm_stateNext = IDLE;
+      fsm_stateNext = fsm_1_IDLE;
     end
   end
 
+  assign scale_cnt_willLoad = 1'b0;
   assign scale_cnt_willOverflowIfInc = (scale_cnt_value == 1'b1);
+  assign scale_cnt_willUnderflowIfDec = (scale_cnt_value == 1'b0);
   assign scale_cnt_willOverflow = (scale_cnt_willOverflowIfInc && scale_cnt_willIncrement);
   always @(*) begin
     scale_cnt_valueNext = (scale_cnt_value + scale_cnt_willIncrement);
@@ -803,6 +836,7 @@ module char_tile (
     end
   end
 
+  assign scale_cnt_willUnderflow = (scale_cnt_willUnderflowIfDec && scale_cnt_willDecrement);
   always @(*) begin
     x_cnt_willIncrement = 1'b0;
     if(scale_cnt_willOverflowIfInc) begin
@@ -810,7 +844,10 @@ module char_tile (
     end
   end
 
+  assign x_cnt_willDecrement = 1'b0;
+  assign x_cnt_willLoad = 1'b0;
   assign x_cnt_willOverflowIfInc = (x_cnt_value == 7'h7f);
+  assign x_cnt_willUnderflowIfDec = (x_cnt_value == 7'h0);
   assign x_cnt_willOverflow = (x_cnt_willOverflowIfInc && x_cnt_willIncrement);
   always @(*) begin
     x_cnt_valueNext = (x_cnt_value + temp_x_cnt_valueNext);
@@ -819,6 +856,7 @@ module char_tile (
     end
   end
 
+  assign x_cnt_willUnderflow = (x_cnt_willUnderflowIfDec && x_cnt_willDecrement);
   assign fsm_wantExit = 1'b0;
   assign fsm_wantKill = 1'b0;
   assign color_payload_r = color_r;
@@ -826,16 +864,6 @@ module char_tile (
   assign color_payload_b = color_b;
   assign color_valid = draw_running_delay_3;
   assign temp_rom_addr_block = y_diff_scale;
-  assign fsm_onExit_IDLE = ((fsm_stateNext != IDLE) && (fsm_stateReg == IDLE));
-  assign fsm_onExit_LINE_START = ((fsm_stateNext != LINE_START) && (fsm_stateReg == LINE_START));
-  assign fsm_onExit_WAIT_POS = ((fsm_stateNext != WAIT_POS) && (fsm_stateReg == WAIT_POS));
-  assign fsm_onExit_FETCG_PIXEL = ((fsm_stateNext != FETCG_PIXEL) && (fsm_stateReg == FETCG_PIXEL));
-  assign fsm_onExit_LINE_END = ((fsm_stateNext != LINE_END) && (fsm_stateReg == LINE_END));
-  assign fsm_onEntry_IDLE = ((fsm_stateNext == IDLE) && (fsm_stateReg != IDLE));
-  assign fsm_onEntry_LINE_START = ((fsm_stateNext == LINE_START) && (fsm_stateReg != LINE_START));
-  assign fsm_onEntry_WAIT_POS = ((fsm_stateNext == WAIT_POS) && (fsm_stateReg != WAIT_POS));
-  assign fsm_onEntry_FETCG_PIXEL = ((fsm_stateNext == FETCG_PIXEL) && (fsm_stateReg != FETCG_PIXEL));
-  assign fsm_onEntry_LINE_END = ((fsm_stateNext == LINE_END) && (fsm_stateReg != LINE_END));
   always @(posedge vga_clk or posedge vga_rst) begin
     if(vga_rst) begin
       sx_early_r <= 10'h0;
@@ -843,24 +871,24 @@ module char_tile (
       rom_addr <= 11'h0;
       scale_cnt_value <= 1'b0;
       x_cnt_value <= 7'h0;
-      fsm_stateReg <= IDLE;
+      fsm_stateReg <= fsm_1_IDLE;
     end else begin
       scale_cnt_value <= scale_cnt_valueNext;
       x_cnt_value <= x_cnt_valueNext;
       fsm_stateReg <= fsm_stateNext;
       case(fsm_stateReg)
-        LINE_START : begin
+        fsm_1_LINE_START : begin
           if(y_valid) begin
             sx_early_r <= (sx_orig - 10'h001);
           end
         end
-        WAIT_POS : begin
+        fsm_1_WAIT_POS : begin
           rom_addr_block <= temp_rom_addr_block_1[10:0];
         end
-        FETCG_PIXEL : begin
+        fsm_1_FETCG_PIXEL : begin
           rom_addr <= (rom_addr_block + temp_rom_addr);
         end
-        LINE_END : begin
+        fsm_1_LINE_END : begin
         end
         default : begin
         end
@@ -888,32 +916,36 @@ module char_tile (
 
 endmodule
 
-module color_palettes (
-  input  wire [3:0]    io_addr,
-  input  wire          io_rd_en,
-  output wire          io_color_valid,
-  output wire [11:0]   io_color_payload,
+module color_palette (
+  input  wire [3:0]    addr,
+  input  wire          rd_en,
+  output wire          color_valid,
+  output wire [11:0]   color_payload,
   input  wire          vga_clk,
   input  wire          vga_rst
 );
 
   reg        [11:0]   rom_spinal_port0;
-  reg                 io_rd_en_regNext;
-  reg [11:0] rom [0:15];
+  reg                 rd_en_regNext;
+  (* ram_style = "distributed" *) reg [11:0] rom [0:15];
 
   initial begin
     $readmemb("vga_display.v_toplevel_cp_rom.bin",rom);
   end
   always @(posedge vga_clk) begin
-    if(io_rd_en) begin
-      rom_spinal_port0 <= rom[io_addr];
+    if(rd_en) begin
+      rom_spinal_port0 <= rom[addr];
     end
   end
 
-  assign io_color_payload = rom_spinal_port0;
-  assign io_color_valid = io_rd_en_regNext;
-  always @(posedge vga_clk) begin
-    io_rd_en_regNext <= io_rd_en;
+  assign color_payload = rom_spinal_port0;
+  assign color_valid = rd_en_regNext;
+  always @(posedge vga_clk or posedge vga_rst) begin
+    if(vga_rst) begin
+      rd_en_regNext <= 1'b0;
+    end else begin
+      rd_en_regNext <= rd_en;
+    end
   end
 
 
@@ -930,11 +962,11 @@ module sprite (
   input  wire          vga_clk,
   input  wire          vga_rst
 );
-  localparam IDLE = 3'd0;
-  localparam LINE_START = 3'd1;
-  localparam WAIT_POS = 3'd2;
-  localparam LINE_DRAW = 3'd3;
-  localparam LINE_END = 3'd4;
+  localparam fsm_IDLE = 3'd0;
+  localparam fsm_LINE_START = 3'd1;
+  localparam fsm_WAIT_POS = 3'd2;
+  localparam fsm_LINE_DRAW = 3'd3;
+  localparam fsm_LINE_END = 3'd4;
 
   reg        [3:0]    rom_spinal_port0;
   wire       [9:0]    temp_y_diff;
@@ -958,17 +990,25 @@ module sprite (
   reg        [9:0]    rom_addr;
   reg                 draw_running;
   reg                 scale_cnt_willIncrement;
+  wire                scale_cnt_willDecrement;
   reg                 scale_cnt_willClear;
+  wire                scale_cnt_willLoad;
   reg        [1:0]    scale_cnt_valueNext;
   reg        [1:0]    scale_cnt_value;
   wire                scale_cnt_willOverflowIfInc;
+  wire                scale_cnt_willUnderflowIfDec;
   wire                scale_cnt_willOverflow;
+  wire                scale_cnt_willUnderflow;
   reg                 x_cnt_willIncrement;
+  wire                x_cnt_willDecrement;
   reg                 x_cnt_willClear;
+  wire                x_cnt_willLoad;
   reg        [4:0]    x_cnt_valueNext;
   reg        [4:0]    x_cnt_value;
   wire                x_cnt_willOverflowIfInc;
+  wire                x_cnt_willUnderflowIfDec;
   wire                x_cnt_willOverflow;
+  wire                x_cnt_willUnderflow;
   wire                fsm_wantExit;
   reg                 fsm_wantStart;
   wire                fsm_wantKill;
@@ -976,16 +1016,6 @@ module sprite (
   reg                 draw_running_delay_2;
   reg        [2:0]    fsm_stateReg;
   reg        [2:0]    fsm_stateNext;
-  wire                fsm_onExit_IDLE;
-  wire                fsm_onExit_LINE_START;
-  wire                fsm_onExit_WAIT_POS;
-  wire                fsm_onExit_LINE_DRAW;
-  wire                fsm_onExit_LINE_END;
-  wire                fsm_onEntry_IDLE;
-  wire                fsm_onEntry_LINE_START;
-  wire                fsm_onEntry_WAIT_POS;
-  wire                fsm_onEntry_LINE_DRAW;
-  wire                fsm_onEntry_LINE_END;
   `ifndef SYNTHESIS
   reg [79:0] fsm_stateReg_string;
   reg [79:0] fsm_stateNext_string;
@@ -1016,21 +1046,21 @@ module sprite (
   `ifndef SYNTHESIS
   always @(*) begin
     case(fsm_stateReg)
-      IDLE : fsm_stateReg_string = "IDLE      ";
-      LINE_START : fsm_stateReg_string = "LINE_START";
-      WAIT_POS : fsm_stateReg_string = "WAIT_POS  ";
-      LINE_DRAW : fsm_stateReg_string = "LINE_DRAW ";
-      LINE_END : fsm_stateReg_string = "LINE_END  ";
+      fsm_IDLE : fsm_stateReg_string = "IDLE      ";
+      fsm_LINE_START : fsm_stateReg_string = "LINE_START";
+      fsm_WAIT_POS : fsm_stateReg_string = "WAIT_POS  ";
+      fsm_LINE_DRAW : fsm_stateReg_string = "LINE_DRAW ";
+      fsm_LINE_END : fsm_stateReg_string = "LINE_END  ";
       default : fsm_stateReg_string = "??????????";
     endcase
   end
   always @(*) begin
     case(fsm_stateNext)
-      IDLE : fsm_stateNext_string = "IDLE      ";
-      LINE_START : fsm_stateNext_string = "LINE_START";
-      WAIT_POS : fsm_stateNext_string = "WAIT_POS  ";
-      LINE_DRAW : fsm_stateNext_string = "LINE_DRAW ";
-      LINE_END : fsm_stateNext_string = "LINE_END  ";
+      fsm_IDLE : fsm_stateNext_string = "IDLE      ";
+      fsm_LINE_START : fsm_stateNext_string = "LINE_START";
+      fsm_WAIT_POS : fsm_stateNext_string = "WAIT_POS  ";
+      fsm_LINE_DRAW : fsm_stateNext_string = "LINE_DRAW ";
+      fsm_LINE_END : fsm_stateNext_string = "LINE_END  ";
       default : fsm_stateNext_string = "??????????";
     endcase
   end
@@ -1047,6 +1077,7 @@ module sprite (
     end
   end
 
+  assign scale_cnt_willDecrement = 1'b0;
   always @(*) begin
     scale_cnt_willClear = 1'b0;
     x_cnt_willClear = 1'b0;
@@ -1054,42 +1085,44 @@ module sprite (
     draw_running = 1'b0;
     fsm_stateNext = fsm_stateReg;
     case(fsm_stateReg)
-      LINE_START : begin
+      fsm_LINE_START : begin
         if(y_valid) begin
-          fsm_stateNext = WAIT_POS;
+          fsm_stateNext = fsm_WAIT_POS;
         end else begin
-          fsm_stateNext = IDLE;
+          fsm_stateNext = fsm_IDLE;
         end
       end
-      WAIT_POS : begin
+      fsm_WAIT_POS : begin
         if(sop) begin
           x_cnt_willClear = 1'b1;
           scale_cnt_willClear = 1'b1;
-          fsm_stateNext = LINE_DRAW;
+          fsm_stateNext = fsm_LINE_DRAW;
         end
       end
-      LINE_DRAW : begin
+      fsm_LINE_DRAW : begin
         draw_running = 1'b1;
         if((x_cnt_willOverflowIfInc && scale_cnt_willOverflowIfInc)) begin
-          fsm_stateNext = LINE_END;
+          fsm_stateNext = fsm_LINE_END;
         end
       end
-      LINE_END : begin
-        fsm_stateNext = IDLE;
+      fsm_LINE_END : begin
+        fsm_stateNext = fsm_IDLE;
       end
       default : begin
         if(sol) begin
-          fsm_stateNext = LINE_START;
+          fsm_stateNext = fsm_LINE_START;
         end
         fsm_wantStart = 1'b1;
       end
     endcase
     if(fsm_wantKill) begin
-      fsm_stateNext = IDLE;
+      fsm_stateNext = fsm_IDLE;
     end
   end
 
+  assign scale_cnt_willLoad = 1'b0;
   assign scale_cnt_willOverflowIfInc = (scale_cnt_value == 2'b11);
+  assign scale_cnt_willUnderflowIfDec = (scale_cnt_value == 2'b00);
   assign scale_cnt_willOverflow = (scale_cnt_willOverflowIfInc && scale_cnt_willIncrement);
   always @(*) begin
     scale_cnt_valueNext = (scale_cnt_value + temp_scale_cnt_valueNext);
@@ -1098,6 +1131,7 @@ module sprite (
     end
   end
 
+  assign scale_cnt_willUnderflow = (scale_cnt_willUnderflowIfDec && scale_cnt_willDecrement);
   always @(*) begin
     x_cnt_willIncrement = 1'b0;
     if(scale_cnt_willOverflowIfInc) begin
@@ -1105,7 +1139,10 @@ module sprite (
     end
   end
 
+  assign x_cnt_willDecrement = 1'b0;
+  assign x_cnt_willLoad = 1'b0;
   assign x_cnt_willOverflowIfInc = (x_cnt_value == 5'h1f);
+  assign x_cnt_willUnderflowIfDec = (x_cnt_value == 5'h0);
   assign x_cnt_willOverflow = (x_cnt_willOverflowIfInc && x_cnt_willIncrement);
   always @(*) begin
     x_cnt_valueNext = (x_cnt_value + temp_x_cnt_valueNext);
@@ -1114,20 +1151,11 @@ module sprite (
     end
   end
 
+  assign x_cnt_willUnderflow = (x_cnt_willUnderflowIfDec && x_cnt_willDecrement);
   assign fsm_wantExit = 1'b0;
   assign fsm_wantKill = 1'b0;
   assign pix_valid = draw_running_delay_2;
   assign pix_payload = rom_spinal_port0;
-  assign fsm_onExit_IDLE = ((fsm_stateNext != IDLE) && (fsm_stateReg == IDLE));
-  assign fsm_onExit_LINE_START = ((fsm_stateNext != LINE_START) && (fsm_stateReg == LINE_START));
-  assign fsm_onExit_WAIT_POS = ((fsm_stateNext != WAIT_POS) && (fsm_stateReg == WAIT_POS));
-  assign fsm_onExit_LINE_DRAW = ((fsm_stateNext != LINE_DRAW) && (fsm_stateReg == LINE_DRAW));
-  assign fsm_onExit_LINE_END = ((fsm_stateNext != LINE_END) && (fsm_stateReg == LINE_END));
-  assign fsm_onEntry_IDLE = ((fsm_stateNext == IDLE) && (fsm_stateReg != IDLE));
-  assign fsm_onEntry_LINE_START = ((fsm_stateNext == LINE_START) && (fsm_stateReg != LINE_START));
-  assign fsm_onEntry_WAIT_POS = ((fsm_stateNext == WAIT_POS) && (fsm_stateReg != WAIT_POS));
-  assign fsm_onEntry_LINE_DRAW = ((fsm_stateNext == LINE_DRAW) && (fsm_stateReg != LINE_DRAW));
-  assign fsm_onEntry_LINE_END = ((fsm_stateNext == LINE_END) && (fsm_stateReg != LINE_END));
   always @(posedge vga_clk or posedge vga_rst) begin
     if(vga_rst) begin
       sx_early_r <= 10'h0;
@@ -1135,24 +1163,24 @@ module sprite (
       rom_addr <= 10'h0;
       scale_cnt_value <= 2'b00;
       x_cnt_value <= 5'h0;
-      fsm_stateReg <= IDLE;
+      fsm_stateReg <= fsm_IDLE;
     end else begin
       scale_cnt_value <= scale_cnt_valueNext;
       x_cnt_value <= x_cnt_valueNext;
       fsm_stateReg <= fsm_stateNext;
       case(fsm_stateReg)
-        LINE_START : begin
+        fsm_LINE_START : begin
           if(y_valid) begin
             sx_early_r <= (sx_orig - 10'h001);
           end
         end
-        WAIT_POS : begin
+        fsm_WAIT_POS : begin
           rom_addr_block <= temp_rom_addr_block[9:0];
         end
-        LINE_DRAW : begin
+        fsm_LINE_DRAW : begin
           rom_addr <= (rom_addr_block + temp_rom_addr);
         end
-        LINE_END : begin
+        fsm_LINE_END : begin
         end
         default : begin
         end
@@ -1498,6 +1526,8 @@ module draw_char_engine (
   wire       [0:0]    temp_y_cnt_valueNext_1;
   wire       [7:0]    temp_when;
   reg        [6:0]    word_reg;
+  reg        [2:0]    scale_reg;
+  reg        [3:0]    color_reg;
   reg                 rom_rd_en;
   reg                 x_scale_cnt_willIncrement;
   wire                x_scale_cnt_willClear;
@@ -1505,12 +1535,17 @@ module draw_char_engine (
   reg        [2:0]    x_scale_cnt_value;
   wire                x_scale_cnt_willOverflowIfInc;
   wire                x_scale_cnt_willOverflow;
+  reg                 x_scale_cnt_isDone;
   reg                 x_cnt_willIncrement;
+  wire                x_cnt_willDecrement;
   wire                x_cnt_willClear;
+  wire                x_cnt_willLoad;
   reg        [2:0]    x_cnt_valueNext;
   reg        [2:0]    x_cnt_value;
   wire                x_cnt_willOverflowIfInc;
+  wire                x_cnt_willUnderflowIfDec;
   wire                x_cnt_willOverflow;
+  wire                x_cnt_willUnderflow;
   wire                x_last_cycle;
   reg                 y_scale_cnt_willIncrement;
   wire                y_scale_cnt_willClear;
@@ -1518,19 +1553,24 @@ module draw_char_engine (
   reg        [2:0]    y_scale_cnt_value;
   wire                y_scale_cnt_willOverflowIfInc;
   wire                y_scale_cnt_willOverflow;
+  reg                 y_scale_cnt_isDone;
   reg                 y_cnt_willIncrement;
+  wire                y_cnt_willDecrement;
   wire                y_cnt_willClear;
+  wire                y_cnt_willLoad;
   reg        [3:0]    y_cnt_valueNext;
   reg        [3:0]    y_cnt_value;
   wire                y_cnt_willOverflowIfInc;
+  wire                y_cnt_willUnderflowIfDec;
   wire                y_cnt_willOverflow;
+  wire                y_cnt_willUnderflow;
   wire                y_last_cycle;
   wire                cnt_last;
   reg        [7:0]    h_cnt_1;
   reg        [6:0]    v_cnt_1;
   reg        [3:0]    char_color;
   reg        [2:0]    pix_idx;
-  reg        [3:0]    color_delay_1;
+  reg        [3:0]    color_reg_delay_1;
   reg                 rom_rd_en_delay_1;
   reg                 rom_rd_en_delay_2;
   reg                 rom_rd_en_regNext;
@@ -1560,7 +1600,7 @@ module draw_char_engine (
   end
 
   assign x_scale_cnt_willClear = 1'b0;
-  assign x_scale_cnt_willOverflowIfInc = (x_scale_cnt_value == scale);
+  assign x_scale_cnt_willOverflowIfInc = (x_scale_cnt_value == scale_reg);
   assign x_scale_cnt_willOverflow = (x_scale_cnt_willOverflowIfInc && x_scale_cnt_willIncrement);
   always @(*) begin
     if(x_scale_cnt_willOverflow) begin
@@ -1580,8 +1620,11 @@ module draw_char_engine (
     end
   end
 
+  assign x_cnt_willDecrement = 1'b0;
   assign x_cnt_willClear = 1'b0;
+  assign x_cnt_willLoad = 1'b0;
   assign x_cnt_willOverflowIfInc = (x_cnt_value == 3'b111);
+  assign x_cnt_willUnderflowIfDec = (x_cnt_value == 3'b000);
   assign x_cnt_willOverflow = (x_cnt_willOverflowIfInc && x_cnt_willIncrement);
   always @(*) begin
     x_cnt_valueNext = (x_cnt_value + temp_x_cnt_valueNext);
@@ -1590,6 +1633,7 @@ module draw_char_engine (
     end
   end
 
+  assign x_cnt_willUnderflow = (x_cnt_willUnderflowIfDec && x_cnt_willDecrement);
   assign x_last_cycle = (x_cnt_willOverflow && x_scale_cnt_willOverflow);
   always @(*) begin
     y_scale_cnt_willIncrement = 1'b0;
@@ -1599,7 +1643,7 @@ module draw_char_engine (
   end
 
   assign y_scale_cnt_willClear = 1'b0;
-  assign y_scale_cnt_willOverflowIfInc = (y_scale_cnt_value == scale);
+  assign y_scale_cnt_willOverflowIfInc = (y_scale_cnt_value == scale_reg);
   assign y_scale_cnt_willOverflow = (y_scale_cnt_willOverflowIfInc && y_scale_cnt_willIncrement);
   always @(*) begin
     if(y_scale_cnt_willOverflow) begin
@@ -1619,8 +1663,11 @@ module draw_char_engine (
     end
   end
 
+  assign y_cnt_willDecrement = 1'b0;
   assign y_cnt_willClear = 1'b0;
+  assign y_cnt_willLoad = 1'b0;
   assign y_cnt_willOverflowIfInc = (y_cnt_value == 4'b1111);
+  assign y_cnt_willUnderflowIfDec = (y_cnt_value == 4'b0000);
   assign y_cnt_willOverflow = (y_cnt_willOverflowIfInc && y_cnt_willIncrement);
   always @(*) begin
     y_cnt_valueNext = (y_cnt_value + temp_y_cnt_valueNext);
@@ -1629,6 +1676,7 @@ module draw_char_engine (
     end
   end
 
+  assign y_cnt_willUnderflow = (y_cnt_willUnderflowIfDec && y_cnt_willDecrement);
   assign y_last_cycle = (y_cnt_willOverflowIfInc && y_scale_cnt_willOverflow);
   assign cnt_last = (x_last_cycle && y_last_cycle);
   assign ascii_font16X8_inst_font_bitmap_addr = {word_reg,y_cnt_value};
@@ -1641,6 +1689,8 @@ module draw_char_engine (
   always @(posedge core_clk or posedge core_rst) begin
     if(core_rst) begin
       word_reg <= 7'h0;
+      scale_reg <= 3'b000;
+      color_reg <= 4'b0000;
       rom_rd_en <= 1'b0;
       x_scale_cnt_value <= 3'b000;
       x_cnt_value <= 3'b000;
@@ -1655,6 +1705,12 @@ module draw_char_engine (
     end else begin
       if(start) begin
         word_reg <= word;
+      end
+      if(start) begin
+        scale_reg <= scale;
+      end
+      if(start) begin
+        color_reg <= color;
       end
       x_scale_cnt_value <= x_scale_cnt_valueNext;
       x_cnt_value <= x_cnt_valueNext;
@@ -1685,7 +1741,7 @@ module draw_char_engine (
       end
       pix_idx <= x_cnt_value;
       if(temp_when[pix_idx]) begin
-        char_color <= color_delay_1;
+        char_color <= color_reg_delay_1;
       end else begin
         char_color <= 4'b0010;
       end
@@ -1695,36 +1751,67 @@ module draw_char_engine (
   end
 
   always @(posedge core_clk) begin
-    color_delay_1 <= color;
+    if(1'b0) begin
+      x_scale_cnt_isDone <= x_scale_cnt_willOverflow;
+    end
+    if(1'b0) begin
+      y_scale_cnt_isDone <= y_scale_cnt_willOverflow;
+    end
+    rom_rd_en_regNext <= rom_rd_en;
   end
 
   always @(posedge core_clk) begin
-    rom_rd_en_regNext <= rom_rd_en;
+    color_reg_delay_1 <= color_reg;
   end
 
 
 endmodule
 
-module bram_2p (
+module Bram2p_4x19200 (
   input  wire          wr_en,
   input  wire [14:0]   wr_addr,
   input  wire [3:0]    wr_data,
   input  wire          rd_en,
   input  wire [14:0]   rd_addr,
-  output wire [3:0]    rd_data,
-  input  wire          core_clk,
-  input  wire          core_rst
+  output wire          rd_data_valid,
+  output wire [3:0]    rd_data_payload,
+  input  wire          clear_start,
+  output wire          clear_done,
+  input  wire          core_rst,
+  input  wire          core_clk
 );
 
   reg        [3:0]    memory_spinal_port1;
-  reg [3:0] memory [0:19199];
+  wire       [14:0]   temp_clear_addr_valueNext;
+  wire       [0:0]    temp_clear_addr_valueNext_1;
+  reg                 clear_start_regNext;
+  wire                clear_start_rise;
+  reg                 clear_busy;
+  reg                 clear_addr_willIncrement;
+  wire                clear_addr_willDecrement;
+  wire                clear_addr_willClear;
+  wire                clear_addr_willLoad;
+  reg        [14:0]   clear_addr_valueNext;
+  reg        [14:0]   clear_addr_value;
+  wire                clear_addr_willOverflowIfInc;
+  wire                clear_addr_willUnderflowIfDec;
+  wire                clear_addr_willOverflow;
+  wire                clear_addr_willUnderflow;
+  wire       [14:0]   wr_addr_1;
+  wire       [3:0]    wr_data_1;
+  wire                wr_en_1;
+  reg                 rd_en_regNext;
+  wire                external_write_during_clear;
+  (* ram_style = "block" *) reg [3:0] memory [0:19199];
 
+  assign temp_clear_addr_valueNext_1 = clear_addr_willIncrement;
+  assign temp_clear_addr_valueNext = {14'd0, temp_clear_addr_valueNext_1};
   initial begin
     $readmemb("vga_display.v_toplevel_core_fb_memory.bin",memory);
   end
   always @(posedge core_clk) begin
-    if(wr_en) begin
-      memory[wr_addr] <= wr_data;
+    if(wr_en_1) begin
+      memory[wr_addr_1] <= wr_data_1;
     end
   end
 
@@ -1734,6 +1821,87 @@ module bram_2p (
     end
   end
 
-  assign rd_data = memory_spinal_port1;
+  WriteWhileClearAssert writeWhileClearAssert_1 (
+    .clk (core_clk                   ), //i
+    .rst (core_rst                   ), //i
+    .vld (external_write_during_clear)  //i
+  );
+  assign clear_start_rise = (clear_start && (! clear_start_regNext));
+  always @(*) begin
+    clear_addr_willIncrement = 1'b0;
+    if(clear_busy) begin
+      clear_addr_willIncrement = 1'b1;
+    end
+  end
+
+  assign clear_addr_willDecrement = 1'b0;
+  assign clear_addr_willClear = 1'b0;
+  assign clear_addr_willLoad = 1'b0;
+  assign clear_addr_willOverflowIfInc = (clear_addr_value == 15'h4aff);
+  assign clear_addr_willUnderflowIfDec = (clear_addr_value == 15'h0);
+  assign clear_addr_willOverflow = (clear_addr_willOverflowIfInc && clear_addr_willIncrement);
+  always @(*) begin
+    clear_addr_valueNext = (clear_addr_value + temp_clear_addr_valueNext);
+    if(clear_addr_willOverflow) begin
+      clear_addr_valueNext = 15'h0;
+    end
+    if(clear_addr_willClear) begin
+      clear_addr_valueNext = 15'h0;
+    end
+  end
+
+  assign clear_addr_willUnderflow = (clear_addr_willUnderflowIfDec && clear_addr_willDecrement);
+  assign clear_done = clear_addr_willOverflow;
+  assign wr_addr_1 = (clear_busy ? clear_addr_value : wr_addr);
+  assign wr_data_1 = (clear_busy ? 4'b1111 : wr_data);
+  assign wr_en_1 = (clear_busy || wr_en);
+  assign rd_data_valid = rd_en_regNext;
+  assign rd_data_payload = memory_spinal_port1;
+  assign external_write_during_clear = (clear_busy && wr_en);
+  always @(posedge core_clk or posedge core_rst) begin
+    if(core_rst) begin
+      clear_start_regNext <= 1'b0;
+      clear_busy <= 1'b0;
+      clear_addr_value <= 15'h0;
+      rd_en_regNext <= 1'b0;
+    end else begin
+      clear_start_regNext <= clear_start;
+      if(clear_start_rise) begin
+        clear_busy <= 1'b1;
+      end
+      clear_addr_value <= clear_addr_valueNext;
+      if(clear_addr_willOverflow) begin
+        clear_busy <= 1'b0;
+      end
+      rd_en_regNext <= rd_en;
+      `ifndef SYNTHESIS
+        `ifdef FORMAL
+          assert((! external_write_during_clear)); // Bram2p.scala:L115
+        `else
+          if(!(! external_write_during_clear)) begin
+            $display("FAILURE Bram2p: external write requested while clear is active"); // Bram2p.scala:L115
+            $finish;
+          end
+        `endif
+      `endif
+    end
+  end
+
 
 endmodule
+
+module WriteWhileClearAssert
+(
+  input wire clk,
+  input wire rst,
+  input wire vld
+);
+`ifdef SIM
+  // SVA: vld must never be high
+  chk_no_write_during_clear : assert property (
+    @(posedge clk) disable iff (rst)
+    !vld
+  ) else $error("Bram2p: external write requested while clear is active");
+`endif
+endmodule
+

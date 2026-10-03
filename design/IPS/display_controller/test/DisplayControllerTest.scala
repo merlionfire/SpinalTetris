@@ -273,7 +273,7 @@ class DisplayControllerTest extends AnyFunSuite {
       dut.clockDomain.waitSampling(10)
 
       expectText(
-        observed = charEvents,
+        observed = charEvents.toSeq,
         expectedWords = openingText,
         xStart = openingInfo.x_orig,
         yStart = openingInfo.y_orig,
@@ -282,7 +282,7 @@ class DisplayControllerTest extends AnyFunSuite {
         color = openingInfo.color
       )
 
-      withClue(s"Observed block events during opening:\n${formatBlocks(blockEvents)}\n") {
+      withClue(s"Observed block events during opening:\n${formatBlocks(blockEvents.toSeq)}\n") {
         assert(blockEvents.isEmpty)
       }
       assertResult(1)(clearEvents.length)
@@ -322,7 +322,7 @@ class DisplayControllerTest extends AnyFunSuite {
       bootToRunning(dut, charEvents, blockEvents, clearEvents)
 
       expectText(
-        observed = charEvents.take(openingText.length),
+        observed = charEvents.take(openingText.length).toSeq,
         expectedWords = openingText,
         xStart = openingInfo.x_orig,
         yStart = openingInfo.y_orig,
@@ -331,7 +331,7 @@ class DisplayControllerTest extends AnyFunSuite {
         color = openingInfo.color
       )
       expectText(
-        observed = charEvents.drop(openingText.length),
+        observed = charEvents.drop(openingText.length).toSeq,
         expectedWords = scoreText,
         xStart = scoreInfo.x_orig,
         yStart = scoreInfo.y_orig,
@@ -347,7 +347,7 @@ class DisplayControllerTest extends AnyFunSuite {
         BlockDrawEvent(0, 190, 10, 2, 222, 15, 14, 0)
       )
 
-      withClue(s"Observed setup wall events:\n${formatBlocks(blockEvents)}\n") {
+      withClue(s"Observed setup wall events:\n${formatBlocks(blockEvents.toSeq)}\n") {
         assertResult(expectedWalls.map(_.xOrig))(blockEvents.map(_.xOrig))
         assertResult(expectedWalls.map(_.yOrig))(blockEvents.map(_.yOrig))
         assertResult(expectedWalls.map(_.width))(blockEvents.map(_.width))
@@ -421,7 +421,7 @@ class DisplayControllerTest extends AnyFunSuite {
       val runtimeBlocks = blockEvents.drop(setupBlockCount)
       val runtimeChars = charEvents.drop(setupCharCount)
 
-      withClue(s"Observed runtime block events:\n${formatBlocks(runtimeBlocks.take(40))}\n...") {
+      withClue(s"Observed runtime block events:\n${formatBlocks(runtimeBlocks.take(40).toSeq)}\n...") {
         assertResult(rowBlocksNum * colBlocksNum)(runtimeBlocks.length)
         assert(runtimeBlocks.forall(_.width == playFieldConfig.block_len - 2))
         assert(runtimeBlocks.forall(_.height == playFieldConfig.block_len - 2))
@@ -429,7 +429,7 @@ class DisplayControllerTest extends AnyFunSuite {
         assert(runtimeBlocks.forall(_.fillPattern == BlockFillPattern.SOLID))
       }
 
-      withClue(s"Observed runtime score char events:\n${formatChars(runtimeChars)}\n") {
+      withClue(s"Observed runtime score char events:\n${formatChars(runtimeChars.toSeq)}\n") {
         assertResult(Seq('0', '0', '4', '2').map(_.toInt))(runtimeChars.map(_.word))
         assertResult(Seq.tabulate(runtimeChars.length)(index => controllerConfig.score_orig_x + index * controllerConfig.score_width))(runtimeChars.map(_.xOrig))
         assertResult(Seq.fill(4)(controllerConfig.score_orig_y))(runtimeChars.map(_.yOrig))
@@ -446,7 +446,7 @@ class DisplayControllerTest extends AnyFunSuite {
         runtimeBlocks(29).copy(time = 0, xOrig = fieldX0 + 9 * blockStep, yOrig = fieldY0 + 2 * blockStep, inColor = playFieldConfig.piece_ft_color)
       )
 
-      withClue(s"Observed runtime block sample events:\n${formatBlocks(runtimeBlocks.take(30))}\n") {
+      withClue(s"Observed runtime block sample events:\n${formatBlocks(runtimeBlocks.take(30).toSeq)}\n") {
         assertResult(expectedSamples.map(_.xOrig))(Seq(runtimeBlocks(0), runtimeBlocks(1), runtimeBlocks(9), runtimeBlocks(10), runtimeBlocks(20), runtimeBlocks(29)).map(_.xOrig))
         assertResult(expectedSamples.map(_.yOrig))(Seq(runtimeBlocks(0), runtimeBlocks(1), runtimeBlocks(9), runtimeBlocks(10), runtimeBlocks(20), runtimeBlocks(29)).map(_.yOrig))
         assertResult(expectedSamples.map(_.inColor))(Seq(runtimeBlocks(0), runtimeBlocks(1), runtimeBlocks(9), runtimeBlocks(10), runtimeBlocks(20), runtimeBlocks(29)).map(_.inColor))
@@ -503,7 +503,7 @@ class DisplayControllerTest extends AnyFunSuite {
       val restartBlocks = blockEvents.drop(setupBlockCount)
 
       expectText(
-        observed = restartChars,
+        observed = restartChars.toSeq,
         expectedWords = scoreText,
         xStart = scoreInfo.x_orig,
         yStart = scoreInfo.y_orig,
@@ -512,7 +512,7 @@ class DisplayControllerTest extends AnyFunSuite {
         color = scoreInfo.color
       )
 
-      withClue(s"Observed restart wall events:\n${formatBlocks(restartBlocks)}\n") {
+      withClue(s"Observed restart wall events:\n${formatBlocks(restartBlocks.toSeq)}\n") {
         assertResult(4)(restartBlocks.length)
       }
 

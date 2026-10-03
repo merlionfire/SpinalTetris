@@ -261,7 +261,7 @@ trait MotionTestExecutor extends  MotionTestExecutorBase {
     )
     scbd.actualData.remove(0,currentState.length )
 
-    currentState
+    currentState.toSeq
   }
 
 //  private def printMotionTestSummary(actionsByRound: List[List[TestMotionPatternGroup]]): Unit = {

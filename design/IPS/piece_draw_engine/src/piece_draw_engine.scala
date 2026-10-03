@@ -68,7 +68,7 @@ class piece_draw_engine(config : PieceDrawEngConfig )  extends Component {
 
   val load = Bool()
   val shift_en = Bool()
-  val row_bits = cloneOf(row_value ) setAsReg()
+  val row_bits = cloneOf(row_value).setAsReg()
   val row_bits_next = row_bits |>> 1
   val gen_start = io.row_val.valid.fall(False)
 

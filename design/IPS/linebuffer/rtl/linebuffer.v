@@ -1,6 +1,6 @@
-// Generator : SpinalHDL dev    git head : b81cafe88f26d2deab44d860435c5aad3ed2bc8e
+// Generator : SpinalHDL v1.15.0    git head : 05a01af3d3345aa0afcaad8e0186dde13a359db2
 // Component : linebuffer
-// Git hash  : 01335b58a83ea585387474b2fea2371459fd1911
+// Git hash  : 3d467bff18f916b687d55ae2a8e3528df145783c
 
 `timescale 1ns/1ps
 
@@ -21,9 +21,13 @@ module linebuffer (
   reg        [4:0]    rd_addr;
   reg                 rd_enable;
   reg                 rd_scale_cnt_willIncrement;
+  wire                rd_scale_cnt_willDecrement;
   reg                 rd_scale_cnt_willClear;
+  wire                rd_scale_cnt_willLoad;
   wire                rd_scale_cnt_willOverflowIfInc;
+  wire                rd_scale_cnt_willUnderflowIfDec;
   wire                rd_scale_cnt_willOverflow;
+  wire                rd_scale_cnt_willUnderflow;
   wire                rd_valid;
   wire                rd_inc_enable;
   wire                rd_data_valid;
@@ -51,6 +55,7 @@ module linebuffer (
     end
   end
 
+  assign rd_scale_cnt_willDecrement = 1'b0;
   always @(*) begin
     rd_scale_cnt_willClear = 1'b0;
     if(rd_start) begin
@@ -58,8 +63,11 @@ module linebuffer (
     end
   end
 
+  assign rd_scale_cnt_willLoad = 1'b0;
   assign rd_scale_cnt_willOverflowIfInc = 1'b1;
+  assign rd_scale_cnt_willUnderflowIfDec = 1'b1;
   assign rd_scale_cnt_willOverflow = (rd_scale_cnt_willOverflowIfInc && rd_scale_cnt_willIncrement);
+  assign rd_scale_cnt_willUnderflow = (rd_scale_cnt_willUnderflowIfDec && rd_scale_cnt_willDecrement);
   assign rd_valid = (1'b1 && rd_enable);
   assign rd_inc_enable = (rd_scale_cnt_willOverflowIfInc && rd_enable);
   assign rd_rd_data = ram_spinal_port1;

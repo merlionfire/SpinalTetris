@@ -1,7 +1,7 @@
 package SSC.tetris_core
 
 import spinal.core._
-import config.runSimConfig
+import config.{BuildConfig, ElabProfiles, runSimConfig}
 import spinal.core.sim._
 import org.scalatest.funsuite.AnyFunSuite
 import utils._
@@ -82,9 +82,8 @@ class TetrisCoreTest extends AnyFunSuite
   //  CUSTOM CODE END
   // ***************************************
 
-//  val compiler : String = "verilator"
-  val compiler : String = "vcs"
-
+  val compiler : String = "verilator"
+  //val compiler : String = "vcs"
 
   val memory_model : String  = compiler match  {
     case "verilator" => "RAMB16_S9_VERILATOR.v"
@@ -92,10 +91,13 @@ class TetrisCoreTest extends AnyFunSuite
   }
 
   val runFolder : String = PathUtils.getRtlOutputPath(getClass, middlePath = "design/SSC", targetName = "sim").toString
-  lazy val compiled : SimCompiled[tetris_core] = runSimConfig(runFolder, compiler)
+  val fsdbFolder : String = PathUtils.getRtlOutputPath(getClass, middlePath = "design/SSC", targetName = "test").toString
+  lazy val compiled : SimCompiled[tetris_core] = runSimConfig(runFolder, compiler, fsdb="fsdb_simulation_def")
     .addRtl(s"${xilinxPath}/glbl.v")
     .addRtl(s"${xilinxPath}/unisims/${memory_model}")
+    .addRtl(s"${fsdbFolder}/fsdb_simulation_def.v")
     .compile {
+      //implicit val buildConfig: BuildConfig = ElabProfiles.Debug
       val c = new tetris_core(config, sim = true )  /* Test = true is ONLY for standalone DUT test */
       c.game_display_inst.vgaArea.pixel_debug.simPublic()
       c.game_logic_inst.controller_inst.io.gen_piece_en.simPublic()
@@ -107,7 +109,7 @@ class TetrisCoreTest extends AnyFunSuite
 
       val obsFrames = new VgaFrame( width = config.xWidth, height = config.yWidth )
 
-      commonSetup(dut, timeoutByUs = 120000)
+      commonSetup(dut, timeoutByUs = 3000000)
 
       val PlaceTestPatternList = testPattern  /* Pattern group selection */
         .collect{ case (1, pattern) => pattern }
@@ -118,14 +120,15 @@ class TetrisCoreTest extends AnyFunSuite
 
       executeTestMotionActions(
         dut,
-        obsFrames,
         actions = PlaceTestPatternList,
         verbose = true
       )
 
+      dut.coreClockDomain.waitSamplingWhere( dut.io.vga_sof.toBoolean )
+
       generateFrameImages( width = config.xWidth, height = config.yWidth, obsFrames,   testClass = getClass  )
 
-      dut.clockDomain.waitSampling(100)
+      dut.coreClockDomain.waitSampling(10)
       println("[DEBUG] doSim is exited !!!")
       println("simTime : " + simTime())
       simSuccess()
@@ -139,9 +142,9 @@ class TetrisCoreTest extends AnyFunSuite
     " - Test game restart after one game failed. ") {
 
     val predefMotionsTestPattern = List(
-      1 -> MotionScenarios.m0(),
+      0 -> MotionScenarios.m0(),
       0 -> MotionScenarios.m1(),
-      0 -> MotionScenarios.m2(),
+      1 -> MotionScenarios.m2(),
       0 -> MotionScenarios.m3(),
       0 -> MotionScenarios.m4(),
       0 -> MotionScenarios.m5(),

@@ -81,12 +81,12 @@ class playfield(
     val rot_cur = RegInit(U(0, 2 bit))
     val rot_backup = RegInit(U(0, 2 bit))
 
-    val left_shift_all = False allowOverride()
-    val right_shift_all = False allowOverride()
+    val left_shift_all = False.allowOverride()
+    val right_shift_all = False.allowOverride()
 
     case class PieceRegion(colBlocksNum: Int) extends Bundle {
       // There are 2 extra points on both left and right, which represent wall
-      val region_extra = Vec.fill(4)(Bits(colBlocksNum + 4 bits)) setAsReg()
+      val region_extra = Vec.fill(4)(Bits(colBlocksNum + 4 bits)).setAsReg()
 
 
       val region = Vec.fill(4)(Bits(colBlocksNum bits))
@@ -175,10 +175,10 @@ class playfield(
     val row = RegInit(U(0, rowBitsWidth bits))
     val row_backup = RegInit(U(0, rowBitsWidth bits))
 
-    val read_req = False allowOverride()
+    val read_req = False.allowOverride()
     val addr_access_port = Flow(UInt(2 bits))
 
-    val region = Vec.fill(4)(Bits(colBlocksNum bits)) setAsReg()
+    val region = Vec.fill(4)(Bits(colBlocksNum bits)).setAsReg()
 
     // sync read
     val readout = RegNext(region(addr_access_port.payload))
@@ -186,8 +186,8 @@ class playfield(
 
     // input control signals
     val restore = False
-    val right_shift = False allowOverride()
-    val left_shift = False allowOverride()
+    val right_shift = False.allowOverride()
+    val left_shift = False.allowOverride()
 
 
     val overflowIfLeft = region(0).msb || region(1).msb || region(2).msb | region(3).msb
@@ -258,7 +258,7 @@ class playfield(
     val clear = False.allowOverride()
     val update_score = False.allowOverride()
 
-    val access_row_base = U(0, rowBitsWidth bits) allowOverride()
+    val access_row_base = U(0, rowBitsWidth bits).allowOverride()
 
 
     val read_req_port = Flow(UInt(rowBitsWidth bits)).allowOverride()
@@ -445,7 +445,7 @@ class playfield(
   val flow = new Area {
 
     val row = RegInit(U(0, rowBitsWidth bits))
-    val read_req = False allowOverride()
+    val read_req = False.allowOverride()
     val addr_access_port = Flow(UInt(2 bits))
 
 
@@ -484,7 +484,7 @@ class playfield(
 
     //val enable = False allowOverride()
 
-    val start = False allowOverride()
+    val start = False.allowOverride()
     val collision_bits = Reg(Flow(Bool()))
 
     collision_bits.valid.init(False)
@@ -506,7 +506,7 @@ class playfield(
   }
 
 
-  val output_en = False allowOverride()
+  val output_en = False.allowOverride()
   val playfield_dataout, src_0, src_1, src_2 = Flow(Bits( colBlocksNum bit ))
   src_0 := playfield_dataout.stage()   // flow readout is later one cycle to playfeild. So playfield readout have be delayed one cycle
 

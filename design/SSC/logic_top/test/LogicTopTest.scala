@@ -47,7 +47,7 @@ trait LogicTopTestBase {
 
 
   /** Helper method for common DUT setup and initialization logic. */
-  def commonSetup(dut: logic_top, timeoutByUs : Int = 10 ): Unit = {
+  def commonSetup(dut: logic_top, timeoutByUs : Int = 100 ): Unit = {
     // Global Clocking settings
     dut.clockDomain.forkStimulus(10)
     SimTimeout( timeoutByUs us ) // adjust timeout as needed
@@ -88,8 +88,8 @@ class LogicTopTest extends AnyFunSuite
   val config = LogicTopConfig(
     rowNum,
     colNum,
-    levelFallInCycle = 1,
-    lockDownInCycle = 1
+    levelFallInCycle = 200,
+    lockDownInCycle = 100
   )
 
   // ***************************************

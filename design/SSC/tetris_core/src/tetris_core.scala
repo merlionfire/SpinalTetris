@@ -5,6 +5,7 @@ import spinal.lib._
 import spinal.lib.graphic.vga.Vga
 import SSC.display_top._
 import SSC.logic_top._
+import config.{BuildConfig, ElabProfiles}
 import utils.PathUtils
 import utils.Implicits._
 
@@ -27,7 +28,8 @@ case class TetrisCoreConfig (
   val displayTopConfig = DisplayTopConfig(xWidth, yWidth, offset_x, offset_y )
 }
 
-class tetris_core ( val config : TetrisCoreConfig, sim  : Boolean = false  ) extends Component {
+class tetris_core ( val config : TetrisCoreConfig, sim  : Boolean = false  )(
+      implicit buildConfig: BuildConfig = ElabProfiles.Release ) extends Component {
 
   import config._
 

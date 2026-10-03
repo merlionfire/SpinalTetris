@@ -35,12 +35,14 @@ import java.io.File // Needed for `File` and `Path`
 
 ThisBuild / version := "1.0"
 
-ThisBuild / scalaVersion := "2.12.18" // Make sure this matches your local SpinalHDL publish
+ThisBuild / scalaVersion := "2.13.18" // Make sure this matches your local SpinalHDL publish
 
 ThisBuild / organization := "org.example"
 
-val spinalVersion = "dev" // This version string must match what you published locally
-val scalatestVersion = "3.2.14"
+//val spinalVersion = "dev" // This version string must match what you published locally
+val spinalVersion = "1.15.0"
+
+val scalatestVersion = "3.2.20"
 
 val spinalCore = "com.github.spinalhdl" %% "spinalhdl-core" % spinalVersion
 val spinalLib = "com.github.spinalhdl" %% "spinalhdl-lib" % spinalVersion
@@ -54,6 +56,12 @@ lazy val projectname = (project in file("."))
   .settings(
     name := "SpinalTetris",
     Compile / scalaSource := baseDirectory.value / "design" ,
+    Compile / sources := (Compile / sources).value.filterNot(source =>
+      source.getPath.contains("/test/") && !source.getName.equals("VagFrames.scala")
+    ),
+    Test / sources := ((baseDirectory.value / "design") ** "*.scala").get.filter(source =>
+      source.getPath.contains("/test/") && !source.getName.equals("VagFrames.scala")
+    ),
     libraryDependencies ++= Seq(spinalCore, spinalLib, spinalIdslPlugin, spinalSim, scalaTest,swing, scalaCheck  )
 
     //Compile / scalacOptions += "-Xplugin:" + (update.value.allFiles.filter(_.getName.contains("spinalhdl-idsl-plugin")).headOption.getOrElse(throw new Exception("SpinalHDL IDSL plugin not found"))).toString,

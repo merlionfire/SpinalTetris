@@ -217,6 +217,7 @@ object gameLogicMain{
     val rowNum : Int = 23   // include bottom wall
     val colNum :Int = 12    // include left and right wall
     val config = LogicTopConfig( rowNum, colNum )
+    implicit val buildConfig: BuildConfig = ElabProfiles.Debug
     SpinalConfig(
       targetDirectory = PathUtils.getRtlOutputPath(getClass,middlePath = "design/SSC").toString,
       verbose = true,
@@ -225,7 +226,7 @@ object gameLogicMain{
       anonymSignalPrefix = "temp",
       mergeAsyncProcess = true
     ).generateVerilog(
-      gen = new logic_top(config)
+      gen = new logic_top(config, sim=true)
     )
   }
 }

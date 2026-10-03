@@ -52,7 +52,7 @@ case class SpriteConfig (
   ).get(SPR_NAME).map { patternString =>
     val lines = patternString
       .stripMargin // This removes the leading | and any whitespace before it from each line of the multi-line string.
-      .lines // splits the string into an iterator of lines based on newline characters */
+      .linesIterator // splits the string into an iterator of lines based on newline characters */
       .filter(_.trim.nonEmpty) // Filters out any empty lines (after trimming leading/trailing whitespace)
       .toList
     val height = lines.length

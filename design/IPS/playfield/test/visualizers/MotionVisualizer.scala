@@ -53,7 +53,7 @@ class MotionVisualizer (
     val gridTasks = buildGridLayout(frames)
     val (totalWidth, totalHeight) = calculateCanvasSize(frames.size)
 
-    ImageGenerator.fromGridLayout(totalWidth, totalHeight, gridTasks)
+    ImageGenerator.fromGridLayout(totalWidth, totalHeight, gridTasks.toSeq)
       .buildAndSave(
         PathUtils.getRtlOutputPath(testClass, middlePath= middlePath,  targetName = s"sim/img/Motions_$roundIndex").toString +
           s"/Action_${actionIndex}_${playfieldPattern}_${piecePattern}.png"
@@ -71,7 +71,7 @@ class MotionVisualizer (
     val gridTasks = buildGridLayout(frames)
     val (totalWidth, totalHeight) = calculateCanvasSize(frames.size)
 
-    ImageGenerator.fromGridLayout(totalWidth, totalHeight, gridTasks)
+    ImageGenerator.fromGridLayout(totalWidth, totalHeight, gridTasks.toSeq)
       .buildAndSave(
         PathUtils.getRtlOutputPath(testClass, middlePath= middlePath,  targetName = targetName ) .toString )
   }

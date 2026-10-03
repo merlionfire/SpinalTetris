@@ -189,7 +189,7 @@ class UniDma[T <: Data ](addr_port : Flow[UInt],config : UniDmaConfig ) extends 
   base_addr.allowUnsetRegToAvoidLatch
   word_count.allowUnsetRegToAvoidLatch
 
-  val start = False allowOverride()
+  val start = False.allowOverride()
 
   val delay = 1
 
@@ -218,7 +218,7 @@ class UniDma[T <: Data ](addr_port : Flow[UInt],config : UniDmaConfig ) extends 
     req_counter := U(0)
   }
 
-  val addr = cloneOf(base_addr ) setAsReg()
+  val addr = cloneOf(base_addr).setAsReg()
 
 
   addr_port.valid := req_valid

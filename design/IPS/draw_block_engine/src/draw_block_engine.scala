@@ -91,7 +91,7 @@ class draw_block_engine ( config : DrawBlockEngConfig ) extends Component {
 //    out_color := Delay(io.pat_color,3)
 //  }
 
-  val out_color = cloneOf(in_color) setAsReg()
+  val out_color = cloneOf(in_color).setAsReg()
   when ( ( border_en  || fill_en ) && ! no_pattern )  {
     out_color := pat_color_1d
   } .otherwise(

@@ -1,7 +1,7 @@
 package SSC.tetris_core
 
 import IPS.playfield.visualizers.MotionVisualizer
-import SSC.tetris_core.src.tetris_core
+import SSC.tetris_core.tetris_core
 import spinal.core.sim._
 import spinal.core._
 import utils.MotionPatternGenerators
@@ -40,7 +40,6 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
 
   def executeTestMotionActions(
                                 dut: tetris_core,
-                                obs : VgaFrame,
                                 actions: Seq[Seq[MotionPatternGenerators.Pattern]],
                                 verbose: Boolean
                               ): Unit = {
@@ -51,11 +50,6 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
     dut.coreClockDomain.waitSampling(40)
 
     startGame(dut)
-    dut.coreClockDomain.waitSamplingWhere( dut.io.screen_is_ready.toBoolean )
-
-
-//    dut.coreClockDomain.waitSamplingWhere(condAnd = dut.io.ctrl_allowed.toBoolean)
-
 
     var round = 0
 
@@ -117,7 +111,8 @@ trait MotionTestExecutor extends MotionTestExecutorBase  {
   def startGame(dut: tetris_core ) : Unit = {
     dut.io.game_start #= true
     dut.coreClockDomain.waitSampling(10)
-    //dut.io.game_start #= false
+    dut.coreClockDomain.waitSamplingWhere( dut.io.screen_is_ready.toBoolean )
+    dut.io.game_start #= false
   }
 
 }

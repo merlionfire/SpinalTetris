@@ -141,7 +141,7 @@ class string_draw_engine ( config : StringDrawEngConfig )  extends Component {
 
   def genOutputReg[T <: Data](that: T, isReg : Boolean = true): T = {
     val ret = cloneOf(that)
-    if (isReg)  ret setAsReg()
+    if (isReg)  ret.setAsReg()
     that := ret
     ret
   }
