@@ -1,0 +1,2952 @@
+Release 14.7 - xst P.20131013 (lin64)
+Copyright (c) 1995-2013 Xilinx, Inc.  All rights reserved.
+--> 
+Parameter TMPDIR set to xst/projnav.tmp
+
+
+Total REAL time to Xst completion: 0.00 secs
+Total CPU time to Xst completion: 0.03 secs
+ 
+--> 
+Parameter xsthdpdir set to xst
+
+
+Total REAL time to Xst completion: 0.00 secs
+Total CPU time to Xst completion: 0.03 secs
+ 
+--> 
+Reading design: pcb.prj
+
+TABLE OF CONTENTS
+  1) Synthesis Options Summary
+  2) HDL Compilation
+  3) Design Hierarchy Analysis
+  4) HDL Analysis
+  5) HDL Synthesis
+     5.1) HDL Synthesis Report
+  6) Advanced HDL Synthesis
+     6.1) Advanced HDL Synthesis Report
+  7) Low Level Synthesis
+  8) Partition Report
+  9) Final Report
+	9.1) Device utilization summary
+	9.2) Partition Resource Summary
+	9.3) TIMING REPORT
+
+
+=========================================================================
+*                      Synthesis Options Summary                        *
+=========================================================================
+---- Source Parameters
+Input File Name                    : "pcb.prj"
+Input Format                       : mixed
+Ignore Synthesis Constraint File   : NO
+
+---- Target Parameters
+Output File Name                   : "pcb"
+Output Format                      : NGC
+Target Device                      : xc3s700an-4-fgg484
+
+---- Source Options
+Top Module Name                    : pcb
+Automatic FSM Extraction           : YES
+FSM Encoding Algorithm             : Auto
+Safe Implementation                : No
+FSM Style                          : LUT
+RAM Extraction                     : Yes
+RAM Style                          : Auto
+ROM Extraction                     : Yes
+Mux Style                          : Auto
+Decoder Extraction                 : YES
+Priority Encoder Extraction        : Yes
+Shift Register Extraction          : YES
+Logical Shifter Extraction         : YES
+XOR Collapsing                     : YES
+ROM Style                          : Auto
+Mux Extraction                     : Yes
+Resource Sharing                   : YES
+Asynchronous To Synchronous        : NO
+Multiplier Style                   : Auto
+Automatic Register Balancing       : No
+
+---- Target Options
+Add IO Buffers                     : YES
+Global Maximum Fanout              : 100000
+Add Generic Clock Buffer(BUFG)     : 24
+Register Duplication               : YES
+Slice Packing                      : YES
+Optimize Instantiated Primitives   : NO
+Use Clock Enable                   : Yes
+Use Synchronous Set                : Yes
+Use Synchronous Reset              : Yes
+Pack IO Registers into IOBs        : Auto
+Equivalent register Removal        : YES
+
+---- General Options
+Optimization Goal                  : Speed
+Optimization Effort                : 1
+Keep Hierarchy                     : No
+Netlist Hierarchy                  : As_Optimized
+RTL Output                         : Yes
+Global Optimization                : AllClockNets
+Read Cores                         : YES
+Write Timing Constraints           : NO
+Cross Clock Analysis               : NO
+Hierarchy Separator                : /
+Bus Delimiter                      : <>
+Case Specifier                     : Maintain
+Slice Utilization Ratio            : 100
+BRAM Utilization Ratio             : 100
+Verilog 2001                       : YES
+Auto BRAM Packing                  : NO
+Slice Utilization Ratio Delta      : 5
+
+=========================================================================
+
+
+=========================================================================
+*                          HDL Compilation                              *
+=========================================================================
+Compiling verilog file "dcm.v" in library work
+Compiling verilog file "../design/SOC/pcb/rtl/pcb_bb.v" in library work
+Module <dcm> compiled
+Module <debounce> compiled
+Module <debnce> compiled
+Module <spinner> compiled
+Module <picouser> compiled
+Module <ascii_font16x8> compiled
+Module <ps2_host_rxtx> compiled
+Module <ps2_host_tx> compiled
+Compiling verilog file "../design/SOC/pcb/rtl/pcb.v" in library work
+Module <ps2_host_rx> compiled
+Module <pcb> compiled
+Module <tetris_top> compiled
+Module <uart_controller> compiled
+Module <kd_ps2> compiled
+Module <tetris_core> compiled
+Module <UartCtrl> compiled
+Module <display_top> compiled
+Module <logic_top> compiled
+Module <UartCtrlRx> compiled
+Module <UartCtrlTx> compiled
+Module <BufferCC_1> compiled
+Module <BufferCC> compiled
+Module <linebuffer> compiled
+Module <color_palettes> compiled
+Module <vga_sync_gen> compiled
+Module <display_controller> compiled
+Module <fb_addr_gen> compiled
+Module <draw_block_engine> compiled
+Module <draw_char_engine> compiled
+Module <bram_2p> compiled
+Module <controller> compiled
+Module <playfield> compiled
+Module <seven_bag_rng> compiled
+Module <BufferCC_4> compiled
+Module <bcd> compiled
+No errors in compilation
+Analysis of file <"pcb.prj"> succeeded.
+ 
+
+=========================================================================
+*                     Design Hierarchy Analysis                         *
+=========================================================================
+Analyzing hierarchy for module <pcb> in library <work>.
+
+Analyzing hierarchy for module <dcm> in library <work>.
+
+Analyzing hierarchy for module <picouser> in library <work>.
+
+Analyzing hierarchy for module <tetris_top> in library <work>.
+
+Analyzing hierarchy for module <synchro> in library <work> with parameters.
+	INITIALIZE = "LOGIC0"
+
+Analyzing hierarchy for module <debounce> in library <work> with parameters.
+	NBITS = "00000000000000000000000000010101"
+	NDELAY = "00000000000100100100111110000000"
+
+Analyzing hierarchy for module <synchro> in library <work> with parameters.
+	INITIALIZE = "LOGIC1"
+
+Analyzing hierarchy for module <spinner> in library <work>.
+
+Analyzing hierarchy for module <debnce> in library <work>.
+
+Analyzing hierarchy for module <tetris_core> in library <work>.
+
+Analyzing hierarchy for module <kd_ps2> in library <work> with parameters.
+	DEFAULT_1 = "11"
+	IDLE = "00"
+	WAIT_BREAK = "01"
+	WAIT_LAST = "10"
+
+Analyzing hierarchy for module <uart_controller> in library <work> with parameters.
+	EVEN = "01"
+	NONE = "00"
+	ODD = "10"
+	ONE = "0"
+	TWO = "1"
+
+Analyzing hierarchy for module <logic_top> in library <work> with parameters.
+	I = "000"
+	J = "001"
+	L = "010"
+	O = "011"
+	S = "100"
+	T = "101"
+	Z = "110"
+
+Analyzing hierarchy for module <display_top> in library <work>.
+
+Analyzing hierarchy for module <ps2_host_rxtx> in library <work>.
+
+Analyzing hierarchy for module <UartCtrl> in library <work> with parameters.
+	EVEN = "01"
+	NONE = "00"
+	ODD = "10"
+	ONE = "0"
+	TWO = "1"
+
+Analyzing hierarchy for module <seven_bag_rng> in library <work> with parameters.
+	CHECK = "001"
+	DONE = "011"
+	ELEMENT = "101"
+	IDLE = "000"
+	OUTPUT_1 = "010"
+	SHIFT = "100"
+
+Analyzing hierarchy for module <playfield> in library <work> with parameters.
+	CHECK_ROW_FULL = "10000"
+	CLEAR_REGION = "01111"
+	COLLISION_CHECK = "00011"
+	DOWN = "011"
+	END_OF_COLLISION = "00101"
+	I = "000"
+	IDLE = "00000"
+	J = "001"
+	L = "010"
+	LEFT = "001"
+	LOAD_TO_CHECKER = "00010"
+	LOCKER_READ = "01101"
+	LOCKER_WRITE_0 = "01010"
+	LOCKER_WRITE_1 = "01011"
+	NO = "000"
+	O = "011"
+	PASS = "00110"
+	PLACE = "101"
+	PRE_CHECK = "01001"
+	READOUT = "00001"
+	REPORT_COLLISION = "00100"
+	RIGHT = "010"
+	ROTATE = "100"
+	ROTATION = "01000"
+	ROW_REMOVE = "10001"
+	ROW_REMOVE_DONE = "10010"
+	S = "100"
+	T = "101"
+	WAIT_CONTROL = "00111"
+	WAIT_LOCKER_READ_DONE = "01110"
+	WAIT_LOCKER_WRITE_DONE = "01100"
+	Z = "110"
+
+Analyzing hierarchy for module <controller> in library <work> with parameters.
+	CLEAN = "1100"
+	DOWN = "0110"
+	DROP = "0111"
+	END_1 = "0100"
+	FALLING = "0101"
+	GAME_START = "0001"
+	IDLE = "0000"
+	LOCK = "1010"
+	LOCKDOWN = "1011"
+	MOVE = "1001"
+	PLACE = "0011"
+	RANDOM_GEN = "0010"
+	WAIT_ALLOW_ACTION = "1000"
+	WAIT_TIME = "1101"
+
+Analyzing hierarchy for module <bram_2p> in library <work>.
+
+Analyzing hierarchy for module <draw_char_engine> in library <work>.
+
+Analyzing hierarchy for module <draw_block_engine> in library <work>.
+
+Analyzing hierarchy for module <fb_addr_gen> in library <work>.
+
+Analyzing hierarchy for module <display_controller> in library <work> with parameters.
+	CLEAN_SCREEN = "0001"
+	DATA_READY = "0010"
+	DRAW = "0011"
+	DRAW_DIGIT = "0110"
+	DRAW_SCORE = "1011"
+	FETCH = "0001"
+	IDLE = "0000"
+	POST_DRAW_SCORE = "1000"
+	PRE_DRAW_SCORE = "0101"
+	PRE_DRAW_WALL = "1000"
+	SETUP_IDLE = "0000"
+	START_DRAW_OPEN = "0010"
+	START_DRAW_STRING = "0101"
+	START_DRAW_WALL = "1001"
+	WAIT_DONE = "0100"
+	WAIT_DRAW_DIGIT_DONE = "0111"
+	WAIT_DRAW_OPEN_DONE = "0011"
+	WAIT_DRAW_SCORE = "0111"
+	WAIT_DRAW_STRING_DONE = "0110"
+	WAIT_DRAW_WALL_DONE = "1010"
+	WAIT_GAME_START = "0100"
+
+Analyzing hierarchy for module <vga_sync_gen> in library <work>.
+
+Analyzing hierarchy for module <color_palettes> in library <work>.
+
+Analyzing hierarchy for module <linebuffer> in library <work>.
+
+Analyzing hierarchy for module <BufferCC> in library <work>.
+
+Analyzing hierarchy for module <BufferCC_1> in library <work>.
+
+Analyzing hierarchy for module <BufferCC_1> in library <work>.
+
+Analyzing hierarchy for module <BufferCC_1> in library <work>.
+
+Analyzing hierarchy for module <io_filter> in library <work> with parameters.
+	PIN_NUM = "00000000000000000000000000000010"
+
+Analyzing hierarchy for module <ps2_host_tx> in library <work> with parameters.
+	ACK = "00000000000000000000000000000101"
+	DATA = "00000000000000000000000000000011"
+	IDLE = "00000000000000000000000000000000"
+	NUM_OF_BITS_FOR_100US = "00000000000000000000000000001101"
+	RESET = "00000000000000000000000000000001"
+	START = "00000000000000000000000000000010"
+	STOP = "00000000000000000000000000000100"
+	WAIT = "00000000000000000000000000000110"
+
+Analyzing hierarchy for module <ps2_host_rx> in library <work> with parameters.
+	CHECK = "10"
+	DATA = "01"
+	DONE = "11"
+	IDLE = "00"
+
+Analyzing hierarchy for module <UartCtrlTx> in library <work> with parameters.
+	DATA = "010"
+	EVEN = "01"
+	IDLE = "000"
+	NONE = "00"
+	ODD = "10"
+	ONE = "0"
+	PARITY = "011"
+	START = "001"
+	STOP = "100"
+	TWO = "1"
+
+Analyzing hierarchy for module <UartCtrlRx> in library <work> with parameters.
+	DATA = "010"
+	EVEN = "01"
+	IDLE = "000"
+	NONE = "00"
+	ODD = "10"
+	ONE = "0"
+	PARITY = "011"
+	START = "001"
+	STOP = "100"
+	TWO = "1"
+
+Analyzing hierarchy for module <ascii_font16x8> in library <work> with parameters.
+	addressWidth = "00000000000000000000000000001011"
+	wordWidth = "00000000000000000000000000001000"
+
+Analyzing hierarchy for module <bcd> in library <work> with parameters.
+	ADD3_CHECK = "010"
+	BOOT = "000"
+	DONE = "100"
+	IDLE = "001"
+	SHIFT = "011"
+
+Analyzing hierarchy for module <synchro> in library <work> with parameters.
+	INITIALIZE = "LOGIC0"
+
+Analyzing hierarchy for module <glitch_free> in library <work> with parameters.
+	NBITS = "00000000000000000000000000000100"
+	NDELAY = "1010"
+
+Analyzing hierarchy for module <BufferCC_4> in library <work>.
+
+
+=========================================================================
+*                            HDL Analysis                               *
+=========================================================================
+Analyzing top module <pcb>.
+Module <pcb> is correct for synthesis.
+ 
+    Set user-defined property "KEEP_HIERARCHY =  yes" for instance <tetris_top_inst> in unit <pcb>.
+    Set user-defined property "KEEP =  1" for signal <core_fast_clk>.
+    Set user-defined property "KEEP =  1" for signal <dcm_clocked>.
+Analyzing module <dcm> in library <work>.
+Module <dcm> is correct for synthesis.
+ 
+    Set user-defined property "CAPACITANCE =  DONT_CARE" for instance <CLKIN_IBUFG_INST> in unit <dcm>.
+    Set user-defined property "IBUF_DELAY_VALUE =  0" for instance <CLKIN_IBUFG_INST> in unit <dcm>.
+    Set user-defined property "IBUF_LOW_PWR =  TRUE" for instance <CLKIN_IBUFG_INST> in unit <dcm>.
+    Set user-defined property "IOSTANDARD =  DEFAULT" for instance <CLKIN_IBUFG_INST> in unit <dcm>.
+    Set user-defined property "CLKDV_DIVIDE =  2.000000" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "CLKFX_DIVIDE =  1" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "CLKFX_MULTIPLY =  4" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "CLKIN_DIVIDE_BY_2 =  FALSE" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "CLKIN_PERIOD =  20.000000" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "CLKOUT_PHASE_SHIFT =  NONE" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "CLK_FEEDBACK =  1X" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "DESKEW_ADJUST =  SYSTEM_SYNCHRONOUS" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "DFS_FREQUENCY_MODE =  LOW" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "DLL_FREQUENCY_MODE =  LOW" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "DSS_MODE =  NONE" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "DUTY_CYCLE_CORRECTION =  TRUE" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "FACTORY_JF =  C080" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "PHASE_SHIFT =  0" for instance <DCM_SP_INST> in unit <dcm>.
+    Set user-defined property "STARTUP_WAIT =  FALSE" for instance <DCM_SP_INST> in unit <dcm>.
+Analyzing module <picouser> in library <work>.
+Module <picouser> is correct for synthesis.
+ 
+Analyzing module <synchro.1> in library <work>.
+	INITIALIZE = "LOGIC0"
+Module <synchro.1> is correct for synthesis.
+ 
+    Set user-defined property "ASYNC_REG =  TRUE" for instance <use_fdc.fda> in unit <synchro.1>.
+    Set user-defined property "INIT =  0" for instance <use_fdc.fda> in unit <synchro.1>.
+    Set user-defined property "RLOC =  X0Y0" for instance <use_fdc.fda> in unit <synchro.1>.
+    Set user-defined property "ASYNC_REG =  TRUE" for instance <use_fdc.fdb> in unit <synchro.1>.
+    Set user-defined property "INIT =  0" for instance <use_fdc.fdb> in unit <synchro.1>.
+    Set user-defined property "RLOC =  X0Y0" for instance <use_fdc.fdb> in unit <synchro.1>.
+Analyzing module <debounce> in library <work>.
+	NBITS = 32'sb00000000000000000000000000010101
+	NDELAY = 32'sb00000000000100100100111110000000
+Module <debounce> is correct for synthesis.
+ 
+Analyzing module <synchro.2> in library <work>.
+	INITIALIZE = "LOGIC1"
+Module <synchro.2> is correct for synthesis.
+ 
+    Set user-defined property "ASYNC_REG =  TRUE" for instance <use_fdp.fda> in unit <synchro.2>.
+    Set user-defined property "INIT =  1" for instance <use_fdp.fda> in unit <synchro.2>.
+    Set user-defined property "RLOC =  X0Y0" for instance <use_fdp.fda> in unit <synchro.2>.
+    Set user-defined property "ASYNC_REG =  TRUE" for instance <use_fdp.fdb> in unit <synchro.2>.
+    Set user-defined property "INIT =  1" for instance <use_fdp.fdb> in unit <synchro.2>.
+    Set user-defined property "RLOC =  X0Y0" for instance <use_fdp.fdb> in unit <synchro.2>.
+Analyzing module <spinner> in library <work>.
+Module <spinner> is correct for synthesis.
+ 
+Analyzing module <debnce> in library <work>.
+Module <debnce> is correct for synthesis.
+ 
+Analyzing module <tetris_top> in library <work>.
+Module <tetris_top> is correct for synthesis.
+ 
+Analyzing module <tetris_core> in library <work>.
+Module <tetris_core> is correct for synthesis.
+ 
+Analyzing module <logic_top> in library <work>.
+	I = 3'b000
+	J = 3'b001
+	L = 3'b010
+	O = 3'b011
+	S = 3'b100
+	T = 3'b101
+	Z = 3'b110
+Module <logic_top> is correct for synthesis.
+ 
+Analyzing module <seven_bag_rng> in library <work>.
+	CHECK = 3'b001
+	DONE = 3'b011
+	ELEMENT = 3'b101
+	IDLE = 3'b000
+	OUTPUT_1 = 3'b010
+	SHIFT = 3'b100
+Module <seven_bag_rng> is correct for synthesis.
+ 
+Analyzing module <playfield> in library <work>.
+	CHECK_ROW_FULL = 5'b10000
+	CLEAR_REGION = 5'b01111
+	COLLISION_CHECK = 5'b00011
+	DOWN = 3'b011
+	END_OF_COLLISION = 5'b00101
+	I = 3'b000
+	IDLE = 5'b00000
+	J = 3'b001
+	L = 3'b010
+	LEFT = 3'b001
+	LOAD_TO_CHECKER = 5'b00010
+	LOCKER_READ = 5'b01101
+	LOCKER_WRITE_0 = 5'b01010
+	LOCKER_WRITE_1 = 5'b01011
+	NO = 3'b000
+	O = 3'b011
+	PASS = 5'b00110
+	PLACE = 3'b101
+	PRE_CHECK = 5'b01001
+	READOUT = 5'b00001
+	REPORT_COLLISION = 5'b00100
+	RIGHT = 3'b010
+	ROTATE = 3'b100
+	ROTATION = 5'b01000
+	ROW_REMOVE = 5'b10001
+	ROW_REMOVE_DONE = 5'b10010
+	S = 3'b100
+	T = 3'b101
+	WAIT_CONTROL = 5'b00111
+	WAIT_LOCKER_READ_DONE = 5'b01110
+	WAIT_LOCKER_WRITE_DONE = 5'b01100
+	Z = 3'b110
+Module <playfield> is correct for synthesis.
+ 
+    Set property "ram_style = distributed" for signal <locker_region>.
+Analyzing module <controller> in library <work>.
+	CLEAN = 4'b1100
+	DOWN = 4'b0110
+	DROP = 4'b0111
+	END_1 = 4'b0100
+	FALLING = 4'b0101
+	GAME_START = 4'b0001
+	IDLE = 4'b0000
+	LOCK = 4'b1010
+	LOCKDOWN = 4'b1011
+	MOVE = 4'b1001
+	PLACE = 4'b0011
+	RANDOM_GEN = 4'b0010
+	WAIT_ALLOW_ACTION = 4'b1000
+	WAIT_TIME = 4'b1101
+Module <controller> is correct for synthesis.
+ 
+    Set user-defined property "KEEP =  1" for signal <debug_place_new> in unit <controller>.
+Analyzing module <display_top> in library <work>.
+Module <display_top> is correct for synthesis.
+ 
+    Set user-defined property "KEEP_HIERARCHY =  TRUE" for instance <lb_load_valid_buffercc> in unit <display_top>.
+    Set user-defined property "KEEP_HIERARCHY =  TRUE" for instance <softRest_buffercc> in unit <display_top>.
+    Set user-defined property "KEEP_HIERARCHY =  TRUE" for instance <vga_sync_io_sof_buffercc> in unit <display_top>.
+    Set user-defined property "KEEP_HIERARCHY =  TRUE" for instance <vga_sync_io_sos_buffercc> in unit <display_top>.
+Analyzing module <bram_2p> in library <work>.
+INFO:Xst:2546 - "../design/SOC/pcb/rtl/pcb.v" line 3717: reading initialization file "pcb.v_toplevel_tetris_top_inst_tetris_core_inst_game_display_inst_fb_memory.bin".
+Module <bram_2p> is correct for synthesis.
+ 
+    Set property "ram_style = block" for signal <memory>.
+Analyzing module <draw_char_engine> in library <work>.
+Module <draw_char_engine> is correct for synthesis.
+ 
+Analyzing module <ascii_font16x8> in library <work>.
+	addressWidth = 32'sb00000000000000000000000000001011
+	wordWidth = 32'sb00000000000000000000000000001000
+Module <ascii_font16x8> is correct for synthesis.
+ 
+    Set user-defined property "INIT =  000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INITP_00 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INITP_01 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INITP_02 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INITP_03 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INITP_04 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INITP_05 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INITP_06 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INITP_07 =  0000000000000000000000000000000000000000000000000000000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_00 =  000000007E818199BD8181A5817E000000000000000000000000000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_01 =  0000000010387CFEFEFEFE6C00000000000000007EFFFFE7C3FFFFDBFF7E0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_02 =  000000003C1818E7E7E73C3C18000000000000000010387CFE7C381000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_03 =  000000000000183C3C18000000000000000000003C18187EFFFF7E3C18000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_04 =  00000000003C664242663C0000000000FFFFFFFFFFFFE7C3C3E7FFFFFFFFFFFF" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_05 =  0000000078CCCCCCCC78321A0E1E0000FFFFFFFFFFC399BDBD99C3FFFFFFFFFF" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_06 =  00000000E0F070303030303F333F00000000000018187E183C666666663C0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_07 =  000000001818DB3CE73CDB1818000000000000C0E6E767636363637F637F0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_08 =  0000000002060E1E3EFE3E1E0E0602000000000080C0E0F0F8FEF8F0E0C08000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_09 =  000000006666006666666666666600000000000000183C7E1818187E3C180000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_0A =  0000007CC60C386CC6C66C3860C67C00000000001B1B1B1B1B7BDBDBDB7F0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_0B =  000000007E183C7E1818187E3C18000000000000FEFEFEFE0000000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_0C =  00000000183C7E18181818181818000000000000181818181818187E3C180000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_0D =  0000000000003060FE60300000000000000000000000180CFE0C180000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_0E =  000000000000286CFE6C280000000000000000000000FEC0C0C0000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_0F =  00000000001038387C7CFEFE000000000000000000FEFE7C7C38381000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_10 =  000000001818001818183C3C3C18000000000000000000000000000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_11 =  000000006C6CFE6C6C6CFE6C6C00000000000000000000000000002466666600" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_12 =  0000000086C66030180CC6C200000000000018187CC68606067CC0C2C67C1818" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_13 =  000000000000000000000060303030000000000076CCCCCCDC76386C6C380000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_14 =  0000000030180C0C0C0C0C0C18300000000000000C18303030303030180C0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_15 =  00000000000018187E18180000000000000000000000663CFF3C660000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_16 =  0000000000000000FE0000000000000000000030181818000000000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_17 =  0000000080C06030180C06020000000000000000181800000000000000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_18 =  000000007E181818181818783818000000000000386CC6C6D6D6C6C66C380000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_19 =  000000007CC60606063C0606C67C000000000000FEC6C06030180C06C67C0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_1A =  000000007CC6060606FCC0C0C0FE0000000000001E0C0C0CFECC6C3C1C0C0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_1B =  0000000030303030180C0606C6FE0000000000007CC6C6C6C6FCC0C060380000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_1C =  00000000780C0606067EC6C6C67C0000000000007CC6C6C6C67CC6C6C67C0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_1D =  0000000030181800000018180000000000000000001818000000181800000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_1E =  000000000000007E00007E000000000000000000060C18306030180C06000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_1F =  000000001818001818180CC6C67C0000000000006030180C060C183060000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_20 =  00000000C6C6C6C6FEC6C66C38100000000000007CC0DCDEDEDEC6C67C000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_21 =  000000003C66C2C0C0C0C0C2663C000000000000FC666666667C666666FC0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_22 =  00000000FE6662606878686266FE000000000000F86C6666666666666CF80000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_23 =  000000003A66C6C6DEC0C0C2663C000000000000F06060606878686266FE0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_24 =  000000003C18181818181818183C000000000000C6C6C6C6C6FEC6C6C6C60000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_25 =  00000000E666666C78786C6666E600000000000078CCCCCC0C0C0C0C0C1E0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_26 =  00000000C6C6C6C6C6D6FEFEEEC6000000000000FE6662606060606060F00000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_27 =  000000007CC6C6C6C6C6C6C6C67C000000000000C6C6C6C6CEDEFEF6E6C60000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_28 =  00000E0C7CDED6C6C6C6C6C6C67C000000000000F0606060607C666666FC0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_29 =  000000007CC6C6060C3860C6C67C000000000000E66666666C7C666666FC0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_2A =  000000007CC6C6C6C6C6C6C6C6C60000000000003C1818181818185A7E7E0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_2B =  000000006CEEFED6D6D6C6C6C6C600000000000010386CC6C6C6C6C6C6C60000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_2C =  000000003C181818183C66666666000000000000C6C66C7C38387C6CC6C60000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_2D =  000000003C30303030303030303C000000000000FEC6C26030180C86C6FE0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_2E =  000000003C0C0C0C0C0C0C0C0C3C00000000000002060E1C3870E0C080000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_2F =  0000FF00000000000000000000000000000000000000000000000000C66C3810" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_30 =  0000000076CCCCCC7C0C78000000000000000000000000000000000000183030" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_31 =  000000007CC6C0C0C0C67C0000000000000000007C666666666C786060E00000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_32 =  000000007CC6C0C0FEC67C00000000000000000076CCCCCCCC6C3C0C0C1C0000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_33 =  0078CC0C7CCCCCCCCCCC76000000000000000000F060606060F060646C380000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_34 =  000000003C181818181838001818000000000000E666666666766C6060E00000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_35 =  00000000E6666C78786C666060E00000003C66660606060606060E0006060000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_36 =  00000000C6D6D6D6D6FEEC0000000000000000003C1818181818181818380000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_37 =  000000007CC6C6C6C6C67C000000000000000000666666666666DC0000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_38 =  001E0C0C7CCCCCCCCCCC76000000000000F060607C6666666666DC0000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_39 =  000000007CC60C3860C67C000000000000000000F06060606676DC0000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_3A =  0000000076CCCCCCCCCCCC0000000000000000001C3630303030FC3030100000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_3B =  000000006CFED6D6D6C6C6000000000000000000183C66666666660000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_3C =  00F80C067EC6C6C6C6C6C6000000000000000000C66C3838386CC60000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_3D =  000000000E18181818701818180E000000000000FEC6603018CCFE0000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_3E =  0000000070181818180E18181870000000000000181818181800181818180000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "INIT_3F =  0000000000FEC6C6C66C381000000000000000000000000000000000DC760000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "SRVAL =  000000000" for instance <font16X8_inst> in unit <ascii_font16x8>.
+    Set user-defined property "WRITE_MODE =  WRITE_FIRST" for instance <font16X8_inst> in unit <ascii_font16x8>.
+Analyzing module <draw_block_engine> in library <work>.
+Module <draw_block_engine> is correct for synthesis.
+ 
+Analyzing module <fb_addr_gen> in library <work>.
+Module <fb_addr_gen> is correct for synthesis.
+ 
+Analyzing module <display_controller> in library <work>.
+	CLEAN_SCREEN = 4'b0001
+	DATA_READY = 4'b0010
+	DRAW = 4'b0011
+	DRAW_DIGIT = 4'b0110
+	DRAW_SCORE = 4'b1011
+	FETCH = 4'b0001
+	IDLE = 4'b0000
+	POST_DRAW_SCORE = 4'b1000
+	PRE_DRAW_SCORE = 4'b0101
+	PRE_DRAW_WALL = 4'b1000
+	SETUP_IDLE = 4'b0000
+	START_DRAW_OPEN = 4'b0010
+	START_DRAW_STRING = 4'b0101
+	START_DRAW_WALL = 4'b1001
+	WAIT_DONE = 4'b0100
+	WAIT_DRAW_DIGIT_DONE = 4'b0111
+	WAIT_DRAW_OPEN_DONE = 4'b0011
+	WAIT_DRAW_SCORE = 4'b0111
+	WAIT_DRAW_STRING_DONE = 4'b0110
+	WAIT_DRAW_WALL_DONE = 4'b1010
+	WAIT_GAME_START = 4'b0100
+INFO:Xst:2546 - "../design/SOC/pcb/rtl/pcb.v" line 2543: reading initialization file "pcb.v_toplevel_tetris_top_inst_tetris_core_inst_game_display_inst_draw_controller_rom.bin".
+INFO:Xst:2546 - "../design/SOC/pcb/rtl/pcb.v" line 2547: reading initialization file "pcb.v_toplevel_tetris_top_inst_tetris_core_inst_game_display_inst_draw_controller_wall_rom.bin".
+Module <display_controller> is correct for synthesis.
+ 
+    Set user-defined property "KEEP =  1" for signal <rd_en>.
+    Set property "ram_style = distributed" for signal <rom>.
+    Set property "ram_style = distributed" for signal <memory>.
+Analyzing module <bcd> in library <work>.
+	ADD3_CHECK = 3'b010
+	BOOT = 3'b000
+	DONE = 3'b100
+	IDLE = 3'b001
+	SHIFT = 3'b011
+Module <bcd> is correct for synthesis.
+ 
+Analyzing module <vga_sync_gen> in library <work>.
+Module <vga_sync_gen> is correct for synthesis.
+ 
+Analyzing module <color_palettes> in library <work>.
+INFO:Xst:2546 - "../design/SOC/pcb/rtl/pcb.v" line 2135: reading initialization file "pcb.v_toplevel_tetris_top_inst_tetris_core_inst_game_display_inst_lbcp_rom.bin".
+Module <color_palettes> is correct for synthesis.
+ 
+    Set property "ram_style = distributed" for signal <rom>.
+Analyzing module <linebuffer> in library <work>.
+Module <linebuffer> is correct for synthesis.
+ 
+    Set property "ram_style = distributed" for signal <ram>.
+Analyzing module <BufferCC> in library <work>.
+Module <BufferCC> is correct for synthesis.
+ 
+    Set user-defined property "ASYNC_REG =  true" for signal <buffers_0>.
+    Set user-defined property "ASYNC_REG =  true" for signal <buffers_1>.
+Analyzing module <BufferCC_1.1> in library <work>.
+Module <BufferCC_1.1> is correct for synthesis.
+ 
+    Set user-defined property "ASYNC_REG =  true" for signal <buffers_0>.
+    Set user-defined property "ASYNC_REG =  true" for signal <buffers_1>.
+Analyzing module <BufferCC_1.2> in library <work>.
+Module <BufferCC_1.2> is correct for synthesis.
+ 
+    Set user-defined property "ASYNC_REG =  true" for signal <buffers_0>.
+    Set user-defined property "ASYNC_REG =  true" for signal <buffers_1>.
+Analyzing module <BufferCC_1.3> in library <work>.
+Module <BufferCC_1.3> is correct for synthesis.
+ 
+    Set user-defined property "ASYNC_REG =  true" for signal <buffers_0>.
+    Set user-defined property "ASYNC_REG =  true" for signal <buffers_1>.
+Analyzing module <kd_ps2> in library <work>.
+	DEFAULT_1 = 2'b11
+	IDLE = 2'b00
+	WAIT_BREAK = 2'b01
+	WAIT_LAST = 2'b10
+Module <kd_ps2> is correct for synthesis.
+ 
+Analyzing module <ps2_host_rxtx> in library <work>.
+Module <ps2_host_rxtx> is correct for synthesis.
+ 
+Analyzing module <io_filter> in library <work>.
+	PIN_NUM = 32'sb00000000000000000000000000000010
+Module <io_filter> is correct for synthesis.
+ 
+Analyzing module <glitch_free> in library <work>.
+	NBITS = 32'sb00000000000000000000000000000100
+	NDELAY = 4'b1010
+Module <glitch_free> is correct for synthesis.
+ 
+Analyzing module <ps2_host_tx> in library <work>.
+	ACK = 32'sb00000000000000000000000000000101
+	DATA = 32'sb00000000000000000000000000000011
+	IDLE = 32'sb00000000000000000000000000000000
+	NUM_OF_BITS_FOR_100US = 32'sb00000000000000000000000000001101
+	RESET = 32'sb00000000000000000000000000000001
+	START = 32'sb00000000000000000000000000000010
+	STOP = 32'sb00000000000000000000000000000100
+	WAIT = 32'sb00000000000000000000000000000110
+"../design/SOC/pcb/rtl/pcb_bb.v" line 676: Found Parallel Case directive in module <ps2_host_tx>.
+"../design/SOC/pcb/rtl/pcb_bb.v" line 691: Found Parallel Case directive in module <ps2_host_tx>.
+Module <ps2_host_tx> is correct for synthesis.
+ 
+    Set user-defined property "KEEP =  true" for signal <ps2_clk_in> in unit <ps2_host_tx>.
+    Set user-defined property "KEEP =  true" for signal <ps2_data_in> in unit <ps2_host_tx>.
+    Set user-defined property "KEEP =  true" for signal <ps2_wr_stb> in unit <ps2_host_tx>.
+    Set user-defined property "KEEP =  true" for signal <ps2_wr_data> in unit <ps2_host_tx>.
+    Set user-defined property "KEEP =  true" for signal <ps2_clk_out> in unit <ps2_host_tx>.
+    Set user-defined property "KEEP =  true" for signal <ps2_data_out_en> in unit <ps2_host_tx>.
+    Set user-defined property "KEEP =  true" for signal <ps2_data_out> in unit <ps2_host_tx>.
+    Set user-defined property "KEEP =  true" for signal <ps2_go>.
+    Set user-defined property "KEEP =  true" for signal <state_nxt>.
+    Set user-defined property "KEEP =  true" for signal <delay_cntr>.
+    Set user-defined property "KEEP =  true" for signal <load_dout>.
+    Set user-defined property "KEEP =  true" for signal <dec_cntr>.
+    Set user-defined property "KEEP =  true" for signal <load_cntr>.
+    Set user-defined property "KEEP =  true" for signal <state_r>.
+    Set user-defined property "KEEP =  true" for signal <cntr_zero>.
+Analyzing module <ps2_host_rx> in library <work>.
+	CHECK = 2'b10
+	DATA = 2'b01
+	DONE = 2'b11
+	IDLE = 2'b00
+Module <ps2_host_rx> is correct for synthesis.
+ 
+    Set user-defined property "KEEP =  true" for signal <ps2_clk_nep>.
+    Set user-defined property "KEEP =  true" for signal <state_nxt>.
+    Set user-defined property "KEEP =  true" for signal <state_r>.
+Analyzing module <uart_controller> in library <work>.
+	EVEN = 2'b01
+	NONE = 2'b00
+	ODD = 2'b10
+	ONE = 1'b0
+	TWO = 1'b1
+Module <uart_controller> is correct for synthesis.
+ 
+Analyzing module <UartCtrl> in library <work>.
+	EVEN = 2'b01
+	NONE = 2'b00
+	ODD = 2'b10
+	ONE = 1'b0
+	TWO = 1'b1
+Module <UartCtrl> is correct for synthesis.
+ 
+Analyzing module <UartCtrlTx> in library <work>.
+	DATA = 3'b010
+	EVEN = 2'b01
+	IDLE = 3'b000
+	NONE = 2'b00
+	ODD = 2'b10
+	ONE = 1'b0
+	PARITY = 3'b011
+	START = 3'b001
+	STOP = 3'b100
+	TWO = 1'b1
+Module <UartCtrlTx> is correct for synthesis.
+ 
+Analyzing module <UartCtrlRx> in library <work>.
+	DATA = 3'b010
+	EVEN = 2'b01
+	IDLE = 3'b000
+	NONE = 2'b00
+	ODD = 2'b10
+	ONE = 1'b0
+	PARITY = 3'b011
+	START = 3'b001
+	STOP = 3'b100
+	TWO = 1'b1
+Module <UartCtrlRx> is correct for synthesis.
+ 
+    Set user-defined property "KEEP_HIERARCHY =  TRUE" for instance <io_rxd_buffercc> in unit <UartCtrlRx>.
+Analyzing module <BufferCC_4> in library <work>.
+Module <BufferCC_4> is correct for synthesis.
+ 
+    Set user-defined property "ASYNC_REG =  true" for signal <buffers_0>.
+WARNING:Xst:37 - Detected unknown constraint/property "altera_attribute". This constraint/property is not supported by the current software release and will be ignored.
+    Set user-defined property "ASYNC_REG =  true" for signal <buffers_1>.
+
+=========================================================================
+*                           HDL Synthesis                               *
+=========================================================================
+
+Performing bidirectional port resolution...
+INFO:Xst:2679 - Register <stepup_color> in unit <display_controller> has a constant value of 0110 during circuit operation. The register is replaced by logic.
+INFO:Xst:2679 - Register <temp_io_rts> in unit <UartCtrlRx> has a constant value of 0 during circuit operation. The register is replaced by logic.
+
+Synthesizing Unit <debounce>.
+    Related source file is "../design/SOC/pcb/rtl/pcb_bb.v".
+    Found 1-bit register for signal <DataClean>.
+    Found 21-bit up counter for signal <count>.
+    Found 1-bit register for signal <data_i>.
+    Found 1-bit xor2 for signal <data_i$xor0000> created at line 51.
+    Summary:
+	inferred   1 Counter(s).
+	inferred   2 D-type flip-flop(s).
+Unit <debounce> synthesized.
+
+
+Synthesizing Unit <spinner>.
+    Related source file is "../design/SOC/pcb/rtl/pcb_bb.v".
+    Found 1-bit register for signal <event_rot_l>.
+    Found 1-bit register for signal <event_rot_r>.
+    Found 1-bit register for signal <rotary_q1>.
+    Found 1-bit 4-to-1 multiplexer for signal <rotary_q1$mux0000> created at line 220.
+    Found 1-bit register for signal <rotary_q1_dly>.
+    Found 1-bit register for signal <rotary_q2>.
+    Found 1-bit 4-to-1 multiplexer for signal <rotary_q2$mux0000> created at line 220.
+    Found 1-bit register for signal <rotary_q2_dly>.
+    Summary:
+	inferred   6 D-type flip-flop(s).
+	inferred   2 Multiplexer(s).
+Unit <spinner> synthesized.
+
+
+Synthesizing Unit <debnce>.
+    Related source file is "../design/SOC/pcb/rtl/pcb_bb.v".
+    Found 1-bit register for signal <event_on>.
+    Found 1-bit register for signal <event_off>.
+    Found 16-bit register for signal <ctr>.
+    Found 16-bit adder for signal <ctr$addsub0000> created at line 137.
+    Found 16-bit 4-to-1 multiplexer for signal <ctr$mux0000> created at line 134.
+    Found 1-bit register for signal <dly>.
+    Summary:
+	inferred  19 D-type flip-flop(s).
+	inferred   1 Adder/Subtractor(s).
+	inferred  16 Multiplexer(s).
+Unit <debnce> synthesized.
+
+
+Synthesizing Unit <seven_bag_rng>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <temp_1<7>> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_wantStart> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_wantExit> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_stateReg_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_stateNext_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_SHIFT> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_OUTPUT_1> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_ELEMENT> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_CHECK> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_SHIFT> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_OUTPUT_1> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_ELEMENT> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_CHECK> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Found finite state machine <FSM_0> for signal <fsm_stateReg>.
+    -----------------------------------------------------------------------
+    | States             | 6                                              |
+    | Transitions        | 9                                              |
+    | Inputs             | 3                                              |
+    | Outputs            | 3                                              |
+    | Clock              | core_clk                  (rising_edge)        |
+    | Reset              | core_rst                  (positive)           |
+    | Reset type         | asynchronous                                   |
+    | Reset State        | 000                                            |
+    | Encoding           | automatic                                      |
+    | Implementation     | LUT                                            |
+    -----------------------------------------------------------------------
+    Found 3-bit register for signal <count>.
+    Found 3-bit adder for signal <count$addsub0000> created at line 6542.
+    Found 1-bit register for signal <existed>.
+    Found 3-bit comparator equal for signal <existed$cmp_eq0000> created at line 6580.
+    Found 3-bit comparator equal for signal <existed$cmp_eq0001> created at line 6577.
+    Found 3-bit comparator equal for signal <existed$cmp_eq0002> created at line 6574.
+    Found 3-bit comparator equal for signal <existed$cmp_eq0003> created at line 6571.
+    Found 3-bit comparator equal for signal <existed$cmp_eq0004> created at line 6568.
+    Found 3-bit comparator equal for signal <existed$cmp_eq0005> created at line 6565.
+    Found 3-bit comparator equal for signal <existed$cmp_eq0006> created at line 6562.
+    Found 3-bit comparator greater for signal <existed$cmp_lt0000> created at line 6580.
+    Found 3-bit comparator greater for signal <existed$cmp_lt0001> created at line 6577.
+    Found 3-bit comparator greater for signal <existed$cmp_lt0002> created at line 6574.
+    Found 3-bit comparator greater for signal <existed$cmp_lt0003> created at line 6571.
+    Found 3-bit comparator greater for signal <existed$cmp_lt0004> created at line 6568.
+    Found 3-bit comparator greater for signal <existed$cmp_lt0005> created at line 6565.
+    Found 3-bit comparator greater for signal <existed$cmp_lt0006> created at line 6562.
+    Found 3-bit register for signal <generatedNumbers_0>.
+    Found 3-bit register for signal <generatedNumbers_1>.
+    Found 3-bit register for signal <generatedNumbers_2>.
+    Found 3-bit register for signal <generatedNumbers_3>.
+    Found 3-bit register for signal <generatedNumbers_4>.
+    Found 3-bit register for signal <generatedNumbers_5>.
+    Found 3-bit register for signal <generatedNumbers_6>.
+    Found 1-bit register for signal <invalid>.
+    Found 6-bit register for signal <lfsr>.
+    Found 1-bit xor2 for signal <lfsr$xor0000> created at line 6535.
+    Found 8-bit shifter logical left for signal <temp_1>.
+    Summary:
+	inferred   1 Finite State Machine(s).
+	inferred  26 D-type flip-flop(s).
+	inferred   1 Adder/Subtractor(s).
+	inferred  14 Comparator(s).
+	inferred   1 Combinational logic shifter(s).
+Unit <seven_bag_rng> synthesized.
+
+
+Synthesizing Unit <playfield>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <src_2_valid> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <playfield_write_req_port_valid> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <playfield_write_req_port_payload> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <playfield_rows_to_clear<21>> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <playfield_reset> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <playfield_read_req_port_valid> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <playfield_read_req_port_payload> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <playfield_freeze> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <playfield_addr_access_port_valid> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <playfield_access_row_base> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <piece_payload_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <piece_in_payload_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_wantStart> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_wantExit> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_stateReg_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_stateNext_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_WAIT_CONTROL> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_ROW_REMOVE_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_ROW_REMOVE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_ROTATION> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_REPORT_COLLISION> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_PRE_CHECK> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_LOCKER_WRITE_1> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_LOCKER_WRITE_0> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_LOCKER_READ> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_LOAD_TO_CHECKER> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_END_OF_COLLISION> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_CLEAR_REGION> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onExit_CHECK_ROW_FULL> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_WAIT_LOCKER_WRITE_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_WAIT_LOCKER_READ_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_WAIT_CONTROL> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_ROW_REMOVE_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_ROW_REMOVE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_ROTATION> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_REPORT_COLLISION> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_PRE_CHECK> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_LOCKER_WRITE_1> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_LOAD_TO_CHECKER> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_END_OF_COLLISION> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_CLEAR_REGION> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <main_fsm_onEntry_CHECK_ROW_FULL> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <flow_row_occuppied> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <flow_read_req> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <flow_addr_access_port_valid> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:1780 - Signal <dma_playfield_dma_addr> is never used or assigned. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:1780 - Signal <dma_locker_dma_addr> is never used or assigned. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:1780 - Signal <dma_flow_dma_addr> is never used or assigned. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:1780 - Signal <dma_checker_dma_addr> is never used or assigned. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <collision_checker_src_1_valid> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <checker_row_backup> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <checker_read_req> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <checker_addr_access_port_valid> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <action_1_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Found 4x10-bit single-port RAM <Mram_locker_region> for signal <locker_region>.
+    Register <dma_flow_dma_req_valid_regNext> equivalent to <dma_flow_dma_req_valid_1d> has been removed
+    Register <locker_addr_access_port_valid_regNext> equivalent to <dma_locker_dma_req_valid_regNext> has been removed
+    Register <dma_playfield_dma_req_valid_regNext> equivalent to <dma_playfield_dma_req_valid_1d> has been removed
+    Found finite state machine <FSM_1> for signal <main_fsm_stateReg>.
+    -----------------------------------------------------------------------
+    | States             | 19                                             |
+    | Transitions        | 37                                             |
+    | Inputs             | 17                                             |
+    | Outputs            | 38                                             |
+    | Clock              | core_clk                  (rising_edge)        |
+    | Reset              | core_rst                  (positive)           |
+    | Reset type         | asynchronous                                   |
+    | Reset State        | 00000                                          |
+    | Encoding           | automatic                                      |
+    | Implementation     | LUT                                            |
+    -----------------------------------------------------------------------
+    Using one-hot encoding for signal <action_1>.
+    Found 8x5-bit ROM for signal <temp_playfield_count_28>.
+    Found 8x5-bit ROM for signal <temp_playfield_count_26>.
+    Found 8x5-bit ROM for signal <temp_playfield_count_23>.
+    Found 8x5-bit ROM for signal <temp_playfield_count_21>.
+    Found 8x5-bit ROM for signal <temp_playfield_count_17>.
+    Found 8x5-bit ROM for signal <temp_playfield_count_15>.
+    Found 8x5-bit ROM for signal <temp_playfield_count_12>.
+    Found 8x5-bit ROM for signal <temp_playfield_count_10>.
+    Found 6-bit register for signal <action_1>.
+    Found 10-bit register for signal <checker_readout>.
+    Found 10-bit register for signal <checker_region_0>.
+    Found 10-bit register for signal <checker_region_1>.
+    Found 10-bit register for signal <checker_region_2>.
+    Found 10-bit register for signal <checker_region_3>.
+    Found 5-bit register for signal <checker_row>.
+    Found 5-bit adder for signal <checker_row$addsub0000> created at line 5999.
+    Found 1-bit register for signal <collision_checker_check_status>.
+    Found 1-bit register for signal <collision_checker_collision_bits_payload>.
+    Found 1-bit register for signal <collision_checker_collision_bits_valid>.
+    Found 1-bit register for signal <collision_checker_collision_bits_valid_regNext>.
+    Found 2-bit up counter for signal <dma_checker_dma_req_counter>.
+    Found 1-bit register for signal <dma_checker_dma_req_valid>.
+    Found 1-bit register for signal <dma_checker_dma_req_valid_regNext>.
+    Found 1-bit register for signal <dma_checker_dma_start_regNext>.
+    Found 1-bit register for signal <dma_flow_dma_channel_0_enable>.
+    Found 2-bit up counter for signal <dma_flow_dma_req_counter>.
+    Found 1-bit register for signal <dma_flow_dma_req_valid>.
+    Found 1-bit register for signal <dma_flow_dma_req_valid_1d>.
+    Found 5-bit comparator equal for signal <dma_flow_dma_start$cmp_eq0000> created at line 5066.
+    Found 1-bit register for signal <dma_flow_dma_start_regNext>.
+    Found 1-bit register for signal <dma_locker_dma_channel_0_enable>.
+    Found 2-bit up counter for signal <dma_locker_dma_req_counter>.
+    Found 1-bit register for signal <dma_locker_dma_req_valid>.
+    Found 1-bit register for signal <dma_locker_dma_req_valid_regNext>.
+    Found 1-bit register for signal <dma_locker_dma_start_regNext>.
+    Found 5-bit register for signal <dma_playfield_dma_base_addr>.
+    Found 1-bit register for signal <dma_playfield_dma_channel_0_enable>.
+    Found 1-bit register for signal <dma_playfield_dma_channel_1_enable>.
+    Found 1-bit register for signal <dma_playfield_dma_channel_2_enable>.
+    Found 5-bit comparator equal for signal <dma_playfield_dma_counter_is_last>.
+    Found 5-bit up counter for signal <dma_playfield_dma_req_counter>.
+    Found 1-bit register for signal <dma_playfield_dma_req_valid>.
+    Found 1-bit register for signal <dma_playfield_dma_req_valid_1d>.
+    Found 1-bit register for signal <dma_playfield_dma_start_regNext>.
+    Found 5-bit register for signal <dma_playfield_dma_word_count>.
+    Found 10-bit register for signal <flow_readout>.
+    Found 10-bit register for signal <flow_region_0>.
+    Found 10-bit register for signal <flow_region_1>.
+    Found 10-bit register for signal <flow_region_2>.
+    Found 10-bit register for signal <flow_region_3>.
+    Found 5-bit register for signal <flow_row>.
+    Found 1-bit register for signal <game_restart_regNext>.
+    Found 10-bit register for signal <locker_region_spinal_port1>.
+    Found 1-bit register for signal <main_fsm_will_goto_idle>.
+    Found 14-bit register for signal <piece_buffer_pieces_0_region_extra_0>.
+    Found 14-bit register for signal <piece_buffer_pieces_0_region_extra_1>.
+    Found 14-bit register for signal <piece_buffer_pieces_0_region_extra_2>.
+    Found 14-bit register for signal <piece_buffer_pieces_0_region_extra_3>.
+    Found 14-bit register for signal <piece_buffer_pieces_1_region_extra_0>.
+    Found 14-bit register for signal <piece_buffer_pieces_1_region_extra_1>.
+    Found 14-bit register for signal <piece_buffer_pieces_1_region_extra_2>.
+    Found 14-bit register for signal <piece_buffer_pieces_1_region_extra_3>.
+    Found 14-bit register for signal <piece_buffer_pieces_2_region_extra_0>.
+    Found 14-bit register for signal <piece_buffer_pieces_2_region_extra_1>.
+    Found 14-bit register for signal <piece_buffer_pieces_2_region_extra_2>.
+    Found 14-bit register for signal <piece_buffer_pieces_2_region_extra_3>.
+    Found 14-bit register for signal <piece_buffer_pieces_3_region_extra_0>.
+    Found 14-bit register for signal <piece_buffer_pieces_3_region_extra_1>.
+    Found 14-bit register for signal <piece_buffer_pieces_3_region_extra_2>.
+    Found 14-bit register for signal <piece_buffer_pieces_3_region_extra_3>.
+    Found 2-bit register for signal <piece_buffer_rot_backup>.
+    Found 2-bit register for signal <piece_buffer_rot_cur>.
+    Found 2-bit adder for signal <piece_buffer_rot_cur$addsub0000> created at line 6004.
+    Found 3-bit register for signal <piece_payload>.
+    Found 1-bit register for signal <piece_valid>.
+    Found 5-bit adder for signal <playfield_addr_access_port_payload>.
+    Found 5-bit comparator greater for signal <playfield_address_beyond_limit>.
+    Found 5-bit register for signal <playfield_count>.
+    Found 5-bit adder for signal <playfield_count$add0000> created at line 5801.
+    Found 10-bit register for signal <playfield_dataout_stage_payload>.
+    Found 1-bit register for signal <playfield_dataout_stage_valid>.
+    Found 1-bit register for signal <playfield_lock_score>.
+    Found 1-bit register for signal <playfield_lock_score_1d>.
+    Found 22-bit register for signal <playfield_ones>.
+    Found 10-bit register for signal <playfield_readout>.
+    Found 10-bit register for signal <playfield_region_0>.
+    Found 10-bit register for signal <playfield_region_1>.
+    Found 10-bit register for signal <playfield_region_10>.
+    Found 10-bit register for signal <playfield_region_11>.
+    Found 10-bit register for signal <playfield_region_12>.
+    Found 10-bit register for signal <playfield_region_13>.
+    Found 10-bit register for signal <playfield_region_14>.
+    Found 10-bit register for signal <playfield_region_15>.
+    Found 10-bit register for signal <playfield_region_16>.
+    Found 10-bit register for signal <playfield_region_17>.
+    Found 10-bit register for signal <playfield_region_18>.
+    Found 10-bit register for signal <playfield_region_19>.
+    Found 10-bit register for signal <playfield_region_2>.
+    Found 10-bit register for signal <playfield_region_20>.
+    Found 10-bit register for signal <playfield_region_21>.
+    Found 10-bit register for signal <playfield_region_3>.
+    Found 10-bit register for signal <playfield_region_4>.
+    Found 10-bit register for signal <playfield_region_5>.
+    Found 10-bit register for signal <playfield_region_6>.
+    Found 10-bit register for signal <playfield_region_7>.
+    Found 10-bit register for signal <playfield_region_8>.
+    Found 10-bit register for signal <playfield_region_9>.
+    Found 22-bit subtractor for signal <playfield_rows_to_clear>.
+    Found 10-bit register for signal <playfield_total_score>.
+    Found 10-bit adder for signal <playfield_total_score$addsub0000> created at line 5875.
+    Found 1-bit register for signal <playfield_update_score_delay_1>.
+    Found 1-bit register for signal <src_0_valid_regNext>.
+    Found 10-bit 4-to-1 multiplexer for signal <temp_checker_readout>.
+    Found 10-bit 4-to-1 multiplexer for signal <temp_checker_region_0>.
+    Found 10-bit 4-to-1 multiplexer for signal <temp_checker_region_1>.
+    Found 10-bit 4-to-1 multiplexer for signal <temp_checker_region_2>.
+    Found 10-bit 4-to-1 multiplexer for signal <temp_checker_region_3>.
+    Found 10-bit 4-to-1 multiplexer for signal <temp_flow_readout>.
+    Found 5-bit adder for signal <temp_playfield_count_14>.
+    Found 5-bit adder for signal <temp_playfield_count_19>.
+    Found 5-bit adder for signal <temp_playfield_count_20>.
+    Found 5-bit adder for signal <temp_playfield_count_25>.
+    Found 5-bit adder for signal <temp_playfield_count_8>.
+    Found 5-bit adder for signal <temp_playfield_count_9>.
+    Found 22-bit subtractor for signal <temp_playfield_lowestOne>.
+    Found 1-bit 4-to-1 multiplexer for signal <temp_when_3>.
+    Summary:
+	inferred   1 Finite State Machine(s).
+	inferred   1 RAM(s).
+	inferred   8 ROM(s).
+	inferred   4 Counter(s).
+	inferred 662 D-type flip-flop(s).
+	inferred  13 Adder/Subtractor(s).
+	inferred   3 Comparator(s).
+	inferred  61 Multiplexer(s).
+Unit <playfield> synthesized.
+
+
+Synthesizing Unit <controller>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <lock_timeout_stateRise> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_wantStart> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_wantExit> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_stateReg_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_stateNext_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_WAIT_TIME> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_WAIT_ALLOW_ACTION> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_RANDOM_GEN> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_MOVE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_LOCKDOWN> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_LOCK> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_GAME_START> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_END_1> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_DROP> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_DOWN> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_CLEAN> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_WAIT_TIME> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_WAIT_ALLOW_ACTION> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_RANDOM_GEN> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_PLACE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_MOVE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_GAME_START> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_FALLING> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_END_1> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_CLEAN> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <drop_timeout_stateRise> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Found finite state machine <FSM_2> for signal <fsm_stateReg>.
+    -----------------------------------------------------------------------
+    | States             | 14                                             |
+    | Transitions        | 36                                             |
+    | Inputs             | 13                                             |
+    | Outputs            | 29                                             |
+    | Clock              | core_clk                  (rising_edge)        |
+    | Reset              | core_rst                  (positive)           |
+    | Reset type         | asynchronous                                   |
+    | Reset State        | 0000                                           |
+    | Encoding           | automatic                                      |
+    | Implementation     | LUT                                            |
+    -----------------------------------------------------------------------
+    Found 1-bit register for signal <debug_place_new_cnt_value<0>>.
+    Found 1-bit adder for signal <debug_place_new_cnt_valueNext<0>>.
+    Found 1-bit register for signal <drop_regNext>.
+    Found 25-bit register for signal <drop_timeout_counter_value>.
+    Found 25-bit adder for signal <drop_timeout_counter_valueNext$addsub0000> created at line 4104.
+    Found 1-bit register for signal <drop_timeout_state>.
+    Found 25-bit register for signal <lock_timeout_counter_value>.
+    Found 25-bit adder for signal <lock_timeout_counter_valueNext$addsub0000> created at line 4118.
+    Found 1-bit register for signal <lock_timeout_state>.
+    Found 5-bit register for signal <motion_request>.
+    Found 1-bit register for signal <move_down_regNext>.
+    Found 1-bit register for signal <move_left_regNext>.
+    Found 1-bit register for signal <move_right_regNext>.
+    Found 1-bit register for signal <rotate_regNext>.
+    Found 10-bit subtractor for signal <temp_temp_motion_voted_2>.
+    Summary:
+	inferred   1 Finite State Machine(s).
+	inferred  63 D-type flip-flop(s).
+	inferred   4 Adder/Subtractor(s).
+Unit <controller> synthesized.
+
+
+Synthesizing Unit <bram_2p>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+    Found 69120x4-bit dual-port RAM <Mram_memory> for signal <memory>.
+    Found 1-bit register for signal <addr_inc>.
+    Found 1-bit register for signal <addr_inc_regNext>.
+    Found 17-bit register for signal <full_addr_value>.
+    Found 17-bit adder for signal <full_addr_valueNext$addsub0000> created at line 3745.
+    Found 4-bit register for signal <memory_spinal_port1>.
+    Summary:
+	inferred   1 RAM(s).
+	inferred  23 D-type flip-flop(s).
+	inferred   1 Adder/Subtractor(s).
+Unit <bram_2p> synthesized.
+
+
+Synthesizing Unit <draw_block_engine>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:1780 - Signal <v_cnt_isDone> is never used or assigned. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:1780 - Signal <h_cnt_isDone> is never used or assigned. This unconnected signal will be trimmed during the optimization process.
+    Found 1-bit register for signal <active_1d>.
+    Found 1-bit register for signal <active_2d>.
+    Found 1-bit register for signal <addr_comp_active>.
+    Found 1-bit register for signal <border_en>.
+    Found 1-bit register for signal <fill_en>.
+    Found 2-bit comparator equal for signal <fill_en$cmp_eq0000> created at line 3420.
+    Found 2-bit register for signal <fill_pattern_reg>.
+    Found 8-bit register for signal <h_cnt_value>.
+    Found 8-bit adder for signal <h_cnt_valueNext$addsub0000> created at line 3323.
+    Found 8-bit comparator equal for signal <h_cnt_willOverflowIfInc>.
+    Found 8-bit register for signal <height_reg>.
+    Found 4-bit register for signal <in_color_1>.
+    Found 4-bit register for signal <in_color_1d>.
+    Found 1-bit register for signal <no_pattern>.
+    Found 8-bit comparator less for signal <no_pattern$cmp_lt0000> created at line 3413.
+    Found 8-bit comparator less for signal <no_pattern$cmp_lt0001> created at line 3413.
+    Found 4-bit register for signal <out_color_1>.
+    Found 4-bit register for signal <pat_color_1>.
+    Found 4-bit register for signal <pat_color_1d>.
+    Found 8-bit register for signal <v_cnt_value>.
+    Found 8-bit adder for signal <v_cnt_valueNext$addsub0000> created at line 3344.
+    Found 8-bit comparator equal for signal <v_cnt_willOverflowIfInc>.
+    Found 8-bit register for signal <width_reg>.
+    Summary:
+	inferred  60 D-type flip-flop(s).
+	inferred   2 Adder/Subtractor(s).
+	inferred   5 Comparator(s).
+Unit <draw_block_engine> synthesized.
+
+
+Synthesizing Unit <fb_addr_gen>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+    Found 17-bit register for signal <addr>.
+    Found 17-bit adder for signal <addr$add0000> created at line 3247.
+    Found 9-bit register for signal <h_reg>.
+    Found 9-bit adder for signal <h_reg$add0000> created at line 3245.
+    Found 8-bit adder for signal <v_next>.
+    Found 12-bit adder for signal <v_next_in_fb>.
+    Found 12-bit register for signal <v_reg>.
+    Found 9-bit register for signal <x_reg>.
+    Found 8-bit register for signal <y_reg>.
+    Summary:
+	inferred  55 D-type flip-flop(s).
+	inferred   4 Adder/Subtractor(s).
+Unit <fb_addr_gen> synthesized.
+
+
+Synthesizing Unit <vga_sync_gen>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <temp_io_y<10>> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <temp_io_x<10>> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Found 1-bit register for signal <h_colorEn>.
+    Found 11-bit register for signal <h_counter>.
+    Found 11-bit adder for signal <h_counter$addsub0000> created at line 2237.
+    Found 1-bit register for signal <h_sync>.
+    Found 1-bit register for signal <v_colorEn>.
+    Found 11-bit register for signal <v_counter>.
+    Found 11-bit adder for signal <v_counter$addsub0000> created at line 2260.
+    Found 1-bit register for signal <v_sync>.
+    Summary:
+	inferred   4 D-type flip-flop(s).
+	inferred   2 Adder/Subtractor(s).
+Unit <vga_sync_gen> synthesized.
+
+
+Synthesizing Unit <color_palettes>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:647 - Input <vga_rst> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:1781 - Signal <rom> is used but never assigned. Tied to default value.
+    Found 16x12-bit ROM for signal <$varindex0000> created at line 2139.
+    Found 1-bit register for signal <io_rd_en_regNext>.
+    Found 12-bit register for signal <rom_spinal_port0>.
+    Summary:
+	inferred   1 ROM(s).
+	inferred  13 D-type flip-flop(s).
+Unit <color_palettes> synthesized.
+
+
+Synthesizing Unit <linebuffer>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <rd_scale_cnt_willOverflow> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Found 288x4-bit dual-port RAM <Mram_ram> for signal <ram>.
+    Found 4-bit register for signal <ram_spinal_port1>.
+    Found 9-bit up counter for signal <rd_addr>.
+    Found 1-bit register for signal <rd_enable>.
+    Found 1-bit register for signal <rd_enable_regNext>.
+    Found 1-bit register for signal <rd_scale_cnt_value<0>>.
+    Found 1-bit adder for signal <rd_scale_cnt_valueNext_0$addsub0000> created at line 2065.
+    Found 9-bit up counter for signal <wr_addr>.
+    Summary:
+	inferred   1 RAM(s).
+	inferred   2 Counter(s).
+	inferred   7 D-type flip-flop(s).
+	inferred   1 Adder/Subtractor(s).
+Unit <linebuffer> synthesized.
+
+
+Synthesizing Unit <BufferCC>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+    Found 1-bit register for signal <buffers_0>.
+    Found 1-bit register for signal <buffers_1>.
+    Summary:
+	inferred   2 D-type flip-flop(s).
+Unit <BufferCC> synthesized.
+
+
+Synthesizing Unit <BufferCC_1_1>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+    Found 1-bit register for signal <buffers_0>.
+    Found 1-bit register for signal <buffers_1>.
+    Summary:
+	inferred   2 D-type flip-flop(s).
+Unit <BufferCC_1_1> synthesized.
+
+
+Synthesizing Unit <BufferCC_1_2>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+    Found 1-bit register for signal <buffers_0>.
+    Found 1-bit register for signal <buffers_1>.
+    Summary:
+	inferred   2 D-type flip-flop(s).
+Unit <BufferCC_1_2> synthesized.
+
+
+Synthesizing Unit <BufferCC_1_3>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+    Found 1-bit register for signal <buffers_0>.
+    Found 1-bit register for signal <buffers_1>.
+    Summary:
+	inferred   2 D-type flip-flop(s).
+Unit <BufferCC_1_3> synthesized.
+
+
+Synthesizing Unit <bcd>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <isProcessing> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_wantStart> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_wantExit> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_stateReg_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_stateNext_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_SHIFT> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_BOOT> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_ADD3_CHECK> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_SHIFT> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_BOOT> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_ADD3_CHECK> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Using one-hot encoding for signal <fsm_stateReg>.
+    Found 5-bit register for signal <fsm_stateReg>.
+    Found 4-bit register for signal <shiftCounter>.
+    Found 4-bit adder for signal <shiftCounter$addsub0000> created at line 6821.
+    Found 26-bit register for signal <shiftRegister>.
+    Found 4-bit comparator greatequal for signal <temp_shiftRegister_13$cmp_le0000> created at line 6772.
+    Found 4-bit comparator greatequal for signal <temp_shiftRegister_17$cmp_le0000> created at line 6775.
+    Found 4-bit comparator greatequal for signal <temp_shiftRegister_21$cmp_le0000> created at line 6778.
+    Found 4-bit comparator greatequal for signal <temp_shiftRegister_25$cmp_le0000> created at line 6781.
+    Found 4-bit adder for signal <temp_temp_shiftRegister>.
+    Found 4-bit adder for signal <temp_temp_shiftRegister_1>.
+    Found 4-bit adder for signal <temp_temp_shiftRegister_2>.
+    Found 4-bit adder for signal <temp_temp_shiftRegister_3>.
+    Summary:
+	inferred  30 D-type flip-flop(s).
+	inferred   5 Adder/Subtractor(s).
+	inferred   4 Comparator(s).
+Unit <bcd> synthesized.
+
+
+Synthesizing Unit <ps2_host_tx>.
+    Related source file is "../design/SOC/pcb/rtl/pcb_bb.v".
+WARNING:Xst:646 - Signal <tran_err_no_ack> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Found 1-bit register for signal <cntr_zero>.
+    Found 4-bit register for signal <data_cnt>.
+    Found 4-bit subtractor for signal <data_cnt_nxt$addsub0000> created at line 754.
+    Found 9-bit register for signal <data_out>.
+    Found 13-bit register for signal <delay_cntr>.
+    Found 13-bit subtractor for signal <delay_cntr$addsub0000> created at line 678.
+    Found 1-bit register for signal <ps2_clk_in_1d>.
+    Found 3-bit register for signal <state_r>.
+    Summary:
+	inferred  31 D-type flip-flop(s).
+	inferred   2 Adder/Subtractor(s).
+Unit <ps2_host_tx> synthesized.
+
+
+Synthesizing Unit <ps2_host_rx>.
+    Related source file is "../design/SOC/pcb/rtl/pcb_bb.v".
+WARNING:Xst:646 - Signal <ps2_rx_done> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Found finite state machine <FSM_3> for signal <state_r>.
+    -----------------------------------------------------------------------
+    | States             | 4                                              |
+    | Transitions        | 12                                             |
+    | Inputs             | 7                                              |
+    | Outputs            | 4                                              |
+    | Clock              | clk                       (rising_edge)        |
+    | Reset              | rst                       (positive)           |
+    | Reset type         | synchronous                                    |
+    | Reset State        | 00                                             |
+    | Power Up State     | 00                                             |
+    | Encoding           | automatic                                      |
+    | Implementation     | LUT                                            |
+    -----------------------------------------------------------------------
+WARNING:Xst:697 - FSM extraction is enabled. Signal <state_r> cannot be preserved.
+    Found 1-bit register for signal <ps2_rddata_valid>.
+    Found 10-bit register for signal <data_in>.
+    Found 13-bit down counter for signal <ps2_clk_cnt>.
+    Found 13-bit comparator greater for signal <ps2_clk_cnt$cmp_gt0000> created at line 843.
+    Found 1-bit register for signal <ps2_clk_in_1d>.
+    Found 1-bit register for signal <ps2_rd_data_err>.
+    Found 4-bit register for signal <shift_bits_cnt>.
+    Found 4-bit subtractor for signal <shift_bits_cnt_nxt$addsub0000> created at line 904.
+    Found 1-bit xor9 for signal <state_r$xor0000> created at line 910.
+    Summary:
+	inferred   1 Finite State Machine(s).
+	inferred   1 Counter(s).
+	inferred  17 D-type flip-flop(s).
+	inferred   1 Adder/Subtractor(s).
+	inferred   1 Comparator(s).
+	inferred   1 Xor(s).
+Unit <ps2_host_rx> synthesized.
+
+
+Synthesizing Unit <glitch_free>.
+    Related source file is "../design/SOC/pcb/rtl/pcb_bb.v".
+    Found 1-bit register for signal <DataClean>.
+    Found 4-bit up counter for signal <count>.
+    Found 1-bit register for signal <data_i>.
+    Found 1-bit xor2 for signal <data_i$xor0000> created at line 659.
+    Summary:
+	inferred   1 Counter(s).
+	inferred   2 D-type flip-flop(s).
+Unit <glitch_free> synthesized.
+
+
+Synthesizing Unit <UartCtrlTx>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <temp_stateMachine_state_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stateMachine_state_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <io_configFrame_stop_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <io_configFrame_parity_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+INFO:Xst:1799 - State 010 is never reached in FSM <stateMachine_state>.
+INFO:Xst:1799 - State 001 is never reached in FSM <stateMachine_state>.
+INFO:Xst:1799 - State 100 is never reached in FSM <stateMachine_state>.
+INFO:Xst:1799 - State 011 is never reached in FSM <stateMachine_state>.
+    Found finite state machine <FSM_4> for signal <stateMachine_state>.
+    -----------------------------------------------------------------------
+    | States             | 1                                              |
+    | Transitions        | 1                                              |
+    | Inputs             | 3                                              |
+    | Outputs            | 1                                              |
+    | Clock              | core_clk                  (rising_edge)        |
+    | Reset              | core_rst                  (positive)           |
+    | Reset type         | asynchronous                                   |
+    | Reset State        | 000                                            |
+    | Encoding           | automatic                                      |
+    | Implementation     | LUT                                            |
+    -----------------------------------------------------------------------
+    Found 3-bit up accumulator for signal <clockDivider_counter_value>.
+    Found 1-bit register for signal <stateMachine_parity>.
+    Found 1-bit xor2 for signal <stateMachine_parity$xor0000> created at line 1923.
+    Found 1-bit register for signal <temp_io_txd>.
+    Found 3-bit register for signal <tickCounter_value>.
+    Found 3-bit adder for signal <tickCounter_value$share0000> created at line 1925.
+    Summary:
+	inferred   1 Finite State Machine(s).
+	inferred   1 Accumulator(s).
+	inferred   5 D-type flip-flop(s).
+	inferred   1 Adder/Subtractor(s).
+Unit <UartCtrlTx> synthesized.
+
+
+Synthesizing Unit <BufferCC_4>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+    Found 1-bit register for signal <buffers_0>.
+    Found 1-bit register for signal <buffers_1>.
+    Summary:
+	inferred   2 D-type flip-flop(s).
+Unit <BufferCC_4> synthesized.
+
+
+Synthesizing Unit <dcm>.
+    Related source file is "dcm.v".
+Unit <dcm> synthesized.
+
+
+Synthesizing Unit <synchro_1>.
+    Related source file is "../design/SOC/pcb/rtl/pcb_bb.v".
+Unit <synchro_1> synthesized.
+
+
+Synthesizing Unit <synchro_2>.
+    Related source file is "../design/SOC/pcb/rtl/pcb_bb.v".
+Unit <synchro_2> synthesized.
+
+
+Synthesizing Unit <logic_top>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:647 - Input <vga_sof> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <draw_field_done> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:646 - Signal <temp_piece_in_payload_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <controller_inst_debug_place_new> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Found 1-bit register for signal <playfield_inst_status_stage_payload>.
+    Found 1-bit register for signal <playfield_inst_status_stage_valid>.
+    Summary:
+	inferred   2 D-type flip-flop(s).
+Unit <logic_top> synthesized.
+
+
+Synthesizing Unit <display_controller>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:1781 - Signal <wall_rom> is used but never assigned. Tied to default value.
+WARNING:Xst:646 - Signal <stepup_fsm_wantStart> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_wantExit> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_stateReg_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_stateNext_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onExit_WAIT_GAME_START> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onExit_WAIT_DRAW_WALL_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onExit_WAIT_DRAW_STRING_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onExit_WAIT_DRAW_SCORE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onExit_WAIT_DRAW_OPEN_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onExit_START_DRAW_WALL> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onExit_START_DRAW_STRING> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onExit_START_DRAW_OPEN> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onExit_SETUP_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onExit_PRE_DRAW_WALL> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onExit_DRAW_SCORE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onExit_CLEAN_SCREEN> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onEntry_WAIT_GAME_START> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onEntry_WAIT_DRAW_WALL_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onEntry_WAIT_DRAW_STRING_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onEntry_WAIT_DRAW_SCORE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onEntry_WAIT_DRAW_OPEN_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onEntry_START_DRAW_WALL> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onEntry_START_DRAW_STRING> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onEntry_START_DRAW_OPEN> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onEntry_SETUP_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onEntry_PRE_DRAW_WALL> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_onEntry_DRAW_SCORE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <stepup_fsm_debug> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:1781 - Signal <rom> is used but never assigned. Tied to default value.
+WARNING:Xst:646 - Signal <fsm_wantStart> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_wantExit> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_stateReg_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_stateNext_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_WAIT_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_PRE_DRAW_SCORE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_POST_DRAW_SCORE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_FETCH> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_DRAW_DIGIT> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_DRAW> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onExit_DATA_READY> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_WAIT_DRAW_DIGIT_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_WAIT_DONE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_PRE_DRAW_SCORE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_POST_DRAW_SCORE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_FETCH> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_DRAW_DIGIT> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_DRAW> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fsm_onEntry_DATA_READY> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <digital_cnt_willOverflow> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Found 22x10-bit dual-port RAM <Mram_memory> for signal <memory>.
+    Found finite state machine <FSM_5> for signal <fsm_stateReg>.
+    -----------------------------------------------------------------------
+    | States             | 9                                              |
+    | Transitions        | 15                                             |
+    | Inputs             | 6                                              |
+    | Outputs            | 16                                             |
+    | Clock              | core_clk                  (rising_edge)        |
+    | Reset              | core_rst                  (positive)           |
+    | Reset type         | asynchronous                                   |
+    | Reset State        | 0000                                           |
+    | Encoding           | automatic                                      |
+    | Implementation     | LUT                                            |
+    -----------------------------------------------------------------------
+    Found finite state machine <FSM_6> for signal <stepup_fsm_stateReg>.
+    -----------------------------------------------------------------------
+    | States             | 12                                             |
+    | Transitions        | 23                                             |
+    | Inputs             | 10                                             |
+    | Outputs            | 15                                             |
+    | Clock              | core_clk                  (rising_edge)        |
+    | Reset              | core_rst                  (positive)           |
+    | Reset type         | asynchronous                                   |
+    | Reset State        | 0000                                           |
+    | Encoding           | automatic                                      |
+    | Implementation     | LUT                                            |
+    -----------------------------------------------------------------------
+    Found 11x7-bit ROM for signal <rom_spinal_port0>.
+    Found 4x43-bit ROM for signal <wall_rom_spinal_port0>.
+    Found 4-bit register for signal <cnt_value>.
+    Found 2-bit up accumulator for signal <cnt_value_1>.
+    Found 4-bit register for signal <col_cnt_value>.
+    Found 4-bit adder for signal <col_cnt_valueNext$addsub0000> created at line 2770.
+    Found 2-bit register for signal <digital_cnt_value>.
+    Found 2-bit adder for signal <digital_cnt_valueNext$addsub0000> created at line 2726.
+    Found 10-bit register for signal <memory_spinal_port1>.
+    Found 4-bit adder for signal <old_cnt_valueNext_6$add0000> created at line 2823.
+    Found 10-bit register for signal <row_bits>.
+    Found 5-bit register for signal <row_cnt_value>.
+    Found 5-bit adder for signal <row_cnt_valueNext$addsub0000> created at line 2791.
+    Found 1-bit register for signal <row_val_valid_regNext>.
+    Found 16-bit register for signal <score>.
+    Found 1-bit register for signal <stepup_game_is_running>.
+    Found 3-bit register for signal <stepup_scale>.
+    Found 9-bit register for signal <stepup_x>.
+    Found 9-bit adder for signal <stepup_x$share0000> created at line 3095.
+    Found 8-bit register for signal <stepup_y>.
+    Found 4-bit 4-to-1 multiplexer for signal <temp_itf_word>.
+    Found 1-bit register for signal <wait_date_readout>.
+    Found 1-bit register for signal <wait_date_readout_regNext>.
+    Found 5-bit register for signal <wr_row_cnt_value>.
+    Found 5-bit adder for signal <wr_row_cnt_valueNext$addsub0000> created at line 2749.
+    Found 9-bit register for signal <x>.
+    Found 9-bit adder for signal <x$share0000>.
+    Found 8-bit register for signal <y>.
+    Found 8-bit adder for signal <y$addsub0000> created at line 2810.
+    Summary:
+	inferred   2 Finite State Machine(s).
+	inferred   1 RAM(s).
+	inferred   2 ROM(s).
+	inferred   1 Accumulator(s).
+	inferred  97 D-type flip-flop(s).
+	inferred   8 Adder/Subtractor(s).
+	inferred   4 Multiplexer(s).
+Unit <display_controller> synthesized.
+
+
+Synthesizing Unit <ascii_font16x8>.
+    Related source file is "../design/SOC/pcb/rtl/pcb_bb.v".
+Unit <ascii_font16x8> synthesized.
+
+
+Synthesizing Unit <UartCtrlRx>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <stateMachine_state_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <io_configFrame_stop_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <io_configFrame_parity_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+INFO:Xst:1799 - State 011 is never reached in FSM <stateMachine_state>.
+    Found finite state machine <FSM_7> for signal <stateMachine_state>.
+    -----------------------------------------------------------------------
+    | States             | 4                                              |
+    | Transitions        | 12                                             |
+    | Inputs             | 7                                              |
+    | Outputs            | 6                                              |
+    | Clock              | core_clk                  (rising_edge)        |
+    | Reset              | core_rst                  (positive)           |
+    | Reset type         | asynchronous                                   |
+    | Reset State        | 000                                            |
+    | Encoding           | automatic                                      |
+    | Implementation     | LUT                                            |
+    -----------------------------------------------------------------------
+    Found 3-bit register for signal <bitCounter_value>.
+    Found 3-bit adder for signal <bitCounter_value$share0000> created at line 1702.
+    Found 3-bit down counter for signal <bitTimer_counter>.
+    Found 3-bit subtractor for signal <bitTimer_counter$addsub0000> created at line 1694.
+    Found 7-bit up counter for signal <break_counter>.
+    Found 1-bit register for signal <sampler_samples_1>.
+    Found 1-bit register for signal <sampler_samples_2>.
+    Found 1-bit register for signal <sampler_samples_3>.
+    Found 1-bit register for signal <sampler_samples_4>.
+    Found 1-bit register for signal <sampler_tick>.
+    Found 1-bit register for signal <sampler_value>.
+    Found 1-bit register for signal <stateMachine_parity>.
+    Found 8-bit register for signal <stateMachine_shifter>.
+    Found 1-bit register for signal <stateMachine_validReg>.
+    Found 1-bit xor2 for signal <temp_when_2$xor0000> created at line 1516.
+    Summary:
+	inferred   1 Finite State Machine(s).
+	inferred   2 Counter(s).
+	inferred  19 D-type flip-flop(s).
+	inferred   2 Adder/Subtractor(s).
+Unit <UartCtrlRx> synthesized.
+
+
+Synthesizing Unit <picouser>.
+    Related source file is "../design/SOC/pcb/rtl/pcb_bb.v".
+    Found 4-bit register for signal <rot_out>.
+    Summary:
+	inferred   4 D-type flip-flop(s).
+Unit <picouser> synthesized.
+
+
+Synthesizing Unit <draw_char_engine>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:1780 - Signal <y_scale_cnt_isDone> is never used or assigned. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <y_cnt_willOverflow> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:1780 - Signal <x_scale_cnt_isDone> is never used or assigned. This unconnected signal will be trimmed during the optimization process.
+    Found 4-bit register for signal <char_color>.
+    Found 4-bit register for signal <color_reg>.
+    Found 4-bit register for signal <color_reg_delay_1>.
+    Found 9-bit up counter for signal <h_cnt_1>.
+    Found 3-bit register for signal <pix_idx>.
+    Found 1-bit register for signal <rom_rd_en>.
+    Found 1-bit register for signal <rom_rd_en_delay_1>.
+    Found 1-bit register for signal <rom_rd_en_delay_2>.
+    Found 1-bit register for signal <rom_rd_en_regNext>.
+    Found 3-bit register for signal <scale_reg>.
+    Found 8-bit up counter for signal <v_cnt_1>.
+    Found 7-bit register for signal <word_reg>.
+    Found 3-bit up accumulator for signal <x_cnt_value>.
+    Found 3-bit register for signal <x_scale_cnt_value>.
+    Found 3-bit adder for signal <x_scale_cnt_valueNext$addsub0000> created at line 3532.
+    Found 3-bit comparator equal for signal <x_scale_cnt_willOverflowIfInc>.
+    Found 4-bit up accumulator for signal <y_cnt_value>.
+    Found 3-bit register for signal <y_scale_cnt_value>.
+    Found 3-bit adder for signal <y_scale_cnt_valueNext$addsub0000> created at line 3571.
+    Found 3-bit comparator equal for signal <y_scale_cnt_willOverflowIfInc>.
+    Summary:
+	inferred   2 Counter(s).
+	inferred   2 Accumulator(s).
+	inferred  35 D-type flip-flop(s).
+	inferred   2 Adder/Subtractor(s).
+	inferred   2 Comparator(s).
+	inferred   1 Multiplexer(s).
+Unit <draw_char_engine> synthesized.
+
+
+Synthesizing Unit <io_filter>.
+    Related source file is "../design/SOC/pcb/rtl/pcb_bb.v".
+Unit <io_filter> synthesized.
+
+
+Synthesizing Unit <UartCtrl>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <rx_io_rts> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <io_config_frame_stop_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <io_config_frame_parity_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Found 20-bit down counter for signal <clockDivider_counter>.
+    Found 1-bit register for signal <clockDivider_tickReg>.
+    Summary:
+	inferred   1 Counter(s).
+	inferred   1 D-type flip-flop(s).
+Unit <UartCtrl> synthesized.
+
+
+Synthesizing Unit <uart_controller>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <uartCtrl_1_io_write_ready> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <uartCtrl_1_io_readError> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <uartCtrl_1_io_readBreak> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Found 1-bit register for signal <drop_reg>.
+    Found 1-bit register for signal <game_start_reg>.
+    Found 1-bit register for signal <move_down_reg>.
+    Found 1-bit register for signal <move_left_reg>.
+    Found 1-bit register for signal <move_right_reg>.
+    Found 1-bit register for signal <rotate_reg>.
+    Summary:
+	inferred   6 D-type flip-flop(s).
+Unit <uart_controller> synthesized.
+
+
+Synthesizing Unit <display_top>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <vga_sync_io_y> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <vga_sync_io_x> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <pixel_debug_valid> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <pixel_debug_payload_r> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <pixel_debug_payload_g> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <pixel_debug_payload_b> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <fb_scale_cnt_willOverflow> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Found 17-bit register for signal <dma_fb_fetch_addr_value>.
+    Found 17-bit adder for signal <dma_fb_fetch_addr_valueNext$addsub0000> created at line 1235.
+    Found 1-bit register for signal <dma_fb_fetch_en>.
+    Found 9-bit register for signal <dma_fb_fetch_en_cnt_value>.
+    Found 9-bit adder for signal <dma_fb_fetch_en_cnt_valueNext$addsub0000> created at line 1208.
+    Found 1-bit register for signal <dma_fb_fetch_en_regNext>.
+    Found 1-bit register for signal <fb_scale_cnt_value<0>>.
+    Found 1-bit adder for signal <fb_scale_cnt_valueNext<0>>.
+    Found 1-bit register for signal <is_bg_color>.
+    Found 1-bit register for signal <temp_1>.
+    Found 1-bit register for signal <temp_dma_sos_1>.
+    Found 1-bit register for signal <temp_draw_done>.
+    Found 9-bit 4-to-1 multiplexer for signal <temp_h_cnt>.
+    Found 5-bit up accumulator for signal <temp_rd_start_2>.
+    Found 8-bit 4-to-1 multiplexer for signal <temp_v_cnt>.
+    Found 1-bit register for signal <vga_sync_io_colorEn_delay_1>.
+    Found 1-bit register for signal <vga_sync_io_colorEn_delay_2>.
+    Found 1-bit register for signal <vga_sync_io_colorEn_regNext>.
+    Found 1-bit register for signal <vga_sync_io_hSync_delay_1>.
+    Found 1-bit register for signal <vga_sync_io_hSync_delay_2>.
+    Found 1-bit register for signal <vga_sync_io_vSync_delay_1>.
+    Found 1-bit register for signal <vga_sync_io_vSync_delay_2>.
+    Summary:
+	inferred   1 Accumulator(s).
+	inferred  40 D-type flip-flop(s).
+	inferred   3 Adder/Subtractor(s).
+	inferred  17 Multiplexer(s).
+Unit <display_top> synthesized.
+
+
+Synthesizing Unit <ps2_host_rxtx>.
+    Related source file is "../design/SOC/pcb/rtl/pcb_bb.v".
+WARNING:Xst:646 - Signal <ps2_data_out_en> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <ps2_data_out> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <ps2_clk_out> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+Unit <ps2_host_rxtx> synthesized.
+
+
+Synthesizing Unit <tetris_core>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <game_display_inst_draw_done> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+Unit <tetris_core> synthesized.
+
+
+Synthesizing Unit <kd_ps2>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <rx_fsm_wantStart> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <rx_fsm_wantExit> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <rx_fsm_stateReg_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <rx_fsm_stateNext_string> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <rx_fsm_onExit_WAIT_LAST> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <rx_fsm_onExit_WAIT_BREAK> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <rx_fsm_onExit_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <rx_fsm_onExit_DEFAULT_1> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <rx_fsm_onEntry_WAIT_LAST> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <rx_fsm_onEntry_WAIT_BREAK> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <rx_fsm_onEntry_IDLE> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <rx_fsm_onEntry_DEFAULT_1> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <ps2_inst_ps2_tx_ready> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <ps2_inst_ps2_tx_done> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <ps2_inst_ps2_rx_ready> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+INFO:Xst:1799 - State 11 is never reached in FSM <rx_fsm_stateReg>.
+    Found finite state machine <FSM_8> for signal <rx_fsm_stateReg>.
+    -----------------------------------------------------------------------
+    | States             | 3                                              |
+    | Transitions        | 6                                              |
+    | Inputs             | 3                                              |
+    | Outputs            | 4                                              |
+    | Clock              | core_clk                  (rising_edge)        |
+    | Reset              | core_rst                  (positive)           |
+    | Reset type         | asynchronous                                   |
+    | Reset State        | 00                                             |
+    | Encoding           | automatic                                      |
+    | Implementation     | LUT                                            |
+    -----------------------------------------------------------------------
+    Found 1-bit register for signal <down_valid>.
+    Found 1-bit register for signal <drop_valid>.
+    Found 1-bit register for signal <left_valid>.
+    Found 1-bit register for signal <right_valid>.
+    Found 1-bit register for signal <rotate_valid>.
+    Found 1-bit register for signal <start_valid>.
+    Summary:
+	inferred   1 Finite State Machine(s).
+	inferred   6 D-type flip-flop(s).
+Unit <kd_ps2> synthesized.
+
+
+Synthesizing Unit <tetris_top>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:647 - Input <btns_rot_push> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <btns_btn_south> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <btns_rot_right> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <btns_rot_left> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <btns_btn_east> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <btns_btn_north> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <btns_rot_pop> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <btns_btn_west> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:646 - Signal <kd_ps2_inst_rd_data_valid> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <kd_ps2_inst_rd_data_payload> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <kd_ps2_inst_keys_valid> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+    Found 1-bit register for signal <tetris_core_inst_ctrl_allowed_regNext>.
+    Summary:
+	inferred   1 D-type flip-flop(s).
+Unit <tetris_top> synthesized.
+
+
+Synthesizing Unit <pcb>.
+    Related source file is "../design/SOC/pcb/rtl/pcb.v".
+WARNING:Xst:646 - Signal <tetris_top_inst_vga_colorEn> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <sws_out> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <dcm_inst_CLKIN_IBUFG_OUT> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <dcm_clocked> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <core_fast_clk> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+WARNING:Xst:646 - Signal <CLK180_OUT_BUFG_O> is assigned but never used. This unconnected signal will be trimmed during the optimization process.
+Unit <pcb> synthesized.
+
+INFO:Xst:1767 - HDL ADVISOR - Resource sharing has identified that some arithmetic operations in this design can share the same physical resources for reduced device utilization. For improved clock frequency you may try to disable resource sharing.
+WARNING:Xst:638 - in unit ps2_host_tx Conflict on KEEP property on signal ps2_wr_stb and ps2_go ps2_go signal will be lost.
+
+=========================================================================
+HDL Synthesis Report
+
+Macro Statistics
+# RAMs                                                 : 4
+ 22x10-bit dual-port RAM                               : 1
+ 288x4-bit dual-port RAM                               : 1
+ 4x10-bit single-port RAM                              : 1
+ 69120x4-bit dual-port RAM                             : 1
+# ROMs                                                 : 11
+ 11x7-bit ROM                                          : 1
+ 16x12-bit ROM                                         : 1
+ 4x43-bit ROM                                          : 1
+ 8x5-bit ROM                                           : 8
+# Adders/Subtractors                                   : 53
+ 1-bit adder                                           : 3
+ 10-bit adder                                          : 1
+ 10-bit subtractor                                     : 1
+ 11-bit adder                                          : 2
+ 12-bit adder                                          : 1
+ 13-bit subtractor                                     : 1
+ 16-bit adder                                          : 1
+ 17-bit adder                                          : 3
+ 2-bit adder                                           : 2
+ 22-bit subtractor                                     : 2
+ 25-bit adder                                          : 2
+ 3-bit adder                                           : 5
+ 3-bit subtractor                                      : 1
+ 4-bit adder                                           : 7
+ 4-bit subtractor                                      : 2
+ 5-bit adder                                           : 11
+ 8-bit adder                                           : 4
+ 9-bit adder                                           : 4
+# Counters                                             : 22
+ 13-bit down counter                                   : 1
+ 2-bit up counter                                      : 3
+ 20-bit down counter                                   : 1
+ 21-bit up counter                                     : 8
+ 3-bit down counter                                    : 1
+ 4-bit up counter                                      : 2
+ 5-bit up counter                                      : 1
+ 7-bit up counter                                      : 1
+ 8-bit up counter                                      : 1
+ 9-bit up counter                                      : 3
+# Accumulators                                         : 5
+ 2-bit up accumulator                                  : 1
+ 3-bit up accumulator                                  : 2
+ 4-bit up accumulator                                  : 1
+ 5-bit up accumulator                                  : 1
+# Registers                                            : 313
+ 1-bit register                                        : 185
+ 10-bit register                                       : 39
+ 11-bit register                                       : 2
+ 12-bit register                                       : 2
+ 13-bit register                                       : 1
+ 14-bit register                                       : 16
+ 16-bit register                                       : 2
+ 17-bit register                                       : 3
+ 2-bit register                                        : 4
+ 25-bit register                                       : 2
+ 26-bit register                                       : 1
+ 3-bit register                                        : 17
+ 4-bit register                                        : 15
+ 5-bit register                                        : 8
+ 6-bit register                                        : 2
+ 7-bit register                                        : 1
+ 8-bit register                                        : 7
+ 9-bit register                                        : 6
+# Comparators                                          : 29
+ 13-bit comparator greater                             : 1
+ 2-bit comparator equal                                : 1
+ 3-bit comparator equal                                : 9
+ 3-bit comparator greater                              : 7
+ 4-bit comparator greatequal                           : 4
+ 5-bit comparator equal                                : 2
+ 5-bit comparator greater                              : 1
+ 8-bit comparator equal                                : 2
+ 8-bit comparator less                                 : 2
+# Multiplexers                                         : 14
+ 1-bit 4-to-1 multiplexer                              : 3
+ 1-bit 8-to-1 multiplexer                              : 1
+ 10-bit 4-to-1 multiplexer                             : 6
+ 16-bit 4-to-1 multiplexer                             : 1
+ 4-bit 4-to-1 multiplexer                              : 1
+ 8-bit 4-to-1 multiplexer                              : 1
+ 9-bit 4-to-1 multiplexer                              : 1
+# Logic shifters                                       : 1
+ 8-bit shifter logical left                            : 1
+# Xors                                                 : 14
+ 1-bit xor2                                            : 13
+ 1-bit xor9                                            : 1
+
+=========================================================================
+
+=========================================================================
+*                       Advanced HDL Synthesis                          *
+=========================================================================
+
+Analyzing FSM <FSM_8> for best encoding.
+Optimizing FSM <tetris_top_inst/kd_ps2_inst/rx_fsm_stateReg/FSM> on signal <rx_fsm_stateReg[1:2]> with gray encoding.
+-------------------
+ State | Encoding
+-------------------
+ 00    | 00
+ 01    | 11
+ 10    | 01
+ 11    | unreached
+-------------------
+Analyzing FSM <FSM_7> for best encoding.
+Optimizing FSM <tetris_top_inst/uart_inst/uartCtrl_1/rx/stateMachine_state/FSM> on signal <stateMachine_state[1:2]> with gray encoding.
+-------------------
+ State | Encoding
+-------------------
+ 000   | 00
+ 001   | 01
+ 010   | 11
+ 011   | unreached
+ 100   | 10
+-------------------
+Analyzing FSM <FSM_6> for best encoding.
+Optimizing FSM <tetris_top_inst/tetris_core_inst/game_display_inst/draw_controller/stepup_fsm_stateReg/FSM> on signal <stepup_fsm_stateReg[1:12]> with one-hot encoding.
+-----------------------
+ State | Encoding
+-----------------------
+ 0000  | 000000000001
+ 0001  | 000000001000
+ 0010  | 000000000100
+ 0011  | 000000010000
+ 0100  | 000000100000
+ 0101  | 000000000010
+ 0110  | 000001000000
+ 0111  | 000010000000
+ 1000  | 000100000000
+ 1001  | 001000000000
+ 1010  | 010000000000
+ 1011  | 100000000000
+-----------------------
+Analyzing FSM <FSM_5> for best encoding.
+Optimizing FSM <tetris_top_inst/tetris_core_inst/game_display_inst/draw_controller/fsm_stateReg/FSM> on signal <fsm_stateReg[1:9]> with one-hot encoding.
+--------------------
+ State | Encoding
+--------------------
+ 0000  | 000000001
+ 0001  | 000000100
+ 0010  | 000000010
+ 0011  | 000001000
+ 0100  | 000010000
+ 0101  | 000100000
+ 0110  | 001000000
+ 0111  | 010000000
+ 1000  | 100000000
+--------------------
+Analyzing FSM <FSM_4> for best encoding.
+Optimizing FSM <tetris_top_inst/uart_inst/uartCtrl_1/tx/stateMachine_state/FSM> on signal <stateMachine_state[1:3]> with user encoding.
+-------------------
+ State | Encoding
+-------------------
+ 000   | 000
+ 001   | unreached
+ 010   | unreached
+ 011   | unreached
+ 100   | unreached
+-------------------
+Analyzing FSM <FSM_3> for best encoding.
+Optimizing FSM <tetris_top_inst/kd_ps2_inst/ps2_inst/ps2_host_rx_inst/state_r/FSM> on signal <state_r[1:2]> with gray encoding.
+-------------------
+ State | Encoding
+-------------------
+ 00    | 00
+ 01    | 01
+ 10    | 11
+ 11    | 10
+-------------------
+Analyzing FSM <FSM_2> for best encoding.
+Optimizing FSM <tetris_top_inst/tetris_core_inst/game_logic_inst/controller_inst/fsm_stateReg/FSM> on signal <fsm_stateReg[1:14]> with one-hot encoding.
+-------------------------
+ State | Encoding
+-------------------------
+ 0000  | 00000000000001
+ 0001  | 00000000000100
+ 0010  | 00000000000010
+ 0011  | 00000000001000
+ 0100  | 00000000010000
+ 0101  | 00000000100000
+ 0110  | 00001000000000
+ 0111  | 00000100000000
+ 1000  | 00100000000000
+ 1001  | 00000010000000
+ 1010  | 00000001000000
+ 1011  | 00010000000000
+ 1100  | 01000000000000
+ 1101  | 10000000000000
+-------------------------
+Analyzing FSM <FSM_1> for best encoding.
+Optimizing FSM <tetris_top_inst/tetris_core_inst/game_logic_inst/playfield_inst/main_fsm_stateReg/FSM> on signal <main_fsm_stateReg[1:19]> with one-hot encoding.
+------------------------------
+ State | Encoding
+------------------------------
+ 00000 | 0000000000000000001
+ 00001 | 0000000000000000100
+ 00010 | 0000000000000010000
+ 00011 | 0000000000000001000
+ 00100 | 0000000000000100000
+ 00101 | 0000000000010000000
+ 00110 | 0000000000001000000
+ 00111 | 0000000000000000010
+ 01000 | 0000000001000000000
+ 01001 | 0000000010000000000
+ 01010 | 0000000000100000000
+ 01011 | 0000000100000000000
+ 01100 | 0000001000000000000
+ 01101 | 0000010000000000000
+ 01110 | 0000100000000000000
+ 01111 | 0001000000000000000
+ 10000 | 0010000000000000000
+ 10001 | 0100000000000000000
+ 10010 | 1000000000000000000
+------------------------------
+Analyzing FSM <FSM_0> for best encoding.
+Optimizing FSM <tetris_top_inst/tetris_core_inst/game_logic_inst/piece_gen_inst/fsm_stateReg/FSM> on signal <fsm_stateReg[1:6]> with one-hot encoding.
+-------------------
+ State | Encoding
+-------------------
+ 000   | 000001
+ 001   | 001000
+ 010   | 000100
+ 011   | 010000
+ 100   | 000010
+ 101   | 100000
+-------------------
+WARNING:Xst:79 - Model 'dcm' has different characteristics in destination library
+WARNING:Xst:80 - Model name has been changed to 'dcm1'
+WARNING:Xst:1290 - Hierarchical block <db_sws_3> is unconnected in block <picouser_inst>.
+   It will be removed from the design.
+WARNING:Xst:1290 - Hierarchical block <db_sws_2> is unconnected in block <picouser_inst>.
+   It will be removed from the design.
+WARNING:Xst:1290 - Hierarchical block <db_sws_1> is unconnected in block <picouser_inst>.
+   It will be removed from the design.
+WARNING:Xst:1290 - Hierarchical block <db_sws_0> is unconnected in block <picouser_inst>.
+   It will be removed from the design.
+WARNING:Xst:1290 - Hierarchical block <db_btn_e> is unconnected in block <picouser_inst>.
+   It will be removed from the design.
+WARNING:Xst:1290 - Hierarchical block <db_btn_s> is unconnected in block <picouser_inst>.
+   It will be removed from the design.
+WARNING:Xst:1290 - Hierarchical block <db_btn_w> is unconnected in block <picouser_inst>.
+   It will be removed from the design.
+WARNING:Xst:1290 - Hierarchical block <spinner_inst> is unconnected in block <picouser_inst>.
+   It will be removed from the design.
+WARNING:Xst:1290 - Hierarchical block <debnce_rot_c> is unconnected in block <picouser_inst>.
+   It will be removed from the design.
+INFO:Xst:2261 - The FF/Latch <stepup_scale_0> in Unit <draw_controller> is equivalent to the following FF/Latch, which will be removed : <stepup_scale_2> 
+WARNING:Xst:1710 - FF/Latch <0> (without init value) has a constant value of 1 in block <dma_playfield_dma_word_count>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1710 - FF/Latch <3> (without init value) has a constant value of 0 in block <dma_playfield_dma_word_count>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1710 - FF/Latch <color_reg_0> (without init value) has a constant value of 0 in block <draw_char_engine_1>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1710 - FF/Latch <color_reg_3> (without init value) has a constant value of 0 in block <draw_char_engine_1>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1710 - FF/Latch <scale_reg_0> (without init value) has a constant value of 0 in block <draw_char_engine_1>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1710 - FF/Latch <scale_reg_2> (without init value) has a constant value of 0 in block <draw_char_engine_1>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1710 - FF/Latch <char_color_0> (without init value) has a constant value of 0 in block <draw_char_engine_1>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1710 - FF/Latch <char_color_3> (without init value) has a constant value of 0 in block <draw_char_engine_1>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1710 - FF/Latch <stepup_scale_0> (without init value) has a constant value of 0 in block <draw_controller>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1710 - FF/Latch <temp_io_txd> (without init value) has a constant value of 1 in block <tx>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1895 - Due to other FF/Latch trimming, FF/Latch <color_reg_delay_1_0> (without init value) has a constant value of 0 in block <draw_char_engine_1>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1895 - Due to other FF/Latch trimming, FF/Latch <color_reg_delay_1_3> (without init value) has a constant value of 0 in block <draw_char_engine_1>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:2404 -  FFs/Latches <stepup_scale<2:2>> (without init value) have a constant value of 0 in block <display_controller>.
+
+Synthesizing (advanced) Unit <bram_2p>.
+INFO:Xst:3226 - The RAM <Mram_memory> will be implemented as a BLOCK RAM, absorbing the following register(s): <memory_spinal_port1>
+    -----------------------------------------------------------------------
+    | ram_type           | Block                               |          |
+    -----------------------------------------------------------------------
+    | Port A                                                              |
+    |     aspect ratio   | 69120-word x 4-bit                  |          |
+    |     mode           | read-first                          |          |
+    |     clkA           | connected to signal <core_clk>      | rise     |
+    |     weA            | connected to signal <wr_en_1>       | high     |
+    |     addrA          | connected to signal <wr_addr_1>     |          |
+    |     diA            | connected to signal <wr_data_1>     |          |
+    -----------------------------------------------------------------------
+    | optimization       | speed                               |          |
+    -----------------------------------------------------------------------
+    | Port B                                                              |
+    |     aspect ratio   | 69120-word x 4-bit                  |          |
+    |     mode           | write-first                         |          |
+    |     clkB           | connected to signal <core_clk>      | rise     |
+    |     enB            | connected to signal <rd_en>         | high     |
+    |     addrB          | connected to signal <rd_addr>       |          |
+    |     doB            | connected to signal <memory_spinal_port1> |          |
+    -----------------------------------------------------------------------
+    | optimization       | speed                               |          |
+    -----------------------------------------------------------------------
+Unit <bram_2p> synthesized (advanced).
+
+Synthesizing (advanced) Unit <color_palettes>.
+INFO:Xst:3034 - In order to maximize performance and save block RAM resources, the small ROM <Mrom__varindex0000> will be implemented on LUT. If you want to force its implementation on block, use option/constraint rom_style.
+Unit <color_palettes> synthesized (advanced).
+
+Synthesizing (advanced) Unit <controller>.
+The following registers are absorbed into accumulator <debug_place_new_cnt_value_0>: 1 register on signal <debug_place_new_cnt_value_0>.
+Unit <controller> synthesized (advanced).
+
+Synthesizing (advanced) Unit <display_controller>.
+INFO:Xst:3216 - HDL ADVISOR - LUT implementation is currently selected for the RAM <Mram_memory>. If you want the register to be removed and the RAM to be implemented as block RAM, please change the RAM implementation style accordingly.
+    -----------------------------------------------------------------------
+    | ram_type           | Distributed                         |          |
+    -----------------------------------------------------------------------
+    | Port A                                                              |
+    |     aspect ratio   | 22-word x 10-bit                    |          |
+    |     clkA           | connected to signal <core_clk>      | rise     |
+    |     weA            | connected to signal <row_val_valid> | high     |
+    |     addrA          | connected to signal <wr_row_cnt_value> |          |
+    |     diA            | connected to signal <row_val_payload> |          |
+    -----------------------------------------------------------------------
+    | Port B                                                              |
+    |     aspect ratio   | 22-word x 10-bit                    |          |
+    |     addrB          | connected to signal <row_cnt_value> |          |
+    |     doB            | connected to internal node          |          |
+    -----------------------------------------------------------------------
+Unit <display_controller> synthesized (advanced).
+
+Synthesizing (advanced) Unit <display_top>.
+The following registers are absorbed into accumulator <fb_scale_cnt_value_0>: 1 register on signal <fb_scale_cnt_value_0>.
+Unit <display_top> synthesized (advanced).
+
+Synthesizing (advanced) Unit <linebuffer>.
+INFO:Xst:3216 - HDL ADVISOR - LUT implementation is currently selected for the RAM <Mram_ram>. If you want the register to be removed and the RAM to be implemented as block RAM, please change the RAM implementation style accordingly.
+    -----------------------------------------------------------------------
+    | ram_type           | Distributed                         |          |
+    -----------------------------------------------------------------------
+    | Port A                                                              |
+    |     aspect ratio   | 288-word x 4-bit                    |          |
+    |     clkA           | connected to signal <core_clk>      | rise     |
+    |     weA            | connected to signal <wr_in_valid>   | high     |
+    |     addrA          | connected to signal <wr_addr>       |          |
+    |     diA            | connected to signal <wr_in_payload> |          |
+    -----------------------------------------------------------------------
+    | Port B                                                              |
+    |     aspect ratio   | 288-word x 4-bit                    |          |
+    |     addrB          | connected to signal <rd_addr>       |          |
+    |     doB            | connected to internal node          |          |
+    -----------------------------------------------------------------------
+Unit <linebuffer> synthesized (advanced).
+
+Synthesizing (advanced) Unit <playfield>.
+INFO:Xst:3216 - HDL ADVISOR - LUT implementation is currently selected for the RAM <Mram_locker_region>. If you want the register to be removed and the RAM to be implemented as block RAM, please change the RAM implementation style accordingly.
+    -----------------------------------------------------------------------
+    | ram_type           | Distributed                         |          |
+    -----------------------------------------------------------------------
+    | Port A                                                              |
+    |     aspect ratio   | 4-word x 10-bit                     |          |
+    |     clkA           | connected to signal <core_clk>      | rise     |
+    |     weA            | connected to signal <temp_locker_region_port> | high     |
+    |     addrA          | connected to signal <dma_locker_dma_req_counter> |          |
+    |     diA            | connected to signal <row_merged>    |          |
+    |     doA            | connected to internal node          |          |
+    -----------------------------------------------------------------------
+Unit <playfield> synthesized (advanced).
+
+Synthesizing (advanced) Unit <ps2_host_tx>.
+INFO:Xst:2774 - HDL ADVISOR - KEEP property attached to signal delay_cntr may hinder XST clustering optimizations.
+Unit <ps2_host_tx> synthesized (advanced).
+
+=========================================================================
+Advanced HDL Synthesis Report
+
+Macro Statistics
+# FSMs                                                 : 9
+# RAMs                                                 : 4
+ 22x10-bit dual-port distributed RAM                   : 1
+ 288x4-bit dual-port distributed RAM                   : 1
+ 4x10-bit single-port distributed RAM                  : 1
+ 69120x4-bit dual-port block RAM                       : 1
+# ROMs                                                 : 11
+ 11x7-bit ROM                                          : 1
+ 16x12-bit ROM                                         : 1
+ 4x43-bit ROM                                          : 1
+ 8x5-bit ROM                                           : 8
+# Adders/Subtractors                                   : 51
+ 1-bit adder                                           : 1
+ 10-bit adder                                          : 1
+ 10-bit subtractor                                     : 1
+ 11-bit adder                                          : 2
+ 12-bit adder                                          : 1
+ 13-bit subtractor                                     : 1
+ 16-bit adder                                          : 1
+ 17-bit adder                                          : 3
+ 2-bit adder                                           : 2
+ 21-bit subtractor                                     : 2
+ 25-bit adder                                          : 2
+ 3-bit adder                                           : 5
+ 3-bit subtractor                                      : 1
+ 4-bit adder                                           : 7
+ 4-bit subtractor                                      : 2
+ 5-bit adder                                           : 11
+ 8-bit adder                                           : 4
+ 9-bit adder                                           : 4
+# Counters                                             : 22
+ 13-bit down counter                                   : 1
+ 2-bit up counter                                      : 3
+ 20-bit down counter                                   : 1
+ 21-bit up counter                                     : 8
+ 3-bit down counter                                    : 1
+ 4-bit up counter                                      : 2
+ 5-bit up counter                                      : 1
+ 7-bit up counter                                      : 1
+ 8-bit up counter                                      : 1
+ 9-bit up counter                                      : 3
+# Accumulators                                         : 7
+ 1-bit up accumulator                                  : 2
+ 2-bit up accumulator                                  : 1
+ 3-bit up accumulator                                  : 2
+ 4-bit up accumulator                                  : 1
+ 5-bit up accumulator                                  : 1
+# Registers                                            : 1324
+ Flip-Flops                                            : 1324
+# Comparators                                          : 29
+ 13-bit comparator greater                             : 1
+ 2-bit comparator equal                                : 1
+ 3-bit comparator equal                                : 9
+ 3-bit comparator greater                              : 7
+ 4-bit comparator greatequal                           : 4
+ 5-bit comparator equal                                : 2
+ 5-bit comparator greater                              : 1
+ 8-bit comparator equal                                : 2
+ 8-bit comparator less                                 : 2
+# Multiplexers                                         : 14
+ 1-bit 4-to-1 multiplexer                              : 3
+ 1-bit 8-to-1 multiplexer                              : 1
+ 10-bit 4-to-1 multiplexer                             : 6
+ 16-bit 4-to-1 multiplexer                             : 1
+ 4-bit 4-to-1 multiplexer                              : 1
+ 8-bit 4-to-1 multiplexer                              : 1
+ 9-bit 4-to-1 multiplexer                              : 1
+# Logic shifters                                       : 1
+ 8-bit shifter logical left                            : 1
+# Xors                                                 : 14
+ 1-bit xor2                                            : 13
+ 1-bit xor9                                            : 1
+
+=========================================================================
+
+=========================================================================
+*                         Low Level Synthesis                           *
+=========================================================================
+WARNING:Xst:1710 - FF/Latch <temp_io_txd> (without init value) has a constant value of 1 in block <UartCtrlTx>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1710 - FF/Latch <stepup_scale_0> (without init value) has a constant value of 0 in block <display_controller>. This FF/Latch will be trimmed during the optimization process.
+INFO:Xst:1730 - XST has found some RLOC properties in element synchro_rot_a which is instantiated several times. To handle this constraint XST will add the property "hu_set synchro_rot_a" on each element with RLOC.
+INFO:Xst:1730 - XST has found some RLOC properties in element synchro_rot_b which is instantiated several times. To handle this constraint XST will add the property "hu_set synchro_rot_b" on each element with RLOC.
+WARNING:Xst:1710 - FF/Latch <stepup_y_5> (without init value) has a constant value of 0 in block <display_controller>. This FF/Latch will be trimmed during the optimization process.
+INFO:Xst:1901 - Instance font16X8_inst in unit ascii_font16x8 of type RAMB16_S9 has been replaced by RAMB16BWE
+WARNING:Xst:2677 - Node <tickCounter_value_0> of sequential type is unconnected in block <UartCtrlTx>.
+WARNING:Xst:2677 - Node <tickCounter_value_1> of sequential type is unconnected in block <UartCtrlTx>.
+WARNING:Xst:2677 - Node <tickCounter_value_2> of sequential type is unconnected in block <UartCtrlTx>.
+WARNING:Xst:2677 - Node <stateMachine_parity> of sequential type is unconnected in block <UartCtrlTx>.
+WARNING:Xst:2677 - Node <clockDivider_counter_value_0> of sequential type is unconnected in block <UartCtrlTx>.
+WARNING:Xst:2677 - Node <clockDivider_counter_value_1> of sequential type is unconnected in block <UartCtrlTx>.
+WARNING:Xst:2677 - Node <clockDivider_counter_value_2> of sequential type is unconnected in block <UartCtrlTx>.
+WARNING:Xst:1710 - FF/Latch <dma_playfield_dma_word_count_3> (without init value) has a constant value of 0 in block <playfield>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1895 - Due to other FF/Latch trimming, FF/Latch <dma_playfield_dma_word_count_0> (without init value) has a constant value of 1 in block <playfield>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:2677 - Node <action_1_0> of sequential type is unconnected in block <playfield>.
+WARNING:Xst:2677 - Node <fsm_stateReg_0> of sequential type is unconnected in block <bcd>.
+WARNING:Xst:2677 - Node <stateMachine_parity> of sequential type is unconnected in block <UartCtrlRx>.
+INFO:Xst:2261 - The FF/Latch <dma_playfield_dma_word_count_4> in Unit <playfield> is equivalent to the following FF/Latch, which will be removed : <dma_playfield_dma_word_count_2> 
+
+Optimizing unit <pcb> ...
+
+Optimizing unit <debounce> ...
+
+Optimizing unit <spinner> ...
+
+Optimizing unit <debnce> ...
+
+Optimizing unit <controller> ...
+
+Optimizing unit <bram_2p> ...
+
+Optimizing unit <draw_block_engine> ...
+
+Optimizing unit <fb_addr_gen> ...
+
+Optimizing unit <color_palettes> ...
+
+Optimizing unit <linebuffer> ...
+
+Optimizing unit <BufferCC> ...
+
+Optimizing unit <BufferCC_1_1> ...
+
+Optimizing unit <BufferCC_1_2> ...
+
+Optimizing unit <BufferCC_1_3> ...
+
+Optimizing unit <ps2_host_tx> ...
+
+Optimizing unit <ps2_host_rx> ...
+
+Optimizing unit <glitch_free> ...
+
+Optimizing unit <UartCtrlTx> ...
+
+Optimizing unit <BufferCC_4> ...
+
+Optimizing unit <synchro_1> ...
+
+Optimizing unit <ascii_font16x8> ...
+
+Optimizing unit <seven_bag_rng> ...
+
+Optimizing unit <playfield> ...
+
+Optimizing unit <vga_sync_gen> ...
+
+Optimizing unit <bcd> ...
+
+Optimizing unit <UartCtrlRx> ...
+
+Optimizing unit <picouser> ...
+
+Optimizing unit <draw_char_engine> ...
+
+Optimizing unit <io_filter> ...
+
+Optimizing unit <logic_top> ...
+
+Optimizing unit <display_controller> ...
+
+Optimizing unit <UartCtrl> ...
+
+Optimizing unit <ps2_host_rxtx> ...
+
+Optimizing unit <uart_controller> ...
+
+Optimizing unit <display_top> ...
+
+Optimizing unit <kd_ps2> ...
+
+Optimizing unit <tetris_core> ...
+
+Optimizing unit <tetris_top> ...
+WARNING:Xst:1303 - From in and out of unit ps2_host_tx_inst, both signals ps2_wr_data<7> and ps2_host_tx_inst/ps2_wr_stb have a KEEP attribute, signal ps2_wr_data<7> will be lost.
+WARNING:Xst:1303 - From in and out of unit ps2_host_tx_inst, both signals ps2_wr_data<6> and ps2_host_tx_inst/ps2_wr_stb have a KEEP attribute, signal ps2_wr_data<6> will be lost.
+WARNING:Xst:1303 - From in and out of unit ps2_host_tx_inst, both signals ps2_wr_data<5> and ps2_host_tx_inst/ps2_wr_stb have a KEEP attribute, signal ps2_wr_data<5> will be lost.
+WARNING:Xst:1303 - From in and out of unit ps2_host_tx_inst, both signals ps2_wr_data<4> and ps2_host_tx_inst/ps2_wr_stb have a KEEP attribute, signal ps2_wr_data<4> will be lost.
+WARNING:Xst:1303 - From in and out of unit ps2_host_tx_inst, both signals ps2_wr_data<3> and ps2_host_tx_inst/ps2_wr_stb have a KEEP attribute, signal ps2_wr_data<3> will be lost.
+WARNING:Xst:1303 - From in and out of unit ps2_host_tx_inst, both signals ps2_wr_data<2> and ps2_host_tx_inst/ps2_wr_stb have a KEEP attribute, signal ps2_wr_data<2> will be lost.
+WARNING:Xst:1303 - From in and out of unit ps2_host_tx_inst, both signals ps2_wr_data<1> and ps2_host_tx_inst/ps2_wr_stb have a KEEP attribute, signal ps2_wr_data<1> will be lost.
+WARNING:Xst:1303 - From in and out of unit ps2_host_tx_inst, both signals ps2_wr_data<0> and ps2_host_tx_inst/ps2_wr_stb have a KEEP attribute, signal ps2_wr_data<0> will be lost.
+INFO:Xst:1730 - XST has found some RLOC properties in element io_sync_db[1].io_sync_inst which is instantiated several times. To handle this constraint XST will add the property "hu_set io_sync_db[1].io_sync_inst" on each element with RLOC.
+INFO:Xst:1730 - XST has found some RLOC properties in element io_sync_db[0].io_sync_inst which is instantiated several times. To handle this constraint XST will add the property "hu_set io_sync_db[0].io_sync_inst" on each element with RLOC.
+INFO:Xst:1730 - XST has found some RLOC properties in element synchro_rot_c which is instantiated several times. To handle this constraint XST will add the property "hu_set synchro_rot_c" on each element with RLOC.
+INFO:Xst:1730 - XST has found some RLOC properties in element synchro_btn_w which is instantiated several times. To handle this constraint XST will add the property "hu_set synchro_btn_w" on each element with RLOC.
+INFO:Xst:1730 - XST has found some RLOC properties in element synchro_btn_s which is instantiated several times. To handle this constraint XST will add the property "hu_set synchro_btn_s" on each element with RLOC.
+INFO:Xst:1730 - XST has found some RLOC properties in element synchro_btn_e which is instantiated several times. To handle this constraint XST will add the property "hu_set synchro_btn_e" on each element with RLOC.
+INFO:Xst:1730 - XST has found some RLOC properties in element synchro_btn_n which is instantiated several times. To handle this constraint XST will add the property "hu_set synchro_btn_n" on each element with RLOC.
+INFO:Xst:1730 - XST has found some RLOC properties in element synchro_sws_0 which is instantiated several times. To handle this constraint XST will add the property "hu_set synchro_sws_0" on each element with RLOC.
+INFO:Xst:1730 - XST has found some RLOC properties in element synchro_sws_1 which is instantiated several times. To handle this constraint XST will add the property "hu_set synchro_sws_1" on each element with RLOC.
+INFO:Xst:1730 - XST has found some RLOC properties in element synchro_sws_2 which is instantiated several times. To handle this constraint XST will add the property "hu_set synchro_sws_2" on each element with RLOC.
+INFO:Xst:1730 - XST has found some RLOC properties in element synchro_sws_3 which is instantiated several times. To handle this constraint XST will add the property "hu_set synchro_sws_3" on each element with RLOC.
+WARNING:Xst:1710 - FF/Latch <tetris_core_inst/game_display_inst/draw_block_engine_1/pat_color_1_1> (without init value) has a constant value of 1 in block <tetris_top_inst>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1895 - Due to other FF/Latch trimming, FF/Latch <tetris_core_inst/game_display_inst/draw_block_engine_1/pat_color_1d_1> (without init value) has a constant value of 1 in block <tetris_top_inst>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/dly> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/event_off> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/event_on> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_0> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_1> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_2> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_3> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_4> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_5> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_6> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_7> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_8> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_9> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_10> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_11> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_12> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_13> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_14> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/debnce_rot_c/ctr_15> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/spinner_inst/event_rot_l> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/spinner_inst/event_rot_r> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/spinner_inst/rotary_q1> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/spinner_inst/rotary_q2> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/spinner_inst/rotary_q1_dly> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/spinner_inst/rotary_q2_dly> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/data_i> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/DataClean> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_0> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_1> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_2> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_3> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_4> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_5> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_6> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_7> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_8> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_9> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_10> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_11> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_12> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_13> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_14> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_15> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_16> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_17> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_18> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_19> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_3/count_20> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/data_i> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/DataClean> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_0> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_1> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_2> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_3> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_4> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_5> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_6> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_7> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_8> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_9> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_10> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_11> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_12> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_13> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_14> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_15> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_16> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_17> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_18> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_19> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_2/count_20> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/data_i> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/DataClean> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_0> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_1> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_2> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_3> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_4> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_5> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_6> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_7> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_8> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_9> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_10> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_11> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_12> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_13> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_14> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_15> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_16> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_17> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_18> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_19> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_1/count_20> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/data_i> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/DataClean> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_0> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_1> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_2> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_3> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_4> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_5> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_6> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_7> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_8> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_9> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_10> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_11> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_12> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_13> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_14> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_15> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_16> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_17> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_18> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_19> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_sws_0/count_20> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/data_i> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/DataClean> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_0> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_1> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_2> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_3> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_4> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_5> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_6> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_7> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_8> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_9> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_10> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_11> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_12> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_13> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_14> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_15> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_16> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_17> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_18> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_19> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_e/count_20> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/data_i> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/DataClean> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_0> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_1> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_2> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_3> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_4> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_5> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_6> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_7> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_8> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_9> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_10> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_11> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_12> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_13> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_14> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_15> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_16> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_17> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_18> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_19> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_s/count_20> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/data_i> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/DataClean> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_0> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_1> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_2> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_3> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_4> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_5> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_6> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_7> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_8> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_9> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_10> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_11> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_12> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_13> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_14> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_15> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_16> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_17> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_18> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_19> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/db_btn_w/count_20> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/rot_out_1> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/rot_out_2> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/rot_out_0> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <picouser_inst/rot_out_3> of sequential type is unconnected in block <pcb>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/state_r_FSM_FFd2> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/state_r_FSM_FFd1> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_cnt_12> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_cnt_11> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_cnt_10> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_cnt_9> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_cnt_8> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_cnt_7> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_cnt_6> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_cnt_5> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_cnt_4> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_cnt_3> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_cnt_2> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_cnt_1> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_cnt_0> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_rddata_valid> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/shift_bits_cnt_3> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/shift_bits_cnt_2> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/shift_bits_cnt_1> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/shift_bits_cnt_0> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/data_in_9> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/data_in_8> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/data_in_7> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/data_in_6> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/data_in_5> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/data_in_4> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/data_in_3> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/data_in_2> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/data_in_1> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/data_in_0> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/rx_fsm_stateReg_FSM_FFd2> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/rx_fsm_stateReg_FSM_FFd1> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/drop_valid> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/rotate_valid> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/right_valid> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/left_valid> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/down_valid> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <kd_ps2_inst/start_valid> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <tetris_core_inst/game_display_inst/temp_draw_done> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <tetris_core_inst/game_display_inst/vga_sync_io_colorEn_delay_1> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <tetris_core_inst/game_display_inst/vga_sync_io_colorEn_delay_2> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:2677 - Node <tetris_core_inst/game_logic_inst/controller_inst/debug_place_new_cnt_value_0> of sequential type is unconnected in block <tetris_top_inst>.
+WARNING:Xst:638 - in unit tetris_top_inst Conflict on KEEP property on signal N0 and kd_ps2_inst/ps2_inst/ps2_host_tx_inst/load_cntr kd_ps2_inst/ps2_inst/ps2_host_tx_inst/load_cntr signal will be lost.
+
+Mapping all equations...
+Building and optimizing final netlist ...
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_display_inst/draw_char_engine_1/color_reg_3> in Unit <tetris_top_inst> is equivalent to the following 3 FFs/Latches, which will be removed : <tetris_core_inst/game_display_inst/draw_char_engine_1/color_reg_0> <tetris_core_inst/game_display_inst/draw_char_engine_1/scale_reg_2> <tetris_core_inst/game_display_inst/draw_char_engine_1/scale_reg_0> 
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_logic_inst/piece_gen_inst/fsm_stateReg_FSM_FFd2> in Unit <tetris_top_inst> is equivalent to the following FF/Latch, which will be removed : <tetris_core_inst/game_logic_inst/playfield_inst/piece_valid> 
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_display_inst/draw_block_engine_1/width_reg_6> in Unit <tetris_top_inst> is equivalent to the following FF/Latch, which will be removed : <tetris_core_inst/game_display_inst/draw_block_engine_1/width_reg_5> 
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_display_inst/draw_block_engine_1/in_color_1_3> in Unit <tetris_top_inst> is equivalent to the following FF/Latch, which will be removed : <tetris_core_inst/game_display_inst/draw_block_engine_1/in_color_1_0> 
+INFO:Xst:2261 - The FF/Latch <kd_ps2_inst/ps2_inst/ps2_host_tx_inst/ps2_clk_in_1d> in Unit <tetris_top_inst> is equivalent to the following FF/Latch, which will be removed : <kd_ps2_inst/ps2_inst/ps2_host_rx_inst/ps2_clk_in_1d> 
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_display_inst/draw_block_engine_1/pat_color_1_3> in Unit <tetris_top_inst> is equivalent to the following FF/Latch, which will be removed : <tetris_core_inst/game_display_inst/draw_block_engine_1/pat_color_1_2> 
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_display_inst/draw_block_engine_1/height_reg_7> in Unit <tetris_top_inst> is equivalent to the following FF/Latch, which will be removed : <tetris_core_inst/game_display_inst/draw_block_engine_1/height_reg_6> 
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_display_inst/draw_block_engine_1/fill_pattern_reg_1> in Unit <tetris_top_inst> is equivalent to the following 2 FFs/Latches, which will be removed : <tetris_core_inst/game_display_inst/draw_block_engine_1/fill_pattern_reg_0> <tetris_core_inst/game_display_inst/draw_block_engine_1/width_reg_3> 
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_display_inst/draw_block_engine_1/height_reg_5> in Unit <tetris_top_inst> is equivalent to the following 2 FFs/Latches, which will be removed : <tetris_core_inst/game_display_inst/draw_block_engine_1/width_reg_7> <tetris_core_inst/game_display_inst/draw_block_engine_1/width_reg_4> 
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_display_inst/draw_char_engine_1/color_reg_2> in Unit <tetris_top_inst> is equivalent to the following FF/Latch, which will be removed : <tetris_core_inst/game_display_inst/draw_char_engine_1/color_reg_1> 
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_display_inst/draw_block_engine_1/in_color_1d_3> in Unit <tetris_top_inst> is equivalent to the following FF/Latch, which will be removed : <tetris_core_inst/game_display_inst/draw_block_engine_1/in_color_1d_0> 
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_display_inst/draw_block_engine_1/pat_color_1d_3> in Unit <tetris_top_inst> is equivalent to the following FF/Latch, which will be removed : <tetris_core_inst/game_display_inst/draw_block_engine_1/pat_color_1d_2> 
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_display_inst/draw_char_engine_1/color_reg_delay_1_3> in Unit <tetris_top_inst> is equivalent to the following FF/Latch, which will be removed : <tetris_core_inst/game_display_inst/draw_char_engine_1/color_reg_delay_1_0> 
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_display_inst/draw_char_engine_1/color_reg_delay_1_2> in Unit <tetris_top_inst> is equivalent to the following FF/Latch, which will be removed : <tetris_core_inst/game_display_inst/draw_char_engine_1/color_reg_delay_1_1> 
+INFO:Xst:2261 - The FF/Latch <tetris_core_inst/game_display_inst/draw_char_engine_1/char_color_3> in Unit <tetris_top_inst> is equivalent to the following FF/Latch, which will be removed : <tetris_core_inst/game_display_inst/draw_char_engine_1/char_color_0> 
+Found area constraint ratio of 100 (+ 5) on block pcb, actual ratio is 27.
+FlipFlop tetris_top_inst/tetris_core_inst/game_logic_inst/controller_inst/fsm_stateReg_FSM_FFd10 has been replicated 1 time(s)
+FlipFlop tetris_top_inst/tetris_core_inst/game_logic_inst/playfield_inst/main_fsm_stateReg_FSM_FFd18 has been replicated 2 time(s)
+
+Final Macro Processing ...
+
+Processing Unit <tetris_top_inst> :
+	Found 2-bit shift register for signal <tetris_core_inst/game_display_inst/vga_sync_io_hSync_delay_2>.
+	Found 2-bit shift register for signal <tetris_core_inst/game_display_inst/vga_sync_io_vSync_delay_2>.
+Unit <tetris_top_inst> processed.
+
+=========================================================================
+Final Register Report
+
+Macro Statistics
+# Registers                                            : 1407
+ Flip-Flops                                            : 1407
+# Shift Registers                                      : 2
+ 2-bit shift register                                  : 2
+
+=========================================================================
+
+=========================================================================
+*                           Partition Report                            *
+=========================================================================
+
+Partition Implementation Status
+-------------------------------
+
+  No Partitions were found in this design.
+
+-------------------------------
+
+=========================================================================
+*                            Final Report                               *
+=========================================================================
+Final Results
+RTL Top Level Output File Name     : pcb.ngr
+Top Level Output File Name         : pcb
+Output Format                      : NGC
+Optimization Goal                  : Speed
+Keep Hierarchy                     : No
+
+Design Statistics
+# IOs                              : 30
+
+Cell Usage :
+# BELS                             : 3644
+#      GND                         : 2
+#      INV                         : 70
+#      LUT1                        : 184
+#      LUT2                        : 351
+#      LUT2_D                      : 8
+#      LUT2_L                      : 22
+#      LUT3                        : 601
+#      LUT3_D                      : 24
+#      LUT3_L                      : 4
+#      LUT4                        : 1421
+#      LUT4_D                      : 41
+#      LUT4_L                      : 87
+#      MUXCY                       : 339
+#      MUXF5                       : 151
+#      MUXF6                       : 10
+#      MUXF7                       : 4
+#      VCC                         : 2
+#      XORCY                       : 323
+# FlipFlops/Latches                : 1409
+#      FD                          : 71
+#      FDC                         : 449
+#      FDCE                        : 443
+#      FDE                         : 339
+#      FDP                         : 14
+#      FDPE                        : 20
+#      FDR                         : 27
+#      FDRE                        : 29
+#      FDRS                        : 3
+#      FDS                         : 4
+#      FDSE                        : 10
+# RAMS                             : 120
+#      RAM16X1D                    : 92
+#      RAM16X1S                    : 10
+#      RAMB16BWE                   : 18
+# Shift Registers                  : 2
+#      SRL16                       : 2
+# Clock Buffers                    : 6
+#      BUFG                        : 6
+# IO Buffers                       : 30
+#      IBUF                        : 14
+#      IBUFG                       : 1
+#      OBUF                        : 15
+# DCMs                             : 1
+#      DCM_SP                      : 1
+=========================================================================
+
+Device utilization summary:
+---------------------------
+
+Selected Device : 3s700anfgg484-4 
+
+ Number of Slices:                     1560  out of   5888    26%  
+ Number of Slice Flip Flops:           1409  out of  11776    11%  
+ Number of 4 input LUTs:               3009  out of  11776    25%  
+    Number used as logic:              2813
+    Number used as Shift registers:       2
+    Number used as RAMs:                194
+ Number of IOs:                          30
+ Number of bonded IOBs:                  30  out of    372     8%  
+ Number of BRAMs:                        18  out of     20    90%  
+ Number of GCLKs:                         6  out of     24    25%  
+ Number of DCMs:                          1  out of      8    12%  
+
+---------------------------
+Partition Resource Summary:
+---------------------------
+
+  No Partitions were found in this design.
+
+---------------------------
+
+
+=========================================================================
+TIMING REPORT
+
+NOTE: THESE TIMING NUMBERS ARE ONLY A SYNTHESIS ESTIMATE.
+      FOR ACCURATE TIMING INFORMATION PLEASE REFER TO THE TRACE REPORT
+      GENERATED AFTER PLACE-and-ROUTE.
+
+Clock Information:
+------------------
+-----------------------------------+-------------------------------+-------+
+Clock Signal                       | Clock buffer(FF name)         | Load  |
+-----------------------------------+-------------------------------+-------+
+CLK_50M                            | dcm_inst/DCM_SP_INST:CLK0+BUFG| 1461  |
+CLK_50M                            | dcm_inst/DCM_SP_INST:CLKDV    | 70    |
+-----------------------------------+-------------------------------+-------+
+
+Asynchronous Control Signals Information:
+----------------------------------------
+------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------+-------+
+Control Signal                                                                            | Buffer(FF name)                                                                                 | Load  |
+------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------+-------+
+picouser_inst/db_btn_n/DataClean(picouser_inst/db_btn_n/DataClean:Q)                      | NONE(tetris_top_inst/tetris_core_inst/game_display_inst/dma_fb_fetch_addr_value_0)              | 900   |
+N0(XST_GND:G)                                                                             | NONE(picouser_inst/synchro_btn_e/use_fdc.fda)                                                   | 22    |
+tetris_top_inst/kd_ps2_inst/ps2_inst/ps2_host_tx_inst/load_dout(tetris_top_inst/XST_GND:G)| NONE(tetris_top_inst/kd_ps2_inst/ps2_inst/io_filter_inst/io_sync_db[0].io_sync_inst/use_fdc.fda)| 4     |
+------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------+-------+
+
+Timing Summary:
+---------------
+Speed Grade: -4
+
+   Minimum period: 11.995ns (Maximum Frequency: 83.368MHz)
+   Minimum input arrival time before clock: 1.521ns
+   Maximum output required time after clock: 7.283ns
+   Maximum combinational path delay: No path found
+
+Timing Detail:
+--------------
+All values displayed in nanoseconds (ns)
+
+=========================================================================
+Timing constraint: Default period analysis for Clock 'CLK_50M'
+  Clock period: 11.995ns (frequency: 83.368MHz)
+  Total number of paths / destination ports: 120497 / 3834
+-------------------------------------------------------------------------
+Delay:               11.995ns (Levels of Logic = 8)
+  Source:            tetris_top_inst/tetris_core_inst/game_logic_inst/controller_inst/fsm_stateReg_FSM_FFd5 (FF)
+  Destination:       tetris_top_inst/tetris_core_inst/game_logic_inst/playfield_inst/dma_playfield_dma_req_valid (FF)
+  Source Clock:      CLK_50M rising
+  Destination Clock: CLK_50M rising
+
+  Data Path: tetris_top_inst/tetris_core_inst/game_logic_inst/controller_inst/fsm_stateReg_FSM_FFd5 to tetris_top_inst/tetris_core_inst/game_logic_inst/playfield_inst/dma_playfield_dma_req_valid
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     FDC:C->Q              7   0.591   0.851  tetris_core_inst/game_logic_inst/controller_inst/fsm_stateReg_FSM_FFd5 (tetris_core_inst/game_logic_inst/controller_inst/fsm_stateReg_FSM_FFd5)
+     LUT3:I0->O            1   0.648   0.500  tetris_core_inst/game_logic_inst/controller_inst/move_out_down27 (tetris_core_inst/game_logic_inst/controller_inst/move_out_down27)
+     LUT4:I1->O            1   0.643   0.423  tetris_core_inst/game_logic_inst/controller_inst/move_out_down66_SW0 (N359)
+     LUT4:I3->O           11   0.648   0.936  tetris_core_inst/game_logic_inst/controller_inst/move_out_down66 (tetris_core_inst/game_logic_inst/controller_inst_move_out_down)
+     LUT4:I3->O           10   0.648   0.885  tetris_core_inst/game_logic_inst/playfield_inst/action_1_mux0000<3>27 (tetris_core_inst/game_logic_inst/playfield_inst/N37)
+     LUT4:I3->O           10   0.648   0.885  tetris_core_inst/game_logic_inst/playfield_inst/main_fsm_stateReg_FSM_FFd9-In52 (tetris_core_inst/game_logic_inst/playfield_inst/main_fsm_stateReg_cmp_eq0026)
+     LUT4:I3->O            2   0.648   0.479  tetris_core_inst/game_logic_inst/playfield_inst/main_fsm_onExit_COLLISION_CHECK1124 (tetris_core_inst/game_logic_inst/playfield_inst/N25)
+     LUT4:I2->O            3   0.648   0.534  tetris_core_inst/game_logic_inst/playfield_inst/dma_playfield_dma_start41_SW0 (N363)
+     LUT4:I3->O            1   0.648   0.420  tetris_core_inst/game_logic_inst/playfield_inst/dma_playfield_dma_req_valid_not000160 (tetris_core_inst/game_logic_inst/playfield_inst/dma_playfield_dma_req_valid_not0001)
+     FDCE:CE                   0.312          tetris_core_inst/game_logic_inst/playfield_inst/dma_playfield_dma_req_valid
+    ----------------------------------------
+    Total                     11.995ns (6.082ns logic, 5.913ns route)
+                                       (50.7% logic, 49.3% route)
+
+=========================================================================
+Timing constraint: Default OFFSET IN BEFORE for Clock 'CLK_50M'
+  Total number of paths / destination ports: 14 / 14
+-------------------------------------------------------------------------
+Offset:              1.521ns (Levels of Logic = 1)
+  Source:            SW<3> (PAD)
+  Destination:       picouser_inst/synchro_sws_3/use_fdc.fda (FF)
+  Destination Clock: CLK_50M rising
+
+  Data Path: SW<3> to picouser_inst/synchro_sws_3/use_fdc.fda
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     IBUF:I->O             1   0.849   0.420  SW_3_IBUF (SW_3_IBUF)
+     FDC:D                     0.252          picouser_inst/synchro_sws_3/use_fdc.fda
+    ----------------------------------------
+    Total                      1.521ns (1.101ns logic, 0.420ns route)
+                                       (72.4% logic, 27.6% route)
+
+=========================================================================
+Timing constraint: Default OFFSET OUT AFTER for Clock 'CLK_50M'
+  Total number of paths / destination ports: 38 / 14
+-------------------------------------------------------------------------
+Offset:              7.283ns (Levels of Logic = 3)
+  Source:            tetris_top_inst/tetris_core_inst/game_display_inst/lbcp/io_rd_en_regNext (FF)
+  Destination:       VGA_B<2> (PAD)
+  Source Clock:      CLK_50M rising 0.5X
+
+  Data Path: tetris_top_inst/tetris_core_inst/game_display_inst/lbcp/io_rd_en_regNext to VGA_B<2>
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     FD:C->Q              12   0.591   1.104  tetris_core_inst/game_display_inst/lbcp/io_rd_en_regNext (tetris_core_inst/game_display_inst/lbcp/io_rd_en_regNext)
+     LUT3:I0->O            1   0.648   0.420  tetris_core_inst/game_display_inst/vga_color_r<0>1 (vga_color_r<0>)
+     end scope: 'tetris_top_inst'
+     OBUF:I->O                 4.520          VGA_R_0_OBUF (VGA_R<0>)
+    ----------------------------------------
+    Total                      7.283ns (5.759ns logic, 1.524ns route)
+                                       (79.1% logic, 20.9% route)
+
+=========================================================================
+
+
+Total REAL time to Xst completion: 66.00 secs
+Total CPU time to Xst completion: 65.94 secs
+ 
+--> 
+
+
+Total memory usage is 642416 kilobytes
+
+Number of errors   :    0 (   0 filtered)
+Number of warnings :  525 (   0 filtered)
+Number of infos    :   50 (   0 filtered)
+
