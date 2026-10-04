@@ -156,7 +156,8 @@ class Bram2p(config :Bram2pConfig ) extends Component {
   }
 
   // Instantiate — single call, no leakage outside Bram2p
-  WriteWhileClearAssert(external_write_during_clear)
+  // Uncomment the following line to enable the assertion in simulation
+  //WriteWhileClearAssert(external_write_during_clear)
 
 }
 

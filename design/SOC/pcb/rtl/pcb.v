@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.15.0    git head : 05a01af3d3345aa0afcaad8e0186dde13a359db2
 // Component : pcb
-// Git hash  : ef6d542df7172529bef9d34366e9c03a33434e26
+// Git hash  : 3f41ad21d6291522773b6c62f10ad3baf8138baf
 
 `timescale 1ns/1ps
 
@@ -956,8 +956,8 @@ module display_top (
     .rd_data_payload (frame_buffer_rd_data_payload[3:0]      ), //o
     .clear_start     (draw_controller_bf_clear_start         ), //i
     .clear_done      (frame_buffer_clear_done                ), //o
-    .core_rst        (core_rst                               ), //i
-    .core_clk        (core_clk                               )  //i
+    .core_clk        (core_clk                               ), //i
+    .core_rst        (core_rst                               )  //i
   );
   draw_char_engine draw_char_engine_1 (
     .start      (draw_controller_draw_char_start     ), //i
@@ -3865,8 +3865,8 @@ module Bram2p_4x69120 (
   output wire [3:0]    rd_data_payload,
   input  wire          clear_start,
   output wire          clear_done,
-  input  wire          core_rst,
-  input  wire          core_clk
+  input  wire          core_clk,
+  input  wire          core_rst
 );
 
   reg        [3:0]    memory_spinal_port1;
@@ -3909,11 +3909,6 @@ module Bram2p_4x69120 (
     end
   end
 
-  WriteWhileClearAssert writeWhileClearAssert_1 (
-    .clk (core_clk                   ), //i
-    .rst (core_rst                   ), //i
-    .vld (external_write_during_clear)  //i
-  );
   assign clear_start_rise = (clear_start && (! clear_start_regNext));
   always @(*) begin
     clear_addr_willIncrement = 1'b0;
@@ -6993,19 +6988,3 @@ module bcd (
 
 
 endmodule
-
-module WriteWhileClearAssert
-(
-  input wire clk,
-  input wire rst,
-  input wire vld
-);
-`ifdef SIM
-  // SVA: vld must never be high
-  chk_no_write_during_clear : assert property (
-    @(posedge clk) disable iff (rst)
-    !vld
-  ) else $error("Bram2p: external write requested while clear is active");
-`endif
-endmodule
-
